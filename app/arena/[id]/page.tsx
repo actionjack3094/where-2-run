@@ -151,8 +151,8 @@ function DebateView({ debateId }: { debateId: string }) {
   const aVotes = votes.filter((vote) => vote.candidate_id === debate?.candidate_a_id).length;
   const bVotes = votes.filter((vote) => vote.candidate_id === debate?.candidate_b_id).length;
   const totalVotes = aVotes + bVotes;
-  const aShare = totalVotes === 0 ? 50 : Math.round((aVotes / totalVotes) * 100);
-  const bShare = 100 - aShare;
+  const aShare = totalVotes === 0 ? 0 : Math.round((aVotes / totalVotes) * 100);
+  const bShare = totalVotes === 0 ? 0 : 100 - aShare;
 
   async function withUser() {
     const next = user ?? (await ensureArenaUser());
@@ -409,10 +409,7 @@ function ArgumentSlot({
   return (
     <Card className={cn(!argument && !composer && "border-dashed")}>
       <CardHeader className="flex flex-row items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">{label}</p>
-          {argument && <CardTitle className="mt-1 text-sm font-medium">Filed</CardTitle>}
-        </div>
+        <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">{label}</p>
         {argument?.consistency_score != null && (
           <ConsistencyPill score={argument.consistency_score} />
         )}
