@@ -109,9 +109,14 @@ export default function ArenaPage() {
               : "Asynchronous debates for your selected district."}
           </p>
         </div>
-        <Button type="button" onClick={() => setModalOpen(true)} className="w-fit">
-          Create Debate
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" className="w-fit">
+            <Link href="/spectator">Donor Feed</Link>
+          </Button>
+          <Button type="button" onClick={() => setModalOpen(true)} className="w-fit">
+            Create Debate
+          </Button>
+        </div>
       </div>
 
       {stage === "loading" && (

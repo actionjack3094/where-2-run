@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { use, useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -43,7 +43,7 @@ export default function DebatePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  return <DebateView debateId={id} />;
+  return <DebateView key={id} debateId={id} />;
 }
 
 function DebateView({ debateId }: { debateId: string }) {
@@ -56,6 +56,8 @@ function DebateView({ debateId }: { debateId: string }) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
+  const [localVoteCandidateId, setLocalVoteCandidateId] = useState<string | null>(null);
+  const voteLockRef = useRef(false);
 
   async function loadDebate() {
     const { data, error: debateError } = await supabase
@@ -93,6 +95,8 @@ function DebateView({ debateId }: { debateId: string }) {
     let cancelled = false;
 
     async function boot() {
+      setLocalVoteCandidateId(null);
+      voteLockRef.current = false;
       try {
         const { data: sessionData } = await supabase.auth.getSession();
         const sessionUser = sessionData.session?.user;
@@ -132,6 +136,11 @@ function DebateView({ debateId }: { debateId: string }) {
   const isCandidateB = Boolean(user && debate && user.id === debate.candidate_b_id);
   const isCandidate = isCandidateA || isCandidateB;
   const existingVote = user ? votes.find((vote) => vote.voter_id === user.id) : undefined;
+  const votedCandidateId = existingVote?.candidate_id ?? localVoteCandidateId;
+  const hasVoted = Boolean(votedCandidateId);
+  const isVotableStatus = debate?.status === "active" || debate?.status === "voting";
+  const bothSeated = Boolean(debate?.candidate_a_id && debate?.candidate_b_id);
+  const showVoteButtons = Boolean(!isCandidate && isVotableStatus && bothSeated);
 
   const nextTurn = useMemo(() => {
     if (!debate) return null;
@@ -208,10 +217,20 @@ function DebateView({ debateId }: { debateId: string }) {
   }
 
   async function handleVote(candidateId: string) {
+    if (voteLockRef.current || busy || hasVoted || isCandidate) return;
+    voteLockRef.current = true;
     setBusy(true);
     setActionError(null);
     try {
       const actor = await withUser();
+      if (actor.id === debate?.candidate_a_id || actor.id === debate?.candidate_b_id) {
+        throw new Error("Candidates cannot vote in their own debate.");
+      }
+      const alreadyCast = votes.find((vote) => vote.voter_id === actor.id);
+      if (alreadyCast) {
+        setLocalVoteCandidateId(alreadyCast.candidate_id);
+        throw new Error("You already voted in this debate.");
+      }
       const response = await fetch("/api/arena/votes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -222,9 +241,17 @@ function DebateView({ debateId }: { debateId: string }) {
         }),
       });
       const payload = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(payload.error ?? "Could not record the vote.");
+      if (!response.ok) {
+        if (response.status === 409) {
+          setLocalVoteCandidateId(candidateId);
+          await loadDebate();
+        }
+        throw new Error(payload.error ?? "Could not record the vote.");
+      }
+      setLocalVoteCandidateId(candidateId);
       await loadDebate();
     } catch (err) {
+      voteLockRef.current = false;
       setActionError(err instanceof Error ? err.message : "Could not record the vote.");
     } finally {
       setBusy(false);
@@ -252,12 +279,20 @@ function DebateView({ debateId }: { debateId: string }) {
 
   return (
     <main className="mx-auto flex min-h-full w-full max-w-3xl flex-1 flex-col px-6 py-10">
-      <Link
-        href="/arena"
-        className="text-xs font-medium uppercase tracking-widest text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-50"
-      >
-        ← Arena
-      </Link>
+      <div className="flex flex-wrap items-center gap-4">
+        <Link
+          href="/arena"
+          className="text-xs font-medium uppercase tracking-widest text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-50"
+        >
+          ← Arena
+        </Link>
+        <Link
+          href="/spectator"
+          className="text-xs font-medium uppercase tracking-widest text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-50"
+        >
+          Donor Feed
+        </Link>
+      </div>
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <Badge>
           Round {Math.min(debate.current_round, TOTAL_ROUNDS)} of {TOTAL_ROUNDS}
@@ -289,67 +324,78 @@ function DebateView({ debateId }: { debateId: string }) {
         <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-300">{actionError}</p>
       )}
 
-      <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_16rem]">
-        <section className="flex flex-col gap-8">
-          {Array.from({ length: TOTAL_ROUNDS }, (_, index) => {
-            const round = index + 1;
-            const aArg = findArgument(args, debate.candidate_a_id, round);
-            const bArg = findArgument(args, debate.candidate_b_id, round);
-            const showAComposer = canSpeak && nextTurn?.round === round && nextTurn.side === "a";
-            const showBComposer = canSpeak && nextTurn?.round === round && nextTurn.side === "b";
+      <section className="mt-10 flex flex-col gap-8">
+        {Array.from({ length: TOTAL_ROUNDS }, (_, index) => {
+          const round = index + 1;
+          const aArg = findArgument(args, debate.candidate_a_id, round);
+          const bArg = findArgument(args, debate.candidate_b_id, round);
+          const showAComposer = canSpeak && nextTurn?.round === round && nextTurn.side === "a";
+          const showBComposer = canSpeak && nextTurn?.round === round && nextTurn.side === "b";
 
-            return (
-              <div key={round} className="flex flex-col gap-3">
-                <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
-                  Round {round}
-                </p>
-                <ArgumentSlot
-                  label={candidateA?.username ?? "Candidate A"}
-                  argument={aArg}
-                  composer={
-                    showAComposer
-                      ? {
-                          draft,
-                          setDraft,
-                          busy,
-                          onSubmit: handleSubmitArgument,
-                        }
-                      : null
-                  }
-                />
-                <ArgumentSlot
-                  label={candidateB?.username ?? "Candidate B"}
-                  argument={bArg}
-                  emptyHint={debate.candidate_b_id ? "Awaiting argument" : "Waiting for a challenger"}
-                  composer={
-                    showBComposer
-                      ? {
-                          draft,
-                          setDraft,
-                          busy,
-                          onSubmit: handleSubmitArgument,
-                        }
-                      : null
-                  }
-                />
-              </div>
-            );
-          })}
-        </section>
+          return (
+            <div key={round} className="flex flex-col gap-3">
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
+                Round {round}
+              </p>
+              <ArgumentSlot
+                label={candidateA?.username ?? "Candidate A"}
+                argument={aArg}
+                composer={
+                  showAComposer
+                    ? {
+                        draft,
+                        setDraft,
+                        busy,
+                        onSubmit: handleSubmitArgument,
+                      }
+                    : null
+                }
+              />
+              <ArgumentSlot
+                label={candidateB?.username ?? "Candidate B"}
+                argument={bArg}
+                emptyHint={debate.candidate_b_id ? "Awaiting argument" : "Waiting for a challenger"}
+                composer={
+                  showBComposer
+                    ? {
+                        draft,
+                        setDraft,
+                        busy,
+                        onSubmit: handleSubmitArgument,
+                      }
+                    : null
+                }
+              />
+            </div>
+          );
+        })}
+      </section>
 
-        <VotingPanel
+      {showVoteButtons && candidateA && candidateB && (
+        <SpectatorVote
           candidateA={candidateA}
           candidateB={candidateB}
-          aVotes={aVotes}
-          bVotes={bVotes}
-          aShare={aShare}
-          bShare={bShare}
-          canVote={Boolean(debate.candidate_a_id && debate.candidate_b_id) && !isCandidate}
-          existingVote={existingVote}
+          votedCandidateId={votedCandidateId}
           busy={busy}
           onVote={(candidateId) => void handleVote(candidateId)}
         />
-      </div>
+      )}
+
+      {isCandidate && bothSeated && (
+        <p className="mt-10 text-sm text-zinc-500 dark:text-zinc-400">
+          You are on the ticket. Spectators cast the votes.
+        </p>
+      )}
+
+      <TallyBar
+        candidateA={candidateA}
+        candidateB={candidateB}
+        aVotes={aVotes}
+        bVotes={bVotes}
+        aShare={aShare}
+        bShare={bShare}
+        totalVotes={totalVotes}
+      />
     </main>
   );
 }
@@ -451,17 +497,75 @@ function ArgumentSlot({
   );
 }
 
-function VotingPanel({
+function SpectatorVote({
+  candidateA,
+  candidateB,
+  votedCandidateId,
+  busy,
+  onVote,
+}: {
+  candidateA: DebateCandidate;
+  candidateB: DebateCandidate;
+  votedCandidateId: string | null | undefined;
+  busy: boolean;
+  onVote: (candidateId: string) => void;
+}) {
+  const hasVoted = Boolean(votedCandidateId);
+  const votedForA = votedCandidateId === candidateA.id;
+  const votedForB = votedCandidateId === candidateB.id;
+  const votedName = votedForA ? candidateA.username : votedForB ? candidateB.username : null;
+
+  return (
+    <section className="mt-12">
+      <Card>
+        <CardHeader>
+          <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+            Spectator vote
+          </p>
+          <CardTitle>Cast your ballot</CardTitle>
+          <CardDescription>
+            {hasVoted
+              ? `You voted for ${votedName}. One ballot per spectator.`
+              : "One vote per person. Your ballot locks after you cast it."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Button
+              type="button"
+              size="lg"
+              variant={votedForA ? "default" : "outline"}
+              disabled={busy || hasVoted}
+              aria-pressed={votedForA}
+              onClick={() => onVote(candidateA.id)}
+            >
+              {votedForA ? `Voted ${candidateA.username}` : `Vote ${candidateA.username}`}
+            </Button>
+            <Button
+              type="button"
+              size="lg"
+              variant={votedForB ? "default" : "outline"}
+              disabled={busy || hasVoted}
+              aria-pressed={votedForB}
+              onClick={() => onVote(candidateB.id)}
+            >
+              {votedForB ? `Voted ${candidateB.username}` : `Vote ${candidateB.username}`}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
+
+function TallyBar({
   candidateA,
   candidateB,
   aVotes,
   bVotes,
   aShare,
   bShare,
-  canVote,
-  existingVote,
-  busy,
-  onVote,
+  totalVotes,
 }: {
   candidateA: DebateCandidate | null;
   candidateB: DebateCandidate | null;
@@ -469,91 +573,48 @@ function VotingPanel({
   bVotes: number;
   aShare: number;
   bShare: number;
-  canVote: boolean;
-  existingVote?: Vote;
-  busy: boolean;
-  onVote: (candidateId: string) => void;
+  totalVotes: number;
 }) {
-  const votedForA = existingVote && existingVote.candidate_id === candidateA?.id;
-  const votedForB = existingVote && existingVote.candidate_id === candidateB?.id;
+  const aWidth = totalVotes === 0 ? 50 : aShare;
+  const bWidth = totalVotes === 0 ? 50 : bShare;
 
   return (
-    <aside className="lg:sticky lg:top-8 h-fit">
-      <Card>
-        <CardHeader>
+    <section className="mt-12 border-t border-zinc-200 pt-8 dark:border-zinc-800">
+      <div className="flex items-end justify-between gap-4">
+        <div>
           <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
-            Spectators
+            Candidate A
           </p>
-          <CardTitle>Live tally</CardTitle>
-          <CardDescription>
-            {aVotes + bVotes === 0 ? "No votes yet." : `${aVotes + bVotes} votes in.`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <TallyRow
-            name={candidateA?.username ?? "Candidate A"}
-            votes={aVotes}
-            share={aShare}
-          />
-          <TallyRow
-            name={candidateB?.username ?? "Candidate B"}
-            votes={bVotes}
-            share={bShare}
-          />
-          {canVote && candidateA && candidateB && (
-            <div className="flex flex-col gap-2 pt-1">
-              <Button
-                type="button"
-                variant={votedForA ? "default" : "outline"}
-                disabled={busy || Boolean(existingVote)}
-                onClick={() => onVote(candidateA.id)}
-              >
-                {votedForA ? "Voted A" : `Vote ${candidateA.username}`}
-              </Button>
-              <Button
-                type="button"
-                variant={votedForB ? "default" : "outline"}
-                disabled={busy || Boolean(existingVote)}
-                onClick={() => onVote(candidateB.id)}
-              >
-                {votedForB ? "Voted B" : `Vote ${candidateB.username}`}
-              </Button>
-            </div>
-          )}
-          {!canVote && !candidateB && (
-            <p className="text-xs leading-5 text-zinc-400">
-              Voting opens once a challenger takes the second lectern.
-            </p>
-          )}
-        </CardContent>
-      </Card>
-    </aside>
-  );
-}
-
-function TallyRow({
-  name,
-  votes,
-  share,
-}: {
-  name: string;
-  votes: number;
-  share: number;
-}) {
-  return (
-    <div>
-      <div className="mb-1.5 flex items-baseline justify-between gap-3">
-        <p className="text-sm font-medium">{name}</p>
-        <p className="text-xs tabular-nums text-zinc-400">
-          {votes} · {share}%
+          <p className="mt-1 text-sm font-medium">{candidateA?.username ?? "Candidate A"}</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">{aShare}%</p>
+          <p className="text-xs text-zinc-400">{aVotes} {aVotes === 1 ? "vote" : "votes"}</p>
+        </div>
+        <p className="pb-6 text-xs font-medium uppercase tracking-widest text-zinc-400">
+          {totalVotes === 0 ? "No votes yet" : `${totalVotes} total`}
         </p>
+        <div className="text-right">
+          <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+            Candidate B
+          </p>
+          <p className="mt-1 text-sm font-medium">{candidateB?.username ?? "Open seat"}</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">{bShare}%</p>
+          <p className="text-xs text-zinc-400">{bVotes} {bVotes === 1 ? "vote" : "votes"}</p>
+        </div>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-900">
+      <div
+        className="mt-4 flex h-3 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-900"
+        role="img"
+        aria-label={`${candidateA?.username ?? "Candidate A"} ${aShare} percent, ${candidateB?.username ?? "Candidate B"} ${bShare} percent`}
+      >
         <div
           className="h-full bg-zinc-950 transition-all duration-500 dark:bg-zinc-50"
-          style={{ width: `${share}%` }}
+          style={{ width: `${aWidth}%` }}
+        />
+        <div
+          className="h-full bg-zinc-300 transition-all duration-500 dark:bg-zinc-700"
+          style={{ width: `${bWidth}%` }}
         />
       </div>
-    </div>
+    </section>
   );
 }
