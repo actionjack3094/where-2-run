@@ -28,6 +28,10 @@ export interface UserProfile {
   viability_score: number;
   tier: string | null;
   is_verified: boolean;
+  residency_state: string | null;
+  residency_zip: string | null;
+  is_eligible_federal: boolean;
+  is_eligible_local: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -88,6 +92,18 @@ export interface CandidateStats {
   debates_played: number;
   win_percentage: number;
   total_pledged: number | string;
+}
+
+export interface ElectabilityScore {
+  id: string;
+  user_id: string;
+  district_id: string;
+  ideological_match_pct: number | string;
+  debate_win_rate: number | string;
+  total_escrow_pledged: number | string;
+  electability_multiplier: number | string;
+  created_at: string;
+  updated_at: string;
 }
 
 export type DebateCandidate = Pick<UserProfile, "id" | "username">;
@@ -227,6 +243,28 @@ export interface Database {
             columns: ["donor_id"];
             isOneToOne: false;
             referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      electability_scores: {
+        Row: ElectabilityScore;
+        Insert: Partial<Omit<ElectabilityScore, "electability_multiplier">> &
+          Pick<ElectabilityScore, "user_id" | "district_id">;
+        Update: Partial<Omit<ElectabilityScore, "electability_multiplier">>;
+        Relationships: [
+          {
+            foreignKeyName: "electability_scores_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "electability_scores_district_id_fkey";
+            columns: ["district_id"];
+            isOneToOne: false;
+            referencedRelation: "districts";
             referencedColumns: ["id"];
           },
         ];
