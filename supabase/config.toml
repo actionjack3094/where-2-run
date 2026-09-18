@@ -1,0 +1,10 @@
+# Function flags for WHERE 2 RUN.
+# Database Webhooks cannot send a user JWT, so grade-debate is invoked with
+# the project API key (or no JWT) from pg_net.
+
+project_id = "where-2-run"
+
+[functions.grade-debate]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/grade-debate/index.ts"

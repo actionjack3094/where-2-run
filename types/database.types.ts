@@ -58,6 +58,7 @@ export interface Argument {
   content: string;
   consistency_score: number | null;
   consistency_critique: string | null;
+  graded_at: string | null;
   created_at: string;
 }
 

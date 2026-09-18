@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { applyDebateGrade } from "@/lib/arena/apply-grade";
 import { evaluateConsistency } from "@/lib/arena/consistency";
 import { TOTAL_ROUNDS } from "@/lib/arena/time";
 import { createAdminClient } from "@/lib/db/supabase-admin";
@@ -88,6 +89,12 @@ export async function POST(request: Request) {
           status: nextStatus,
         })
         .eq("id", body.debateId);
+    }
+
+    try {
+      await applyDebateGrade(admin, data);
+    } catch (gradeError) {
+      console.error("AI Grader failed after filing", gradeError);
     }
 
     return NextResponse.json(data);

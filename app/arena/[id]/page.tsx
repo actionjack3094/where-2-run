@@ -12,9 +12,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  waitForIdeologyGrader,
+  type GraderToastState,
+} from "@/lib/arena/grader";
 import { ensureArenaUser, type ArenaUser } from "@/lib/arena/identity";
 import { getExpiryState, TOTAL_ROUNDS } from "@/lib/arena/time";
 import { supabase } from "@/lib/db/supabase";
+import { STORAGE_KEYS } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import type {
   Argument,
@@ -59,7 +64,9 @@ function DebateView({ debateId }: { debateId: string }) {
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [localVoteCandidateId, setLocalVoteCandidateId] = useState<string | null>(null);
+  const [graderToast, setGraderToast] = useState<GraderToastState | null>(null);
   const voteLockRef = useRef(false);
+  const graderWaitRef = useRef(0);
 
   async function loadDebate() {
     const { data, error: debateError } = await supabase
@@ -127,9 +134,16 @@ function DebateView({ debateId }: { debateId: string }) {
 
     return () => {
       cancelled = true;
+      graderWaitRef.current += 1;
       window.clearInterval(interval);
     };
   }, [debateId]);
+
+  useEffect(() => {
+    if (graderToast !== "done" && graderToast !== "timeout") return;
+    const timeout = window.setTimeout(() => setGraderToast(null), 3400);
+    return () => window.clearTimeout(timeout);
+  }, [graderToast]);
 
   const candidateA = unwrapCandidate(debate?.candidate_a ?? null);
   const candidateB = unwrapCandidate(debate?.candidate_b ?? null);
@@ -195,8 +209,19 @@ function DebateView({ debateId }: { debateId: string }) {
     if (!nextTurn || !draft.trim()) return;
     setBusy(true);
     setActionError(null);
+    const waitId = ++graderWaitRef.current;
+    setGraderToast("analyzing");
+    let filed: Pick<Argument, "id" | "author_id"> | null = null;
+    let previousVector: unknown = null;
     try {
       const actor = await withUser();
+      const { data: profile } = await supabase
+        .from("users")
+        .select("ideology_vector")
+        .eq("id", actor.id)
+        .maybeSingle();
+      previousVector = profile?.ideology_vector ?? null;
+
       const response = await fetch("/api/arena/arguments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -207,14 +232,42 @@ function DebateView({ debateId }: { debateId: string }) {
           content: draft.trim(),
         }),
       });
-      const payload = (await response.json()) as { error?: string };
+      const payload = (await response.json()) as Argument & { error?: string };
       if (!response.ok) throw new Error(payload.error ?? "Could not file the argument.");
+      filed = { id: payload.id, author_id: payload.author_id };
       setDraft("");
       await loadDebate();
     } catch (err) {
+      if (graderWaitRef.current === waitId) setGraderToast(null);
       setActionError(err instanceof Error ? err.message : "Could not file the argument.");
     } finally {
       setBusy(false);
+    }
+
+    if (!filed || graderWaitRef.current !== waitId) return;
+
+    setGraderToast("analyzing");
+    const result = await waitForIdeologyGrader({
+      authorId: filed.author_id,
+      argumentId: filed.id,
+      previousVector,
+    });
+    if (graderWaitRef.current !== waitId) return;
+    setGraderToast(result);
+
+    if (result === "done") {
+      const { data: profile } = await supabase
+        .from("users")
+        .select("ideology_vector")
+        .eq("id", filed.author_id)
+        .maybeSingle();
+      if (profile?.ideology_vector) {
+        const stored =
+          typeof profile.ideology_vector === "string"
+            ? profile.ideology_vector
+            : JSON.stringify(profile.ideology_vector);
+        window.sessionStorage.setItem(STORAGE_KEYS.vector, stored);
+      }
     }
   }
 
@@ -398,7 +451,35 @@ function DebateView({ debateId }: { debateId: string }) {
         bShare={bShare}
         totalVotes={totalVotes}
       />
+
+      {graderToast && <GraderToast state={graderToast} />}
     </main>
+  );
+}
+
+function GraderToast({ state }: { state: GraderToastState }) {
+  const label =
+    state === "analyzing"
+      ? "AI Grader analyzing response..."
+      : state === "done"
+        ? "AI Grader updated your ideology vector."
+        : "AI Grader is still working.";
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-6"
+    >
+      <p
+        className={cn(
+          "rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm shadow-lg dark:border-zinc-800 dark:bg-zinc-950",
+          state === "analyzing" && "animate-pulse",
+        )}
+      >
+        {label}
+      </p>
+    </div>
   );
 }
 
