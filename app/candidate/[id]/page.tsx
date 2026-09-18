@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { CampaignStore } from "@/components/merch/CampaignStore";
 import { usePledge } from "@/components/pledges/PledgeHost";
 import { pickDebateWinnerId } from "@/lib/arena/winner";
 import {
@@ -353,6 +354,8 @@ function CandidateProfile({ candidateId }: { candidateId: string }) {
           </p>
 
           <FundingBar raised={raised} />
+
+          <CampaignStore candidateId={stats.id} />
 
           <section className="mt-16">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
