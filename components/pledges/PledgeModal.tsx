@@ -10,11 +10,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  createOptimisticPledge,
+  donorDisplayName,
   formatUsd,
   MAX_PLEDGE_AMOUNT,
   QUICK_PLEDGE_AMOUNTS,
-  submitPledge,
 } from "@/lib/pledges";
 import { cn } from "@/lib/utils";
 import type { Pledge } from "@/types/database.types";
@@ -30,7 +29,6 @@ export type PledgeTarget = {
 export function PledgeModal({
   target,
   onClose,
-  onConfirmed,
 }: {
   target: PledgeTarget;
   onClose: () => void;
@@ -75,27 +73,27 @@ export function PledgeModal({
     setBusy(true);
     setFormError(null);
 
-    const optimistic = createOptimisticPledge({
-      candidateId: target.candidateId,
-      amount,
-      message,
-    });
-
-    target.onOptimistic?.(optimistic);
-    onClose();
-    onConfirmed(`You're backing ${target.candidateName} with ${formatUsd(amount)}.`);
-
     try {
-      const saved = await submitPledge({
-        candidateId: target.candidateId,
-        amount,
-        message,
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount,
+          candidateId: target.candidateId,
+          candidateName: target.candidateName,
+          message,
+          donorName: donorDisplayName(),
+        }),
       });
-      target.onCommitted?.(optimistic.id, saved);
+      const payload = (await response.json()) as { url?: string; error?: string };
+      if (!response.ok || !payload.url) {
+        throw new Error(payload.error ?? "Could not start Stripe checkout.");
+      }
+      window.location.assign(payload.url);
     } catch (error) {
-      target.onFailed?.(optimistic.id);
-      onConfirmed(
-        error instanceof Error ? error.message : "Checkout failed. The pledge was not recorded.",
+      setBusy(false);
+      setFormError(
+        error instanceof Error ? error.message : "Checkout failed. The pledge was not authorized.",
       );
     }
   }
@@ -114,12 +112,12 @@ export function PledgeModal({
       >
         <CardHeader>
           <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
-            Mock checkout
+            Stripe escrow
           </p>
           <CardTitle id={titleId}>Back {target.candidateName}</CardTitle>
           <CardDescription>
-            Simulated Stripe confirmation. No card is charged. Your pledge lands on the campaign
-            instantly.
+            Authorize a card hold with Stripe. The pledge stays in escrow until capture — nothing
+            is charged yet.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -185,9 +183,11 @@ export function PledgeModal({
 
             <div className="flex gap-2">
               <Button type="submit" className="flex-1" disabled={busy}>
-                {busy ? "Confirming…" : `Confirm ${Number.isFinite(amount) ? formatUsd(amount) : ""} pledge`}
+                {busy
+                  ? "Redirecting to Stripe…"
+                  : `Authorize ${Number.isFinite(amount) ? formatUsd(amount) : ""} hold`}
               </Button>
-              <Button type="button" variant="ghost" onClick={onClose}>
+              <Button type="button" variant="ghost" onClick={onClose} disabled={busy}>
                 Cancel
               </Button>
             </div>
@@ -196,7 +196,7 @@ export function PledgeModal({
                 "text-center text-[11px] uppercase tracking-widest text-zinc-400",
               )}
             >
-              One-click mock checkout
+              Stripe Auth & Capture
             </p>
           </form>
         </CardContent>
