@@ -16,6 +16,8 @@ export interface District {
   pvi_score: number | null;
   historical_lean: string | null;
   median_ideology_vector: IdeologyVector | string | null;
+  zip_code: string | null;
+  state: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -101,6 +103,7 @@ export interface ElectabilityScore {
   ideological_match_pct: number | string;
   debate_win_rate: number | string;
   total_escrow_pledged: number | string;
+  legal_eligibility_integer: number;
   electability_multiplier: number | string;
   created_at: string;
   updated_at: string;
@@ -251,7 +254,9 @@ export interface Database {
         Row: ElectabilityScore;
         Insert: Partial<Omit<ElectabilityScore, "electability_multiplier">> &
           Pick<ElectabilityScore, "user_id" | "district_id">;
-        Update: Partial<Omit<ElectabilityScore, "electability_multiplier">>;
+        Update: Partial<
+          Omit<ElectabilityScore, "electability_multiplier" | "id" | "user_id" | "district_id">
+        >;
         Relationships: [
           {
             foreignKeyName: "electability_scores_user_id_fkey";
@@ -291,9 +296,17 @@ export interface Database {
         Args: { debate_uuid: string };
         Returns: string | null;
       };
+      calculate_electability: {
+        Args: { p_user_id: string; p_district_id: string };
+        Returns: number | string;
+      };
       complete_expired_debates: {
         Args: Record<PropertyKey, never>;
         Returns: { debate_id: string; winner_id: string | null }[];
+      };
+      normalize_zip: {
+        Args: { value: string };
+        Returns: string | null;
       };
     };
     Enums: Record<string, never>;
