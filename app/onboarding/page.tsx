@@ -100,9 +100,12 @@ export default function OnboardingPage() {
 
   return (
     <main className="mx-auto flex min-h-full w-full max-w-xl flex-1 flex-col px-6 py-10">
-      <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
+      <Link
+        href="/"
+        className="w-fit text-xs font-medium uppercase tracking-[0.2em] text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-50"
+      >
         Where 2 Run
-      </p>
+      </Link>
       <h1 className="mt-3 text-3xl font-semibold tracking-tight">
         {stage === "results" ? "Your districts" : "Ideological funnel"}
       </h1>

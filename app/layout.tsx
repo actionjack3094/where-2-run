@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { PledgeHost } from "@/components/pledges/PledgeHost";
+import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
 import "./globals.css";
 
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <PledgeHost>
           <SiteNav />
           {children}
+          <SiteFooter />
         </PledgeHost>
       </body>
     </html>

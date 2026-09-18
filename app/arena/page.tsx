@@ -99,9 +99,12 @@ export default function ArenaPage() {
     <main className="mx-auto flex min-h-full w-full max-w-2xl flex-1 flex-col px-6 py-10">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
+          <Link
+            href="/"
+            className="w-fit text-xs font-medium uppercase tracking-[0.2em] text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-50"
+          >
             Where 2 Run
-          </p>
+          </Link>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">Arena</h1>
           <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
             {district
