@@ -63,6 +63,22 @@ export interface Vote {
   created_at: string;
 }
 
+export interface CandidateStats {
+  id: string;
+  username: string;
+  ideology_vector: IdeologyVector | string | null;
+  target_district_id: string | null;
+  viability_score: number;
+  tier: string | null;
+  is_verified: boolean;
+  created_at: string;
+  updated_at: string;
+  total_votes: number;
+  debates_won: number;
+  debates_played: number;
+  win_percentage: number;
+}
+
 export type DebateCandidate = Pick<UserProfile, "id" | "username">;
 
 export type DebateWithCandidates = Debate & {
@@ -75,6 +91,10 @@ type DistrictRow = Omit<District, "median_ideology_vector"> & {
 };
 
 type UserProfileRow = Omit<UserProfile, "ideology_vector"> & {
+  ideology_vector: string | IdeologyVector | null;
+};
+
+type CandidateStatsRow = Omit<CandidateStats, "ideology_vector"> & {
   ideology_vector: string | IdeologyVector | null;
 };
 
@@ -180,7 +200,22 @@ export interface Database {
         ];
       };
     };
-    Views: Record<string, never>;
+    Views: {
+      candidate_stats: {
+        Row: CandidateStatsRow;
+        Insert: Partial<CandidateStatsRow>;
+        Update: Partial<CandidateStatsRow>;
+        Relationships: [
+          {
+            foreignKeyName: "users_target_district_id_fkey";
+            columns: ["target_district_id"];
+            isOneToOne: false;
+            referencedRelation: "districts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+    };
     Functions: {
       calculate_debate_winner: {
         Args: { debate_uuid: string };
