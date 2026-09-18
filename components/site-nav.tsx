@@ -5,6 +5,12 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const links = [
+  { href: "/", label: "Home", match: (path: string) => path === "/" },
+  {
+    href: "/dashboard",
+    label: "Triage",
+    match: (path: string) => path.startsWith("/dashboard"),
+  },
   { href: "/arena", label: "Arena", match: (path: string) => path.startsWith("/arena") },
   {
     href: "/spectator",
@@ -23,10 +29,11 @@ export function SiteNav() {
 
   return (
     <header className="border-b border-zinc-200 dark:border-zinc-800">
-      <div className="mx-auto flex h-14 w-full max-w-2xl items-center justify-between gap-4 px-6">
+      <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-4 px-6">
         <Link
           href="/"
-          className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400"
+          aria-label="Where 2 Run home"
+          className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-950 dark:text-zinc-50"
         >
           Where 2 Run
         </Link>
