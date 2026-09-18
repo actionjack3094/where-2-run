@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { usePledge } from "@/components/pledges/PledgeHost";
 import { pickDebateWinnerId } from "@/lib/arena/winner";
 import {
   candidateById,
@@ -20,12 +21,14 @@ import {
 } from "@/lib/arena/display";
 import { supabase } from "@/lib/db/supabase";
 import { cosineSimilarity, normalizeVector, parseVector, similarityToPercent } from "@/lib/ideology/vector";
+import { formatRelativeTime, formatUsd, GRASSROOTS_THRESHOLD, parseAmount } from "@/lib/pledges";
 import { cn } from "@/lib/utils";
 import type {
   CandidateStats,
   DebateCandidate,
   DebateWithCandidates,
   District,
+  Pledge,
   Vote,
 } from "@/types/database.types";
 
@@ -59,9 +62,12 @@ export default function CandidatePage({
 }
 
 function CandidateProfile({ candidateId }: { candidateId: string }) {
+  const { openPledge } = usePledge();
   const [stats, setStats] = useState<CandidateStats | null>(null);
   const [district, setDistrict] = useState<District | null>(null);
   const [matches, setMatches] = useState<ArchivedMatch[]>([]);
+  const [pledges, setPledges] = useState<Pledge[]>([]);
+  const [raised, setRaised] = useState(0);
   const [matchPercent, setMatchPercent] = useState<number | null>(null);
   const [stage, setStage] = useState<"loading" | "ready" | "missing" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
@@ -95,6 +101,7 @@ function CandidateProfile({ candidateId }: { candidateId: string }) {
 
     const profile = statsRow as CandidateStats;
     setStats(profile);
+    setRaised(parseAmount(profile.total_pledged));
 
     let matchedDistrict: District | null = null;
     if (profile.target_district_id) {
@@ -186,8 +193,52 @@ function CandidateProfile({ candidateId }: { candidateId: string }) {
       })),
     );
 
+    const { data: pledgeRows, error: pledgeError } = await supabase
+      .from("pledges")
+      .select("*")
+      .eq("candidate_id", candidateId)
+      .order("created_at", { ascending: false })
+      .limit(25);
+
+    if (pledgeError) {
+      setError(pledgeError.message);
+      setStage("error");
+      return;
+    }
+
+    setPledges((pledgeRows ?? []) as Pledge[]);
     setMatches(withWinners);
     setStage("ready");
+  }
+
+  function applyOptimisticPledge(pledge: Pledge) {
+    setPledges((current) => [pledge, ...current.filter((entry) => entry.id !== pledge.id)]);
+    setRaised((current) => current + parseAmount(pledge.amount));
+  }
+
+  function commitPledge(tempId: string, pledge: Pledge) {
+    setPledges((current) => current.map((entry) => (entry.id === tempId ? pledge : entry)));
+  }
+
+  function rollbackPledge(tempId: string) {
+    setPledges((current) => {
+      const removed = current.find((entry) => entry.id === tempId);
+      if (removed) {
+        setRaised((value) => Math.max(0, value - parseAmount(removed.amount)));
+      }
+      return current.filter((entry) => entry.id !== tempId);
+    });
+  }
+
+  function handleBackCandidate() {
+    if (!stats) return;
+    openPledge({
+      candidateId: stats.id,
+      candidateName: stats.username,
+      onOptimistic: applyOptimisticPledge,
+      onCommitted: commitPledge,
+      onFailed: rollbackPledge,
+    });
   }
 
   useEffect(() => {
@@ -205,12 +256,19 @@ function CandidateProfile({ candidateId }: { candidateId: string }) {
             {stats?.username ?? (stage === "loading" ? "Loading…" : "Profile")}
           </h1>
           <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-            Lifetime record, ideological match, and archived floor results.
+            Lifetime record, grassroots pledges, and archived floor results.
           </p>
         </div>
-        <Button asChild variant="outline" className="w-fit">
-          <Link href="/district">Leaderboards</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {stage === "ready" && stats && (
+            <Button type="button" className="w-fit" onClick={handleBackCandidate}>
+              Back Candidate
+            </Button>
+          )}
+          <Button asChild variant="outline" className="w-fit">
+            <Link href="/district">Leaderboards</Link>
+          </Button>
+        </div>
       </div>
 
       {stage === "loading" && (
@@ -294,6 +352,38 @@ function CandidateProfile({ candidateId }: { candidateId: string }) {
             {stats.debates_played === 1 ? "completed match" : "completed matches"}.
           </p>
 
+          <FundingBar raised={raised} />
+
+          <section className="mt-16">
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
+              Campaign
+            </p>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight">
+              Recent Backers & Endorsements
+            </h2>
+            <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+              Grassroots pledges and notes from the floor, newest first.
+            </p>
+
+            {pledges.length === 0 ? (
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle>No backers yet</CardTitle>
+                  <CardDescription>
+                    Be the first to put this campaign on the board. Pledges here are mock
+                    checkout confirmations.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            ) : (
+              <div className="mt-6 flex flex-col gap-3">
+                {pledges.map((pledge) => (
+                  <BackerCard key={pledge.id} pledge={pledge} />
+                ))}
+              </div>
+            )}
+          </section>
+
           <section className="mt-16">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
               Archive
@@ -333,6 +423,71 @@ function StatCard({ label, value }: { label: string; value: number }) {
         <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">{label}</p>
         <p className="text-3xl font-semibold tabular-nums tracking-tight">{value}</p>
       </CardHeader>
+    </Card>
+  );
+}
+
+function FundingBar({ raised }: { raised: number }) {
+  const rawPercent = (raised / GRASSROOTS_THRESHOLD) * 100;
+  const percentLabel =
+    raised > 0 && rawPercent < 1 ? rawPercent.toFixed(1) : `${Math.round(rawPercent)}`;
+  const remaining = Math.max(0, GRASSROOTS_THRESHOLD - raised);
+  const cleared = raised >= GRASSROOTS_THRESHOLD;
+  const barWidth = cleared ? 100 : raised > 0 ? Math.max(rawPercent, 1.5) : 0;
+
+  return (
+    <section className="mt-6">
+      <Card>
+        <CardHeader>
+          <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+            Grassroots threshold
+          </p>
+          <CardTitle>{formatUsd(raised)} raised</CardTitle>
+          <CardDescription>
+            {cleared
+              ? "This campaign has cleared the $5,000 grassroots mark."
+              : `${formatUsd(remaining)} to go toward ${formatUsd(GRASSROOTS_THRESHOLD)}.`}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div
+            className="h-3 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-900"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={GRASSROOTS_THRESHOLD}
+            aria-valuenow={Math.min(raised, GRASSROOTS_THRESHOLD)}
+            aria-label="Campaign funding progress"
+          >
+            <div
+              className="h-full bg-zinc-950 transition-all duration-500 dark:bg-zinc-50"
+              style={{ width: `${barWidth}%` }}
+            />
+          </div>
+          <div className="mt-2 flex justify-between text-xs tabular-nums text-zinc-400">
+            <span>{percentLabel}%</span>
+            <span>{formatUsd(GRASSROOTS_THRESHOLD)}</span>
+          </div>
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
+
+function BackerCard({ pledge }: { pledge: Pledge }) {
+  return (
+    <Card>
+      <CardHeader className="gap-2">
+        <div className="flex items-baseline justify-between gap-3">
+          <CardTitle className="text-base">{pledge.donor_name}</CardTitle>
+          <p className="text-sm font-semibold tabular-nums">{formatUsd(pledge.amount)}</p>
+        </div>
+        <CardDescription>{formatRelativeTime(pledge.created_at)}</CardDescription>
+      </CardHeader>
+      {pledge.message ? (
+        <CardContent>
+          <p className="text-sm leading-6">{pledge.message}</p>
+        </CardContent>
+      ) : null}
     </Card>
   );
 }

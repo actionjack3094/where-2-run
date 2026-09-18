@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { CandidateSeat } from "@/components/pledges/CandidateSeat";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -254,35 +255,35 @@ function TrendingCard({ debate, rank }: { debate: RankedDebate; rank: number }) 
   const bWidth = debate.voteCount === 0 ? 50 : debate.bShare;
 
   return (
-    <Link href={`/arena/${debate.id}`} className="block">
-      <Card className="transition-colors hover:border-zinc-400 dark:hover:border-zinc-500">
-        <CardHeader className="gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge>#{rank}</Badge>
-            <Badge>{debate.status}</Badge>
-            <Badge>
-              Round {Math.min(debate.current_round, TOTAL_ROUNDS)} of {TOTAL_ROUNDS}
-            </Badge>
-            <Badge
-              className={cn(
-                expiry.tone === "expired" &&
-                  "border-zinc-950 text-zinc-950 dark:border-zinc-50 dark:text-zinc-50",
-                expiry.tone === "soon" && "border-amber-500 text-amber-700 dark:text-amber-400",
-              )}
-            >
-              {expiry.label}
-            </Badge>
-          </div>
-          <CardTitle className="text-lg leading-snug">{debate.topic}</CardTitle>
-          <CardDescription>
-            {candidateA?.username ?? "Open seat"} vs {candidateB?.username ?? "Open seat"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <VoteBar debate={debate} candidateA={candidateA} candidateB={candidateB} aWidth={aWidth} bWidth={bWidth} />
-        </CardContent>
-      </Card>
-    </Link>
+    <Card>
+      <CardHeader className="gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge>#{rank}</Badge>
+          <Badge>{debate.status}</Badge>
+          <Badge>
+            Round {Math.min(debate.current_round, TOTAL_ROUNDS)} of {TOTAL_ROUNDS}
+          </Badge>
+          <Badge
+            className={cn(
+              expiry.tone === "expired" &&
+                "border-zinc-950 text-zinc-950 dark:border-zinc-50 dark:text-zinc-50",
+              expiry.tone === "soon" && "border-amber-500 text-amber-700 dark:text-amber-400",
+            )}
+          >
+            {expiry.label}
+          </Badge>
+        </div>
+        <Link href={`/arena/${debate.id}`} className="block">
+          <CardTitle className="text-lg leading-snug transition-colors hover:text-zinc-600 dark:hover:text-zinc-300">
+            {debate.topic}
+          </CardTitle>
+        </Link>
+        <SeatRow candidateA={candidateA} candidateB={candidateB} />
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <VoteBar debate={debate} candidateA={candidateA} candidateB={candidateB} aWidth={aWidth} bWidth={bWidth} />
+      </CardContent>
+    </Card>
   );
 }
 
@@ -300,30 +301,46 @@ function CompletedCard({ debate }: { debate: RankedDebate }) {
       : "Draw — no winner declared";
 
   return (
-    <Link href={`/arena/${debate.id}`} className="block">
-      <Card className="transition-colors hover:border-zinc-400 dark:hover:border-zinc-500">
-        <CardHeader className="gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge>Completed</Badge>
-            {winner ? (
-              <Badge className="border-zinc-950 text-zinc-950 dark:border-zinc-50 dark:text-zinc-50">
-                Winner declared
-              </Badge>
-            ) : (
-              <Badge>{debate.voteCount === 0 ? "No contest" : "Draw"}</Badge>
-            )}
-          </div>
-          <CardTitle className="text-lg leading-snug">{debate.topic}</CardTitle>
-          <CardDescription>
-            {candidateA?.username ?? "Open seat"} vs {candidateB?.username ?? "Open seat"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm font-medium">{resultLabel}</p>
-          <VoteBar debate={debate} candidateA={candidateA} candidateB={candidateB} aWidth={aWidth} bWidth={bWidth} />
-        </CardContent>
-      </Card>
-    </Link>
+    <Card>
+      <CardHeader className="gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge>Completed</Badge>
+          {winner ? (
+            <Badge className="border-zinc-950 text-zinc-950 dark:border-zinc-50 dark:text-zinc-50">
+              Winner declared
+            </Badge>
+          ) : (
+            <Badge>{debate.voteCount === 0 ? "No contest" : "Draw"}</Badge>
+          )}
+        </div>
+        <Link href={`/arena/${debate.id}`} className="block">
+          <CardTitle className="text-lg leading-snug transition-colors hover:text-zinc-600 dark:hover:text-zinc-300">
+            {debate.topic}
+          </CardTitle>
+        </Link>
+        <SeatRow candidateA={candidateA} candidateB={candidateB} />
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm font-medium">{resultLabel}</p>
+        <VoteBar debate={debate} candidateA={candidateA} candidateB={candidateB} aWidth={aWidth} bWidth={bWidth} />
+      </CardContent>
+    </Card>
+  );
+}
+
+function SeatRow({
+  candidateA,
+  candidateB,
+}: {
+  candidateA: DebateCandidate | null;
+  candidateB: DebateCandidate | null;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <CandidateSeat candidate={candidateA} />
+      <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-400">vs</span>
+      <CandidateSeat candidate={candidateB} align="end" />
+    </div>
   );
 }
 

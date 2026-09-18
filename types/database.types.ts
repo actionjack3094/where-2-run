@@ -63,6 +63,16 @@ export interface Vote {
   created_at: string;
 }
 
+export interface Pledge {
+  id: string;
+  candidate_id: string;
+  donor_id: string | null;
+  amount: number | string;
+  donor_name: string;
+  message: string | null;
+  created_at: string;
+}
+
 export interface CandidateStats {
   id: string;
   username: string;
@@ -77,6 +87,7 @@ export interface CandidateStats {
   debates_won: number;
   debates_played: number;
   win_percentage: number;
+  total_pledged: number | string;
 }
 
 export type DebateCandidate = Pick<UserProfile, "id" | "username">;
@@ -193,6 +204,27 @@ export interface Database {
           {
             foreignKeyName: "votes_candidate_id_fkey";
             columns: ["candidate_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      pledges: {
+        Row: Pledge;
+        Insert: Partial<Pledge> & Pick<Pledge, "candidate_id" | "amount">;
+        Update: Partial<Pledge>;
+        Relationships: [
+          {
+            foreignKeyName: "pledges_candidate_id_fkey";
+            columns: ["candidate_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "pledges_donor_id_fkey";
+            columns: ["donor_id"];
             isOneToOne: false;
             referencedRelation: "users";
             referencedColumns: ["id"];

@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { use, useEffect, useMemo, useRef, useState } from "react";
+import { BackCandidateButton } from "@/components/pledges/BackCandidateButton";
+import { CandidateSeat } from "@/components/pledges/CandidateSeat";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -310,9 +312,9 @@ function DebateView({ debateId }: { debateId: string }) {
         <Badge>{debate.status}</Badge>
       </div>
       <h1 className="mt-4 text-3xl font-semibold tracking-tight leading-tight">{debate.topic}</h1>
-      <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
-        {candidateA?.username ?? "Candidate A"} vs {candidateB?.username ?? "Open seat"}
-      </p>
+      <div className="mt-4">
+        <CandidateSeatRow candidateA={candidateA} candidateB={candidateB} />
+      </div>
 
       {!debate.candidate_b_id && !isCandidateA && (
         <Button type="button" className="mt-6 w-fit" onClick={() => void handleJoin()} disabled={busy}>
@@ -416,6 +418,30 @@ function Badge({
     >
       {children}
     </span>
+  );
+}
+
+function CandidateSeatRow({
+  candidateA,
+  candidateB,
+}: {
+  candidateA: DebateCandidate | null;
+  candidateB: DebateCandidate | null;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <CandidateSeat
+        candidate={candidateA}
+        nameClassName="text-sm font-medium text-zinc-950 dark:text-zinc-50"
+      />
+      <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-400">vs</span>
+      <CandidateSeat
+        candidate={candidateB}
+        align="end"
+        emptyLabel="Open seat"
+        nameClassName="text-sm font-medium text-zinc-950 dark:text-zinc-50"
+      />
+    </div>
   );
 }
 
@@ -585,7 +611,10 @@ function TallyBar({
           <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
             Candidate A
           </p>
-          <p className="mt-1 text-sm font-medium">{candidateA?.username ?? "Candidate A"}</p>
+          <div className="mt-1 flex items-center gap-2">
+            <p className="text-sm font-medium">{candidateA?.username ?? "Candidate A"}</p>
+            {candidateA ? <BackCandidateButton candidate={candidateA} /> : null}
+          </div>
           <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">{aShare}%</p>
           <p className="text-xs text-zinc-400">{aVotes} {aVotes === 1 ? "vote" : "votes"}</p>
         </div>
@@ -596,7 +625,10 @@ function TallyBar({
           <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
             Candidate B
           </p>
-          <p className="mt-1 text-sm font-medium">{candidateB?.username ?? "Open seat"}</p>
+          <div className="mt-1 flex items-center justify-end gap-2">
+            {candidateB ? <BackCandidateButton candidate={candidateB} /> : null}
+            <p className="text-sm font-medium">{candidateB?.username ?? "Open seat"}</p>
+          </div>
           <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">{bShare}%</p>
           <p className="text-xs text-zinc-400">{bVotes} {bVotes === 1 ? "vote" : "votes"}</p>
         </div>
