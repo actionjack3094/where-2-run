@@ -181,7 +181,16 @@ export interface Database {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      calculate_debate_winner: {
+        Args: { debate_uuid: string };
+        Returns: string | null;
+      };
+      complete_expired_debates: {
+        Args: Record<PropertyKey, never>;
+        Returns: { debate_id: string; winner_id: string | null }[];
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
