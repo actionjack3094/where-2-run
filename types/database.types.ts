@@ -110,6 +110,30 @@ export interface ElectabilityScore {
   updated_at: string;
 }
 
+export type CivicPostStatus = "open" | "challenged" | "debating";
+
+export type CivicStance = "Affirmative" | "Negative";
+
+export interface CivicPost {
+  id: string;
+  author_id: string;
+  district_id: string;
+  claim: string;
+  stance: string;
+  argument: string;
+  ideology_vector: IdeologyVector | string | null;
+  status: CivicPostStatus | string;
+  created_at: string;
+}
+
+export interface MatchedFeedPost {
+  post_id?: string;
+  id?: string;
+  claim: string;
+  argument: string;
+  similarity: number | string;
+}
+
 export type DebateCandidate = Pick<UserProfile, "id" | "username">;
 
 export type DebateWithCandidates = Debate & {
@@ -251,6 +275,21 @@ export interface Database {
           },
         ];
       };
+      civic_posts: {
+        Row: CivicPost;
+        Insert: Partial<CivicPost> &
+          Pick<CivicPost, "author_id" | "district_id" | "claim" | "stance" | "argument">;
+        Update: Partial<CivicPost>;
+        Relationships: [
+          {
+            foreignKeyName: "civic_posts_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       electability_scores: {
         Row: ElectabilityScore;
         Insert: Partial<Omit<ElectabilityScore, "electability_multiplier">> &
@@ -308,6 +347,14 @@ export interface Database {
       normalize_zip: {
         Args: { value: string };
         Returns: string | null;
+      };
+      get_matched_feed: {
+        Args: {
+          viewer_embedding: string;
+          target_district: string;
+          match_count: number;
+        };
+        Returns: MatchedFeedPost[];
       };
     };
     Enums: Record<string, never>;
