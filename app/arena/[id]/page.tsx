@@ -32,6 +32,9 @@ import type {
 const SIMULATED_OPPONENT_ARGUMENT =
   "This is a simulated testing argument from the mock opponent. The district should freeze property taxes on primary residences and fund schools through a local budget ordinance.";
 
+// TEMPORARY DEBUG: let seated candidates cast a ballot so tallies can be verified.
+const ALLOW_CANDIDATE_DEBUG_VOTES = true;
+
 function unwrapCandidate(
   value: DebateWithCandidates["candidate_a"],
 ): DebateCandidate | null {
@@ -68,6 +71,7 @@ function DebateView({ debateId }: { debateId: string }) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
+  const [votingFor, setVotingFor] = useState<"a" | "b" | null>(null);
   const [localVoteCandidateId, setLocalVoteCandidateId] = useState<string | null>(null);
   const [graderToast, setGraderToast] = useState<GraderToastState | null>(null);
   const voteLockRef = useRef(false);
@@ -161,7 +165,9 @@ function DebateView({ debateId }: { debateId: string }) {
   const hasVoted = Boolean(votedCandidateId);
   const isVotableStatus = debate?.status === "active" || debate?.status === "voting";
   const bothSeated = Boolean(debate?.candidate_a_id && debate?.candidate_b_id);
-  const showVoteButtons = Boolean(!isCandidate && isVotableStatus && bothSeated);
+  const showVoteButtons = Boolean(
+    (ALLOW_CANDIDATE_DEBUG_VOTES || !isCandidate) && isVotableStatus && bothSeated,
+  );
 
   const nextTurn = useMemo(() => {
     if (!debate) return null;
@@ -329,45 +335,49 @@ function DebateView({ debateId }: { debateId: string }) {
     }
   }
 
-  async function handleVote(candidateId: string) {
-    if (voteLockRef.current || busy || hasVoted || isCandidate) return;
+  async function handleVote(votedFor: "a" | "b") {
+    if (voteLockRef.current || busy || votingFor || hasVoted) return;
     voteLockRef.current = true;
-    setBusy(true);
+    setVotingFor(votedFor);
     setActionError(null);
+    const chosenCandidateId =
+      votedFor === "a" ? debate?.candidate_a_id ?? null : debate?.candidate_b_id ?? null;
     try {
       const actor = await withUser();
-      if (actor.id === debate?.candidate_a_id || actor.id === debate?.candidate_b_id) {
-        throw new Error("Candidates cannot vote in their own debate.");
-      }
       const alreadyCast = votes.find((vote) => vote.voter_id === actor.id);
       if (alreadyCast) {
         setLocalVoteCandidateId(alreadyCast.candidate_id);
         throw new Error("You already voted in this debate.");
       }
-      const response = await fetch("/api/arena/votes", {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      const response = await fetch("/api/arena/vote", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({
-          debateId,
-          voterId: actor.id,
-          candidateId,
+          match_id: debateId,
+          voted_for: votedFor,
         }),
       });
       const payload = (await response.json()) as { error?: string };
       if (!response.ok) {
-        if (response.status === 409) {
-          setLocalVoteCandidateId(candidateId);
+        if (response.status === 409 && chosenCandidateId) {
+          setLocalVoteCandidateId(chosenCandidateId);
           await loadDebate();
         }
         throw new Error(payload.error ?? "Could not record the vote.");
       }
-      setLocalVoteCandidateId(candidateId);
+      if (chosenCandidateId) setLocalVoteCandidateId(chosenCandidateId);
       await loadDebate();
+      router.refresh();
     } catch (err) {
       voteLockRef.current = false;
       setActionError(err instanceof Error ? err.message : "Could not record the vote.");
     } finally {
-      setBusy(false);
+      setVotingFor(null);
     }
   }
 
@@ -498,12 +508,12 @@ function DebateView({ debateId }: { debateId: string }) {
           candidateA={candidateA}
           candidateB={candidateB}
           votedCandidateId={votedCandidateId}
-          busy={busy}
-          onVote={(candidateId) => void handleVote(candidateId)}
+          votingFor={votingFor}
+          onVote={(side) => void handleVote(side)}
         />
       )}
 
-      {isCandidate && bothSeated && (
+      {isCandidate && bothSeated && !showVoteButtons && (
         <p className="mt-10 text-sm text-zinc-500 dark:text-zinc-400">
           You are on the ticket. Spectators cast the votes.
         </p>
@@ -713,19 +723,20 @@ function SpectatorVote({
   candidateA,
   candidateB,
   votedCandidateId,
-  busy,
+  votingFor,
   onVote,
 }: {
   candidateA: DebateCandidate;
   candidateB: DebateCandidate;
   votedCandidateId: string | null | undefined;
-  busy: boolean;
-  onVote: (candidateId: string) => void;
+  votingFor: "a" | "b" | null;
+  onVote: (votedFor: "a" | "b") => void;
 }) {
   const hasVoted = Boolean(votedCandidateId);
   const votedForA = votedCandidateId === candidateA.id;
   const votedForB = votedCandidateId === candidateB.id;
   const votedName = votedForA ? candidateA.username : votedForB ? candidateB.username : null;
+  const submitting = votingFor !== null;
 
   return (
     <section className="mt-12">
@@ -747,21 +758,29 @@ function SpectatorVote({
               type="button"
               size="lg"
               variant={votedForA ? "default" : "outline"}
-              disabled={busy || hasVoted}
+              disabled={submitting || hasVoted}
               aria-pressed={votedForA}
-              onClick={() => onVote(candidateA.id)}
+              onClick={() => onVote("a")}
             >
-              {votedForA ? `Voted ${candidateA.username}` : `Vote ${candidateA.username}`}
+              {votingFor === "a"
+                ? "Voting…"
+                : votedForA
+                  ? `Voted ${candidateA.username}`
+                  : `Vote ${candidateA.username}`}
             </Button>
             <Button
               type="button"
               size="lg"
               variant={votedForB ? "default" : "outline"}
-              disabled={busy || hasVoted}
+              disabled={submitting || hasVoted}
               aria-pressed={votedForB}
-              onClick={() => onVote(candidateB.id)}
+              onClick={() => onVote("b")}
             >
-              {votedForB ? `Voted ${candidateB.username}` : `Vote ${candidateB.username}`}
+              {votingFor === "b"
+                ? "Voting…"
+                : votedForB
+                  ? `Voted ${candidateB.username}`
+                  : `Vote ${candidateB.username}`}
             </Button>
           </div>
         </CardContent>
