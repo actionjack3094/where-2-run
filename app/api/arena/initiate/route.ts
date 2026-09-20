@@ -1,52 +1,9 @@
-import { createClient } from "@supabase/supabase-js";
-import { createServerClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { requireAuthenticatedUserId } from "@/lib/arena/auth";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-async function requireAuthenticatedUserId(request: Request) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY",
-    );
-  }
-
-  const cookieStore = await cookies();
-  const cookieClient = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          cookieStore.set(name, value, options);
-        });
-      },
-    },
-  });
-
-  const {
-    data: { user: cookieUser },
-  } = await cookieClient.auth.getUser();
-  if (cookieUser?.id) return cookieUser.id;
-
-  const header = request.headers.get("authorization");
-  const token = header?.startsWith("Bearer ") ? header.slice(7) : null;
-  if (!token) return null;
-
-  const headerClient = createClient(supabaseUrl, supabaseAnonKey);
-  const {
-    data: { user: headerUser },
-  } = await headerClient.auth.getUser(token);
-
-  return headerUser?.id ?? null;
-}
 
 async function ensureUsersRow(
   admin: ReturnType<typeof createAdminClient>,

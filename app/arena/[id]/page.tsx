@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import { BackCandidateButton } from "@/components/pledges/BackCandidateButton";
 import { CandidateSeat } from "@/components/pledges/CandidateSeat";
@@ -54,6 +55,7 @@ export default function DebatePage({
 }
 
 function DebateView({ debateId }: { debateId: string }) {
+  const router = useRouter();
   const [debate, setDebate] = useState<DebateWithCandidates | null>(null);
   const [args, setArgs] = useState<Argument[]>([]);
   const [votes, setVotes] = useState<Vote[]>([]);
@@ -171,6 +173,8 @@ function DebateView({ debateId }: { debateId: string }) {
 
   const canSpeak =
     Boolean(nextTurn) &&
+    bothSeated &&
+    (debate?.status === "active" || debate?.status === "matching") &&
     ((nextTurn?.side === "a" && isCandidateA) || (nextTurn?.side === "b" && isCandidateB));
 
   const aVotes = votes.filter((vote) => vote.candidate_id === debate?.candidate_a_id).length;
@@ -222,24 +226,35 @@ function DebateView({ debateId }: { debateId: string }) {
         .maybeSingle();
       previousVector = profile?.ideology_vector ?? null;
 
-      const response = await fetch("/api/arena/arguments", {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      const response = await fetch("/api/arena/submit", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({
-          debateId,
-          authorId: actor.id,
-          roundNumber: nextTurn.round,
-          content: draft.trim(),
+          match_id: debateId,
+          round_number: nextTurn.round,
+          argument_text: draft.trim(),
         }),
       });
-      const payload = (await response.json()) as Argument & { error?: string };
-      if (!response.ok) throw new Error(payload.error ?? "Could not file the argument.");
-      filed = { id: payload.id, author_id: payload.author_id };
+      const payload = (await response.json()) as {
+        ok?: boolean;
+        argument?: Argument;
+        error?: string;
+      };
+      if (!response.ok) throw new Error(payload.error ?? "Could not lock in the argument.");
+      if (payload.argument) {
+        filed = { id: payload.argument.id, author_id: payload.argument.author_id };
+      }
       setDraft("");
       await loadDebate();
+      router.refresh();
     } catch (err) {
       if (graderWaitRef.current === waitId) setGraderToast(null);
-      setActionError(err instanceof Error ? err.message : "Could not file the argument.");
+      setActionError(err instanceof Error ? err.message : "Could not lock in the argument.");
     } finally {
       setBusy(false);
     }
@@ -384,8 +399,11 @@ function DebateView({ debateId }: { debateId: string }) {
           const round = index + 1;
           const aArg = findArgument(args, debate.candidate_a_id, round);
           const bArg = findArgument(args, debate.candidate_b_id, round);
-          const showAComposer = canSpeak && nextTurn?.round === round && nextTurn.side === "a";
-          const showBComposer = canSpeak && nextTurn?.round === round && nextTurn.side === "b";
+          const isCurrentRound = round === debate.current_round;
+          const showAComposer =
+            canSpeak && isCurrentRound && nextTurn?.round === round && nextTurn.side === "a";
+          const showBComposer =
+            canSpeak && isCurrentRound && nextTurn?.round === round && nextTurn.side === "b";
 
           return (
             <div key={round} className="flex flex-col gap-3">
@@ -589,11 +607,12 @@ function ArgumentSlot({
               value={composer.draft}
               onChange={(event) => composer.setDraft(event.target.value)}
               rows={5}
-              placeholder="File this round’s argument…"
-              className="resize-none rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm leading-6 outline-none focus:border-zinc-950 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-50"
+              disabled={composer.busy}
+              placeholder="Lock in this round’s argument…"
+              className="min-h-32 w-full resize-none rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm leading-6 outline-none focus:border-zinc-950 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-50"
             />
             <Button type="submit" size="sm" className="w-fit" disabled={composer.busy || !composer.draft.trim()}>
-              {composer.busy ? "Filing…" : "File argument"}
+              {composer.busy ? "Locking in…" : "Lock In Argument"}
             </Button>
           </form>
         ) : (
