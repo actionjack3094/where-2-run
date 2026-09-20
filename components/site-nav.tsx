@@ -23,9 +23,10 @@ const links = [
     match: (path: string) => path.startsWith("/spectator"),
   },
   {
-    href: "/district",
+    href: "/leaderboards",
     label: "Leaderboards",
-    match: (path: string) => path.startsWith("/district"),
+    match: (path: string) =>
+      path.startsWith("/leaderboards") || path.startsWith("/district"),
   },
 ] as const;
 
