@@ -11,6 +11,7 @@ export async function POST(request: Request) {
       match_id?: string;
       round_number?: number | string;
       argument_text?: string;
+      simulate_opponent?: boolean;
     };
 
     const matchId = body.match_id?.trim();
@@ -43,9 +44,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Match not found." }, { status: 404 });
     }
 
-    const isCandidateA = userId === debate.candidate_a_id;
-    const isCandidateB = userId === debate.candidate_b_id;
-    if (!isCandidateA && !isCandidateB) {
+    const requesterIsA = userId === debate.candidate_a_id;
+    const requesterIsB = userId === debate.candidate_b_id;
+    if (!requesterIsA && !requesterIsB) {
       return NextResponse.json(
         { error: "Only the two candidates can argue." },
         { status: 403 },
@@ -94,9 +95,15 @@ export async function POST(request: Request) {
     if (!expectedUserId) {
       return NextResponse.json({ error: "This round is already locked." }, { status: 409 });
     }
-    if (expectedUserId !== userId) {
+
+    const speakerId =
+      body.simulate_opponent === true ? expectedUserId : userId;
+    if (expectedUserId !== speakerId) {
       return NextResponse.json({ error: "It is not your turn." }, { status: 403 });
     }
+
+    const isCandidateA = speakerId === debate.candidate_a_id;
+    const isCandidateB = speakerId === debate.candidate_b_id;
 
     const evaluation = evaluateConsistency(argumentText, debate.topic);
     const payload = {
@@ -109,7 +116,7 @@ export async function POST(request: Request) {
       .from("arguments")
       .select("id")
       .eq("debate_id", matchId)
-      .eq("author_id", userId)
+      .eq("author_id", speakerId)
       .eq("round_number", roundNumber)
       .maybeSingle();
 
@@ -119,7 +126,7 @@ export async function POST(request: Request) {
           .from("arguments")
           .insert({
             debate_id: matchId,
-            author_id: userId,
+            author_id: speakerId,
             round_number: roundNumber,
             ...payload,
           })

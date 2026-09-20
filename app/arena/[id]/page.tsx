@@ -29,6 +29,9 @@ import type {
   Vote,
 } from "@/types/database.types";
 
+const SIMULATED_OPPONENT_ARGUMENT =
+  "This is a simulated testing argument from the mock opponent. The district should freeze property taxes on primary residences and fund schools through a local budget ordinance.";
+
 function unwrapCandidate(
   value: DebateWithCandidates["candidate_a"],
 ): DebateCandidate | null {
@@ -171,11 +174,18 @@ function DebateView({ debateId }: { debateId: string }) {
     return null;
   }, [args, debate]);
 
-  const canSpeak =
+  const floorOpen =
     Boolean(nextTurn) &&
     bothSeated &&
-    (debate?.status === "active" || debate?.status === "matching") &&
+    (debate?.status === "active" || debate?.status === "matching");
+  const canSpeak =
+    floorOpen &&
     ((nextTurn?.side === "a" && isCandidateA) || (nextTurn?.side === "b" && isCandidateB));
+  const isOpponentTurn =
+    floorOpen &&
+    isCandidate &&
+    ((nextTurn?.side === "a" && isCandidateB) || (nextTurn?.side === "b" && isCandidateA));
+  const opponentSide = isCandidateA ? ("b" as const) : isCandidateB ? ("a" as const) : null;
 
   const aVotes = votes.filter((vote) => vote.candidate_id === debate?.candidate_a_id).length;
   const bVotes = votes.filter((vote) => vote.candidate_id === debate?.candidate_b_id).length;
@@ -286,6 +296,39 @@ function DebateView({ debateId }: { debateId: string }) {
     }
   }
 
+  async function handleSimulateOpponentTurn() {
+    if (!nextTurn || !isOpponentTurn) return;
+    setBusy(true);
+    setActionError(null);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      const response = await fetch("/api/arena/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({
+          match_id: debateId,
+          round_number: nextTurn.round,
+          argument_text: SIMULATED_OPPONENT_ARGUMENT,
+          simulate_opponent: true,
+        }),
+      });
+      const payload = (await response.json()) as { ok?: boolean; error?: string };
+      if (!response.ok) throw new Error(payload.error ?? "Could not simulate the opponent turn.");
+      await loadDebate();
+      router.refresh();
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : "Could not simulate the opponent turn.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleVote(candidateId: string) {
     if (voteLockRef.current || busy || hasVoted || isCandidate) return;
     voteLockRef.current = true;
@@ -381,7 +424,13 @@ function DebateView({ debateId }: { debateId: string }) {
       </div>
       <h1 className="mt-4 text-3xl font-semibold tracking-tight leading-tight">{debate.topic}</h1>
       <div className="mt-4">
-        <CandidateSeatRow candidateA={candidateA} candidateB={candidateB} />
+        <CandidateSeatRow
+          candidateA={candidateA}
+          candidateB={candidateB}
+          simulateSide={isOpponentTurn ? opponentSide : null}
+          simulateBusy={busy}
+          onSimulate={() => void handleSimulateOpponentTurn()}
+        />
       </div>
 
       {!debate.candidate_b_id && !isCandidateA && (
@@ -523,24 +572,61 @@ function Badge({
 function CandidateSeatRow({
   candidateA,
   candidateB,
+  simulateSide,
+  simulateBusy,
+  onSimulate,
 }: {
   candidateA: DebateCandidate | null;
   candidateB: DebateCandidate | null;
+  simulateSide: "a" | "b" | null;
+  simulateBusy: boolean;
+  onSimulate: () => void;
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <CandidateSeat
-        candidate={candidateA}
-        nameClassName="text-sm font-medium text-zinc-950 dark:text-zinc-50"
-      />
+      <div className="flex items-center gap-2">
+        <CandidateSeat
+          candidate={candidateA}
+          nameClassName="text-sm font-medium text-zinc-950 dark:text-zinc-50"
+        />
+        {simulateSide === "a" && (
+          <SimulateOpponentButton busy={simulateBusy} onSimulate={onSimulate} />
+        )}
+      </div>
       <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-400">vs</span>
-      <CandidateSeat
-        candidate={candidateB}
-        align="end"
-        emptyLabel="Open seat"
-        nameClassName="text-sm font-medium text-zinc-950 dark:text-zinc-50"
-      />
+      <div className="flex items-center gap-2">
+        {simulateSide === "b" && (
+          <SimulateOpponentButton busy={simulateBusy} onSimulate={onSimulate} />
+        )}
+        <CandidateSeat
+          candidate={candidateB}
+          align="end"
+          emptyLabel="Open seat"
+          nameClassName="text-sm font-medium text-zinc-950 dark:text-zinc-50"
+        />
+      </div>
     </div>
+  );
+}
+
+function SimulateOpponentButton({
+  busy,
+  onSimulate,
+}: {
+  busy: boolean;
+  onSimulate: () => void;
+}) {
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="outline"
+      className="h-7 px-2 text-[10px] font-medium uppercase tracking-widest"
+      disabled={busy}
+      onClick={onSimulate}
+    >
+      {busy ? "Simulating…" : "Simulate Opponent Turn"}
+    </Button>
   );
 }
 
