@@ -1,9 +1,9 @@
 import { createServerClient } from "@supabase/auth-helpers-nextjs";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import { ChallengeButton } from "@/components/ChallengeButton";
 import { TakeStanceModal } from "@/components/TakeStanceModal";
 import type { MatchedFeedPost } from "@/types/database.types";
-import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "My Ballot Feed · WHERE 2 RUN",
@@ -55,7 +55,10 @@ export default async function FeedPage() {
     match_count: 10,
   });
 
-  const feed = (posts ?? []) as MatchedFeedPost[];
+  const feed = ((posts ?? []) as MatchedFeedPost[]).map((post) => ({
+    ...post,
+    id: post.id || post.post_id || "",
+  }));
 
   return (
     <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
@@ -101,12 +104,7 @@ export default async function FeedPage() {
                   >
                     Endorse
                   </button>
-                  <button
-                    type="button"
-                    className="inline-flex h-9 items-center justify-center rounded-md border border-red-900/80 bg-red-950/60 px-3 text-xs font-medium uppercase tracking-widest text-red-300 transition-colors hover:bg-red-950 hover:text-red-200"
-                  >
-                    Challenge
-                  </button>
+                  <ChallengeButton postId={post.id} />
                 </div>
               </article>
             ))}
