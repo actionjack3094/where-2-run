@@ -46,6 +46,8 @@ export interface UserProfile {
   tier: string | null;
   is_verified: boolean;
   verification_tier: VerificationTier | string;
+  ocd_identifiers: string[];
+  tier_2_verified: boolean;
   residency_state: string | null;
   residency_zip: string | null;
   is_eligible_federal: boolean;

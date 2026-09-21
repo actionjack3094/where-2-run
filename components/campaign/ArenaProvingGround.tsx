@@ -9,6 +9,7 @@ import {
   type PrimaryOpponent,
 } from "@/app/actions/matchmaker";
 import { CandidateIdentity } from "@/components/profile/CandidateAvatar";
+import { Tier2Verification } from "@/components/verification/Tier2Verification";
 import { ensureArenaUser } from "@/lib/arena/identity";
 import { supabase } from "@/lib/db/supabase";
 import { PRIMARY_OPPONENT_LIMIT } from "@/lib/ideology/stance";
@@ -127,6 +128,8 @@ export function ArenaProvingGround() {
           Retake Stance Quiz
         </Link>
       </div>
+
+      <Tier2Verification />
 
       {stage === "booting" ? (
         <p className="rounded-xl border border-gold/30 bg-zinc-900 px-5 py-6 text-sm text-zinc-400">
