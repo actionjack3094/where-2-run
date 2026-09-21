@@ -114,6 +114,12 @@ export default function OnboardingPage() {
           ? "A safe primary and a toss-up general, scored against each district median."
           : "Six policy questions. Four options each. We map your answers onto a 10-dimensional vector."}
       </p>
+      <Link
+        href="/onboarding/ideology"
+        className="mt-4 w-fit text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+      >
+        Named stance vector quiz
+      </Link>
 
       {stage !== "results" && (
         <div className="mt-8 h-1 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-900">
