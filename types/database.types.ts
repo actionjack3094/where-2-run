@@ -1,5 +1,20 @@
 export type IdeologyVector = number[];
 
+export type StanceAxis =
+  | "economy"
+  | "foreign_policy"
+  | "social"
+  | "environment"
+  | "immigration";
+
+export type StanceVector = Record<StanceAxis, number>;
+
+export type VerificationTier =
+  | "unverified"
+  | "phone_verified"
+  | "voter_verified"
+  | "candidate_verified";
+
 export type DistrictLevel = "local" | "state" | "federal" | string;
 
 export type DebateStatus =
@@ -30,11 +45,13 @@ export interface UserProfile {
   viability_score: number;
   tier: string | null;
   is_verified: boolean;
+  verification_tier: VerificationTier | string;
   residency_state: string | null;
   residency_zip: string | null;
   is_eligible_federal: boolean;
   is_eligible_local: boolean;
   elo_rating: number;
+  stance_vector: StanceVector | null;
   created_at: string;
   updated_at: string;
 }
@@ -103,6 +120,7 @@ export interface CandidateStats {
   viability_score: number;
   tier: string | null;
   is_verified: boolean;
+  verification_tier: VerificationTier | string;
   created_at: string;
   updated_at: string;
   total_votes: number;
@@ -111,6 +129,7 @@ export interface CandidateStats {
   win_percentage: number;
   total_pledged: number | string;
   elo_rating: number;
+  stance_vector: StanceVector | null;
 }
 
 export interface ElectabilityScore {

@@ -97,12 +97,26 @@ export default function MyCampaignPage() {
             One municipal question at a time. Endorse, oppose, or skip — the deck
             loops without end.
           </p>
-          <Link
-            href="/my-campaign/coalitions"
-            className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
-          >
-            Coalition Hub
-          </Link>
+          <div className="mt-4 flex flex-wrap gap-4">
+            <Link
+              href="/onboarding/ideology"
+              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+            >
+              Baseline Stance Quiz
+            </Link>
+            <Link
+              href="/my-campaign/verify"
+              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+            >
+              Verification Hub
+            </Link>
+            <Link
+              href="/my-campaign/coalitions"
+              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+            >
+              Coalition Hub
+            </Link>
+          </div>
         </header>
 
         <p className="mt-8 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
@@ -184,6 +198,26 @@ export default function MyCampaignPage() {
         className="mx-auto w-full max-w-5xl px-6 pb-16"
       >
         <div className="border-t border-gold/30 pt-12">
+          <div className="mb-12 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+                Identity
+              </p>
+              <h2 className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment">
+                Verification & Civic Fencing
+              </h2>
+              <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+                Confirm a phone, match the voter file, then file a government ID for
+                ballot access.
+              </p>
+            </div>
+            <Link
+              href="/my-campaign/verify"
+              className="inline-flex h-12 shrink-0 items-center justify-center rounded-md border border-gold/60 bg-zinc-950 px-5 font-display text-sm font-semibold uppercase tracking-[0.18em] text-parchment transition-colors hover:border-gold hover:bg-zinc-900"
+            >
+              Open Verification Hub
+            </Link>
+          </div>
           <div className="mb-12 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
