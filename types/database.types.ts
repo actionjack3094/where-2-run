@@ -34,6 +34,7 @@ export interface UserProfile {
   residency_zip: string | null;
   is_eligible_federal: boolean;
   is_eligible_local: boolean;
+  elo_rating: number;
   created_at: string;
   updated_at: string;
 }
@@ -47,6 +48,7 @@ export interface Debate {
   status: DebateStatus | string;
   current_round: number;
   expires_at: string;
+  elo_applied_at: string | null;
   created_at: string;
 }
 
@@ -69,6 +71,19 @@ export interface Vote {
   candidate_id: string;
   created_at: string;
 }
+
+export interface Comment {
+  id: string;
+  debate_id: string;
+  author_id: string;
+  body: string;
+  created_at: string;
+  ai_stance_score: number | string | null;
+}
+
+export type CommentWithAuthor = Comment & {
+  author: Pick<UserProfile, "id" | "username"> | null;
+};
 
 export interface Pledge {
   id: string;
@@ -95,6 +110,7 @@ export interface CandidateStats {
   debates_played: number;
   win_percentage: number;
   total_pledged: number | string;
+  elo_rating: number;
 }
 
 export interface ElectabilityScore {
@@ -134,7 +150,9 @@ export interface MatchedFeedPost {
   similarity: number | string;
 }
 
-export type DebateCandidate = Pick<UserProfile, "id" | "username">;
+export type DebateCandidate = Pick<UserProfile, "id" | "username"> & {
+  elo_rating?: number;
+};
 
 export type DebateWithCandidates = Debate & {
   candidate_a: DebateCandidate | DebateCandidate[] | null;
@@ -254,6 +272,27 @@ export interface Database {
           },
         ];
       };
+      comments: {
+        Row: Comment;
+        Insert: Partial<Comment> & Pick<Comment, "debate_id" | "author_id" | "body">;
+        Update: Partial<Comment>;
+        Relationships: [
+          {
+            foreignKeyName: "comments_debate_id_fkey";
+            columns: ["debate_id"];
+            isOneToOne: false;
+            referencedRelation: "debates";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "comments_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       pledges: {
         Row: Pledge;
         Insert: Partial<Pledge> & Pick<Pledge, "candidate_id" | "amount">;
@@ -343,6 +382,10 @@ export interface Database {
       complete_expired_debates: {
         Args: Record<PropertyKey, never>;
         Returns: { debate_id: string; winner_id: string | null }[];
+      };
+      apply_debate_elo: {
+        Args: { debate_uuid: string };
+        Returns: undefined;
       };
       normalize_zip: {
         Args: { value: string };
