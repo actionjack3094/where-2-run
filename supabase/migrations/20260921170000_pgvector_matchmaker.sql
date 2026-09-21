@@ -55,6 +55,9 @@ begin
                 least(1, greatest(-1, coalesce((stance_vector->>'environment')::double precision, 0))),
                 least(1, greatest(-1, coalesce((stance_vector->>'immigration')::double precision, 0)))
               ]::vector(5)
+            when jsonb_typeof(stance_vector) = 'string'
+              and (stance_vector #>> '{}') like '[%]' then
+              (stance_vector #>> '{}')::vector(5)
             else null
           end
         )
@@ -69,10 +72,17 @@ comment on column public.users.stance_vector is
 
 do $$
 begin
-  execute 'create index if not exists users_stance_vector_cosine_idx on public.users using hnsw (stance_vector vector_cosine_ops)';
-exception
-  when others then
-    execute 'create index if not exists users_stance_vector_cosine_idx on public.users using ivfflat (stance_vector vector_cosine_ops) with (lists = 10)';
+  begin
+    execute 'create index if not exists users_stance_vector_cosine_idx on public.users using hnsw (stance_vector vector_cosine_ops)';
+  exception
+    when others then
+      begin
+        execute 'create index if not exists users_stance_vector_cosine_idx on public.users using ivfflat (stance_vector vector_cosine_ops) with (lists = 10)';
+      exception
+        when others then
+          raise notice 'Skipping users_stance_vector_cosine_idx: %', SQLERRM;
+      end;
+  end;
 end $$;
 
 create or replace view public.candidate_stats
