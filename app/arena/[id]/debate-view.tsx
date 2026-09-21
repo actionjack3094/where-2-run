@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { evaluateDebate } from "@/app/actions/ai/evaluate-debate";
+import { AppealModal } from "@/app/arena/components/AppealModal";
 import { CommentSection } from "@/components/comments/CommentSection";
 import { BackCandidateButton } from "@/components/pledges/BackCandidateButton";
 import { CandidateSeat } from "@/components/pledges/CandidateSeat";
@@ -14,6 +16,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  canFileAddendum,
+  parseScore,
+} from "@/lib/arena/evaluations";
 import {
   waitForIdeologyGrader,
   type GraderToastState,
@@ -27,6 +33,7 @@ import type {
   Argument,
   CommentWithAuthor,
   DebateCandidate,
+  DebateEvaluation,
   DebateWithCandidates,
   Vote,
 } from "@/types/database.types";
@@ -73,8 +80,13 @@ export function DebateView({
   const [votingFor, setVotingFor] = useState<"a" | "b" | null>(null);
   const [localVoteCandidateId, setLocalVoteCandidateId] = useState<string | null>(null);
   const [graderToast, setGraderToast] = useState<GraderToastState | null>(null);
+  const [evaluations, setEvaluations] = useState<DebateEvaluation[]>([]);
+  const [judgeBusy, setJudgeBusy] = useState(false);
+  const [judgeError, setJudgeError] = useState<string | null>(null);
+  const [appealOpen, setAppealOpen] = useState(false);
   const voteLockRef = useRef(false);
   const graderWaitRef = useRef(0);
+  const judgeRequestRef = useRef(0);
 
   async function loadDebate() {
     const { data, error: debateError } = await supabase
@@ -93,19 +105,24 @@ export function DebateView({
       throw new Error(debateError?.message ?? "Debate not found.");
     }
 
-    const [{ data: argumentRows }, { data: voteRows }] = await Promise.all([
-      supabase
-        .from("arguments")
-        .select("*")
-        .eq("debate_id", debateId)
-        .order("round_number")
-        .order("created_at"),
-      supabase.from("votes").select("*").eq("debate_id", debateId),
-    ]);
+    const [{ data: argumentRows }, { data: voteRows }, evaluationsResult] =
+      await Promise.all([
+        supabase
+          .from("arguments")
+          .select("*")
+          .eq("debate_id", debateId)
+          .order("round_number")
+          .order("created_at"),
+        supabase.from("votes").select("*").eq("debate_id", debateId),
+        supabase.from("debate_evaluations").select("*").eq("debate_id", debateId),
+      ]);
 
     setDebate(data as DebateWithCandidates);
     setArgs(argumentRows ?? []);
     setVotes(voteRows ?? []);
+    if (!evaluationsResult.error) {
+      setEvaluations((evaluationsResult.data ?? []) as DebateEvaluation[]);
+    }
   }
 
   useEffect(() => {
@@ -191,6 +208,49 @@ export function DebateView({
     isCandidate &&
     ((nextTurn?.side === "a" && isCandidateB) || (nextTurn?.side === "b" && isCandidateA));
   const opponentSide = isCandidateA ? ("b" as const) : isCandidateB ? ("a" as const) : null;
+
+  const myEvaluation = user
+    ? evaluations.find((row) => row.candidate_id === user.id) ?? null
+    : null;
+  const appealUnlocked = canFileAddendum(myEvaluation);
+  const roundsComplete = Boolean(debate && !nextTurn && bothSeated);
+  const judgeEligible =
+    isCandidate &&
+    roundsComplete &&
+    (debate?.status === "voting" || debate?.status === "completed");
+
+  useEffect(() => {
+    if (!appealUnlocked) setAppealOpen(false);
+  }, [appealUnlocked]);
+
+  useEffect(() => {
+    if (!judgeEligible || myEvaluation) return;
+    const requestId = ++judgeRequestRef.current;
+    let cancelled = false;
+
+    async function runJudge() {
+      setJudgeBusy(true);
+      setJudgeError(null);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const result = await evaluateDebate(debateId, sessionData.session?.access_token);
+        if (cancelled || judgeRequestRef.current !== requestId) return;
+        setEvaluations(result.evaluations);
+      } catch (err) {
+        if (cancelled || judgeRequestRef.current !== requestId) return;
+        setJudgeError(
+          err instanceof Error ? err.message : "The Primary Judge could not score this debate.",
+        );
+      } finally {
+        if (!cancelled && judgeRequestRef.current === requestId) setJudgeBusy(false);
+      }
+    }
+
+    void runJudge();
+    return () => {
+      cancelled = true;
+    };
+  }, [debateId, judgeEligible, myEvaluation]);
 
   const aVotes = votes.filter((vote) => vote.candidate_id === debate?.candidate_a_id).length;
   const bVotes = votes.filter((vote) => vote.candidate_id === debate?.candidate_b_id).length;
@@ -529,10 +589,140 @@ export function DebateView({
         totalVotes={totalVotes}
       />
 
+      <ArbitrationPanel
+        candidateA={candidateA}
+        candidateB={candidateB}
+        evaluations={evaluations}
+        myEvaluation={myEvaluation}
+        appealUnlocked={appealUnlocked}
+        judgeBusy={judgeBusy}
+        judgeError={judgeError}
+        onOpenAppeal={() => setAppealOpen(true)}
+      />
+
       <CommentSection debateId={debateId} comments={comments} />
 
       {graderToast && <GraderToast state={graderToast} />}
+      {appealOpen && myEvaluation && (
+        <AppealModal
+          evaluation={myEvaluation}
+          onClose={() => setAppealOpen(false)}
+          onSettled={(next) => {
+            setEvaluations((current) =>
+              current.map((row) => (row.id === next.id ? next : row)),
+            );
+            setAppealOpen(false);
+          }}
+        />
+      )}
     </main>
+  );
+}
+
+function ArbitrationPanel({
+  candidateA,
+  candidateB,
+  evaluations,
+  myEvaluation,
+  appealUnlocked,
+  judgeBusy,
+  judgeError,
+  onOpenAppeal,
+}: {
+  candidateA: DebateCandidate | null;
+  candidateB: DebateCandidate | null;
+  evaluations: DebateEvaluation[];
+  myEvaluation: DebateEvaluation | null;
+  appealUnlocked: boolean;
+  judgeBusy: boolean;
+  judgeError: string | null;
+  onOpenAppeal: () => void;
+}) {
+  const evaluationFor = (candidateId: string | undefined) =>
+    candidateId
+      ? evaluations.find((row) => row.candidate_id === candidateId) ?? null
+      : null;
+
+  return (
+    <section className="mt-12">
+      <Card>
+        <CardHeader>
+          <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+            Primary Judge
+          </p>
+          <CardTitle>Automated arbitration</CardTitle>
+          <CardDescription>
+            {judgeBusy
+              ? "The Primary Judge is scoring both filings against the public rubric."
+              : "Confidence between 0.60 and 0.89 unlocks a 150-word addendum for the Ensemble Court."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <JudgeSeat
+              label={candidateA?.username ?? "Candidate A"}
+              evaluation={evaluationFor(candidateA?.id)}
+            />
+            <JudgeSeat
+              label={candidateB?.username ?? "Candidate B"}
+              evaluation={evaluationFor(candidateB?.id)}
+            />
+          </div>
+          {judgeError && (
+            <p className="text-sm text-zinc-600 dark:text-zinc-300">{judgeError}</p>
+          )}
+          {appealUnlocked && myEvaluation && (
+            <Button type="button" onClick={onOpenAppeal}>
+              File addendum on {myEvaluation.rubric_flag?.replace(/_/g, " ")}
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
+
+function JudgeSeat({
+  label,
+  evaluation,
+}: {
+  label: string;
+  evaluation: DebateEvaluation | null;
+}) {
+  return (
+    <div className="rounded-lg border border-zinc-200 px-3 py-3 dark:border-zinc-800">
+      <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">{label}</p>
+      {evaluation ? (
+        <dl className="mt-2 space-y-1 text-sm">
+          <div className="flex justify-between gap-3">
+            <dt className="text-zinc-500">Score</dt>
+            <dd className="tabular-nums">{parseScore(evaluation.primary_score).toFixed(1)}</dd>
+          </div>
+          <div className="flex justify-between gap-3">
+            <dt className="text-zinc-500">Confidence</dt>
+            <dd className="tabular-nums">
+              {parseScore(evaluation.confidence_score).toFixed(2)}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-3">
+            <dt className="text-zinc-500">Flag</dt>
+            <dd>{evaluation.rubric_flag?.replace(/_/g, " ") ?? "—"}</dd>
+          </div>
+          <div className="flex justify-between gap-3">
+            <dt className="text-zinc-500">Court</dt>
+            <dd>
+              {evaluation.status === "locked"
+                ? evaluation.ensemble_result
+                  ? "Pass · ELO locked"
+                  : "Fail · ELO locked"
+                : evaluation.status}
+            </dd>
+          </div>
+        </dl>
+      ) : (
+        <p className="mt-2 text-sm text-zinc-400">Awaiting verdict</p>
+      )}
+    </div>
   );
 }
 

@@ -1,7 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { parseElo, ratingsAfterResult } from "@/lib/arena/elo";
+import { isMarginalConfidence } from "@/lib/arena/evaluations";
 import { pickDebateWinnerId } from "@/lib/arena/winner";
-import type { Database, Debate, Vote } from "@/types/database.types";
+import { isMissingRelation } from "@/lib/coalitions";
+import type { Database, Debate, DebateEvaluation, Vote } from "@/types/database.types";
 
 type AdminClient = SupabaseClient<Database>;
 
@@ -66,6 +68,31 @@ export async function applyDebateElo(admin: AdminClient, debateId: string) {
   const expired =
     Number.isFinite(Date.parse(debate.expires_at)) &&
     Date.parse(debate.expires_at) <= Date.now();
+
+  if (!expired) {
+    const { data: evaluationRows, error: evaluationError } = await admin
+      .from("debate_evaluations")
+      .select("candidate_id, confidence_score, status, ensemble_result")
+      .eq("debate_id", debate.id);
+
+    if (evaluationError && !isMissingRelation(evaluationError)) {
+      throw evaluationError;
+    }
+
+    const pendingAppeal = (
+      (evaluationRows ?? []) as Pick<
+        DebateEvaluation,
+        "candidate_id" | "confidence_score" | "status" | "ensemble_result"
+      >[]
+    ).some(
+      (row) =>
+        isMarginalConfidence(row.confidence_score) &&
+        row.status !== "locked" &&
+        row.ensemble_result == null,
+    );
+
+    if (pendingAppeal) return { skipped: "pending_appeal" as const };
+  }
 
   if (debate.status !== "completed") {
     if (
@@ -139,6 +166,34 @@ export async function applyDebateElo(admin: AdminClient, debateId: string) {
     expectedWinner: next.expectedWinner,
     expectedLoser: next.expectedLoser,
   };
+}
+
+export async function lockDebateEloAfterArbitration(
+  admin: AdminClient,
+  debate: Debate,
+  evaluations: DebateEvaluation[],
+) {
+  const candidateIds = [debate.candidate_a_id, debate.candidate_b_id].filter(
+    (id): id is string => Boolean(id),
+  );
+  const ready = candidateIds.every((candidateId) => {
+    const evaluation = evaluations.find((row) => row.candidate_id === candidateId);
+    if (!evaluation) return false;
+    if (evaluation.status === "locked") return true;
+    return !isMarginalConfidence(evaluation.confidence_score);
+  });
+  if (!ready) return { skipped: "pending_appeal" as const };
+
+  if (debate.status === "active" || debate.status === "voting") {
+    const { error } = await admin
+      .from("debates")
+      .update({ status: "completed" })
+      .eq("id", debate.id)
+      .in("status", ["active", "voting"]);
+    if (error) throw error;
+  }
+
+  return applyDebateElo(admin, debate.id);
 }
 
 export async function settleExpiredDebateElo(

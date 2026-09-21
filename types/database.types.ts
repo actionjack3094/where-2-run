@@ -81,6 +81,22 @@ export interface Argument {
   created_at: string;
 }
 
+export type DebateEvaluationStatus = "evaluated" | "appealed" | "locked";
+
+export interface DebateEvaluation {
+  id: string;
+  debate_id: string;
+  candidate_id: string;
+  primary_score: number | string;
+  confidence_score: number | string;
+  rubric_flag: string | null;
+  addendum_text: string | null;
+  ensemble_result: boolean | null;
+  status: DebateEvaluationStatus | string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Vote {
   id: string;
   debate_id: string;
@@ -313,6 +329,31 @@ export interface Database {
           {
             foreignKeyName: "arguments_author_id_fkey";
             columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      debate_evaluations: {
+        Row: DebateEvaluation;
+        Insert: Partial<DebateEvaluation> &
+          Pick<
+            DebateEvaluation,
+            "debate_id" | "candidate_id" | "primary_score" | "confidence_score"
+          >;
+        Update: Partial<DebateEvaluation>;
+        Relationships: [
+          {
+            foreignKeyName: "debate_evaluations_debate_id_fkey";
+            columns: ["debate_id"];
+            isOneToOne: false;
+            referencedRelation: "debates";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "debate_evaluations_candidate_id_fkey";
+            columns: ["candidate_id"];
             isOneToOne: false;
             referencedRelation: "users";
             referencedColumns: ["id"];
