@@ -7,17 +7,19 @@ import type { DebateCandidate } from "@/types/database.types";
 export function BackCandidateButton({
   candidate,
   className,
+  size = "sm",
 }: {
   candidate: Pick<DebateCandidate, "id" | "username">;
   className?: string;
+  size?: "sm" | "default" | "lg";
 }) {
   const { openPledge } = usePledge();
 
   return (
     <Button
       type="button"
-      size="sm"
-      variant="default"
+      size={size}
+      variant="gold"
       className={className}
       aria-label={`Donate $50 to ${candidate.username}`}
       onClick={() =>

@@ -9,6 +9,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-accent text-accent-foreground hover:bg-accent-hover",
+        gold: "bg-gold-strong font-display font-semibold uppercase tracking-[0.18em] text-zinc-950 hover:bg-gold",
         outline:
           "border border-gold/60 bg-zinc-950 text-parchment hover:border-gold hover:bg-zinc-900",
         ghost: "hover:bg-zinc-100 dark:hover:bg-zinc-900",
