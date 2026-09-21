@@ -13,3 +13,14 @@ export function getStripe() {
   stripeClient = new Stripe(secretKey);
   return stripeClient;
 }
+
+export function paymentMethodIdOf(
+  value: string | Stripe.PaymentMethod | null | undefined,
+) {
+  if (!value) return null;
+  return typeof value === "string" ? value : value.id;
+}
+
+export function dollarsToCents(amount: number) {
+  return Math.round(amount * 100);
+}

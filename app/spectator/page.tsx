@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/auth-helpers-nextjs";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
-import { PledgeButton } from "@/components/pledges/PledgeButton";
+import { PledgeEscrowButton } from "@/components/pledges/PledgeEscrowButton";
 import { formatElectability, toNumber } from "@/lib/electability";
 import { formatUsd, GRASSROOTS_THRESHOLD, parseAmount } from "@/lib/pledges";
 import type { ElectabilityScore, Pledge, UserProfile } from "@/types/database.types";
@@ -177,7 +177,10 @@ function CandidateCard({ candidate }: { candidate: DonorCandidate }) {
           </div>
           <FundingProgress pledged={candidate.pledged} />
         </div>
-        <PledgeButton candidateId={candidate.id} />
+        <PledgeEscrowButton
+          candidateId={candidate.id}
+          candidateName={candidate.username}
+        />
       </div>
     </article>
   );

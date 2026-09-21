@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { cache } from "react";
-import { BackCandidateButton } from "@/components/pledges/BackCandidateButton";
+import { PledgeEscrowButton } from "@/components/pledges/PledgeEscrowButton";
 import { CandidateAvatar } from "@/components/profile/CandidateAvatar";
 import {
   Card,
@@ -243,9 +243,10 @@ function ReadyProfile({ profile }: { profile: PublicProfile }) {
             ) : null}
           </div>
         </div>
-        <BackCandidateButton
-          candidate={{ id: stats.id, username: stats.username }}
-          size="lg"
+        <PledgeEscrowButton
+          candidateId={stats.id}
+          candidateName={stats.username}
+          electionId={filedDistrict?.id ?? matches[0]?.district_id ?? null}
           className="shrink-0"
         />
       </header>
