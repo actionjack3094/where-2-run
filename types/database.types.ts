@@ -112,6 +112,22 @@ export interface Pledge {
   created_at: string;
 }
 
+export type CampaignPledgeStatus = "pending" | "captured" | "failed" | "canceled";
+
+export interface CampaignPledge {
+  id: string;
+  donor_id: string;
+  candidate_id: string;
+  election_id: string;
+  amount: number | string;
+  stripe_customer_id: string;
+  stripe_payment_method_id: string | null;
+  stripe_setup_intent_id: string | null;
+  status: CampaignPledgeStatus | string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CandidateStats {
   id: string;
   username: string;
@@ -143,6 +159,17 @@ export interface ElectabilityScore {
   electability_multiplier: number | string;
   created_at: string;
   updated_at: string;
+}
+
+export interface ElectionRequirement {
+  id: string;
+  election_id: string;
+  state: string;
+  office: string;
+  residency_deadline: string;
+  filing_deadline: string;
+  escrow_goal: number | string;
+  created_at: string;
 }
 
 export type CivicPostStatus = "open" | "challenged" | "debating";
@@ -362,6 +389,31 @@ export interface Database {
           },
         ];
       };
+      campaign_pledges: {
+        Row: CampaignPledge;
+        Insert: Partial<CampaignPledge> &
+          Pick<
+            CampaignPledge,
+            "donor_id" | "candidate_id" | "election_id" | "amount" | "stripe_customer_id"
+          >;
+        Update: Partial<CampaignPledge>;
+        Relationships: [
+          {
+            foreignKeyName: "campaign_pledges_candidate_id_fkey";
+            columns: ["candidate_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "campaign_pledges_election_id_fkey";
+            columns: ["election_id"];
+            isOneToOne: false;
+            referencedRelation: "districts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       civic_posts: {
         Row: CivicPost;
         Insert: Partial<CivicPost> &
@@ -396,6 +448,24 @@ export interface Database {
             foreignKeyName: "electability_scores_district_id_fkey";
             columns: ["district_id"];
             isOneToOne: false;
+            referencedRelation: "districts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      election_requirements: {
+        Row: ElectionRequirement;
+        Insert: Partial<ElectionRequirement> &
+          Pick<
+            ElectionRequirement,
+            "election_id" | "state" | "office" | "residency_deadline" | "filing_deadline"
+          >;
+        Update: Partial<ElectionRequirement>;
+        Relationships: [
+          {
+            foreignKeyName: "election_requirements_election_id_fkey";
+            columns: ["election_id"];
+            isOneToOne: true;
             referencedRelation: "districts";
             referencedColumns: ["id"];
           },
