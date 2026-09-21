@@ -1,26 +1,65 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #09090b;
+  --foreground: #f4f4f5;
+  --gold: #e4c76b;
+  --gold-strong: #d4af37;
+  --parchment: #f3e6c4;
+  --accent: #1d4ed8;
+  --accent-hover: #1e40af;
+  --accent-foreground: #ffffff;
+  --accent-muted: #172554;
+  --accent-ring: #3b82f6;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-gold: var(--gold);
+  --color-gold-strong: var(--gold-strong);
+  --color-parchment: var(--parchment);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-muted: var(--accent-muted);
+  --color-accent-ring: var(--accent-ring);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-cinzel);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+[data-app-mode="voter"] {
+  --accent: #1d4ed8;
+  --accent-hover: #1e40af;
+  --accent-foreground: #ffffff;
+  --accent-muted: #172554;
+  --accent-ring: #60a5fa;
+}
+
+[data-app-mode="candidate"] {
+  --accent: #be123c;
+  --accent-hover: #9f1239;
+  --accent-foreground: #ffffff;
+  --accent-muted: #4c0519;
+  --accent-ring: #fb7185;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+h1,
+h2,
+h3,
+[data-slot="card-title"] {
+  font-family: var(--font-cinzel), ui-serif, Georgia, "Times New Roman", serif;
+  color: var(--parchment);
+}
+
+[data-slot="card"] {
+  border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+  box-shadow: inset 3px 0 0 var(--accent);
 }

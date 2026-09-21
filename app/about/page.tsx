@@ -49,7 +49,7 @@ export default function AboutPage() {
           <Link href="/onboarding">Take the quiz</Link>
         </Button>
         <Button asChild variant="outline">
-          <Link href="/">Back home</Link>
+          <Link href="/feed">Back to feed</Link>
         </Button>
       </div>
     </main>

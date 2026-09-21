@@ -2,25 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ModeToggle } from "@/components/app-shell";
 import { cn } from "@/lib/utils";
 
 const links = [
-  { href: "/", label: "Home", match: (path: string) => path === "/" },
-  {
-    href: "/dashboard",
-    label: "Triage",
-    match: (path: string) => path.startsWith("/dashboard"),
-  },
   {
     href: "/feed",
-    label: "Ballot Feed",
+    label: "Feed",
     match: (path: string) => path.startsWith("/feed"),
   },
-  { href: "/arena", label: "Arena", match: (path: string) => path.startsWith("/arena") },
   {
-    href: "/spectator",
-    label: "Donor Feed",
-    match: (path: string) => path.startsWith("/spectator"),
+    href: "/dashboard",
+    label: "My Campaign",
+    match: (path: string) => path.startsWith("/dashboard"),
   },
   {
     href: "/leaderboards",
@@ -34,16 +28,16 @@ export function SiteNav() {
   const pathname = usePathname();
 
   return (
-    <header className="border-b border-zinc-200 dark:border-zinc-800">
-      <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-4 px-6">
+    <header className="border-b-2 border-gold bg-zinc-950 shadow-[inset_0_3px_0_0_var(--accent)]">
+      <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-6 py-3 sm:h-14 sm:flex-nowrap sm:py-0">
         <Link
-          href="/"
+          href="/feed"
           aria-label="Where 2 Run home"
-          className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-950 dark:text-zinc-50"
+          className="font-display shrink-0 text-xs font-medium uppercase tracking-[0.2em] text-gold"
         >
           Where 2 Run
         </Link>
-        <nav className="flex items-center gap-4 overflow-x-auto text-nowrap">
+        <nav className="order-last flex w-full min-w-0 items-center gap-4 overflow-x-auto text-nowrap sm:order-none sm:ml-auto sm:w-auto">
           {links.map((link) => {
             const active = link.match(pathname);
             return (
@@ -53,7 +47,7 @@ export function SiteNav() {
                 className={cn(
                   "text-[11px] font-medium uppercase tracking-widest transition-colors",
                   active
-                    ? "text-zinc-950 dark:text-zinc-50"
+                    ? "text-accent"
                     : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200",
                 )}
               >
@@ -62,6 +56,7 @@ export function SiteNav() {
             );
           })}
         </nav>
+        <ModeToggle className="ml-auto sm:ml-0" />
       </div>
     </header>
   );

@@ -36,7 +36,7 @@ export function PledgeModal({
 }) {
   const titleId = useId();
   const [preset, setPreset] = useState<(typeof QUICK_PLEDGE_AMOUNTS)[number] | "custom">(
-    QUICK_PLEDGE_AMOUNTS[1],
+    50,
   );
   const [customAmount, setCustomAmount] = useState("20");
   const [message, setMessage] = useState("");
@@ -114,7 +114,7 @@ export function PledgeModal({
           <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
             Stripe escrow
           </p>
-          <CardTitle id={titleId}>Back {target.candidateName}</CardTitle>
+          <CardTitle id={titleId}>Donate $50 — {target.candidateName}</CardTitle>
           <CardDescription>
             Authorize a card hold with Stripe. The pledge stays in escrow until capture — nothing
             is charged yet.

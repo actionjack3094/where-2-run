@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Cinzel, Geist, Geist_Mono } from "next/font/google";
+import { AppShell } from "@/components/app-shell";
 import { PledgeHost } from "@/components/pledges/PledgeHost";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
@@ -15,6 +16,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const cinzel = Cinzel({
+  variable: "--font-cinzel",
+  subsets: ["latin"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "WHERE 2 RUN",
   description: "Find the district that matches your ideology, then enter the arena.",
@@ -24,14 +31,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} dark h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <PledgeHost>
-          <SiteNav />
-          {children}
-          <SiteFooter />
-        </PledgeHost>
+        <AppShell>
+          <PledgeHost>
+            <SiteNav />
+            {children}
+            <SiteFooter />
+          </PledgeHost>
+        </AppShell>
       </body>
     </html>
   );

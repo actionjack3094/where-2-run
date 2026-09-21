@@ -263,7 +263,7 @@ function CandidateProfile({ candidateId }: { candidateId: string }) {
         <div className="flex flex-wrap gap-2">
           {stage === "ready" && stats && (
             <Button type="button" className="w-fit" onClick={handleBackCandidate}>
-              Back Candidate
+              Donate $50
             </Button>
           )}
           <Button asChild variant="outline" className="w-fit">

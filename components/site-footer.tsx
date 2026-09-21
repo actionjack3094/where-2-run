@@ -1,20 +1,20 @@
 import Link from "next/link";
 
 const links = [
-  { href: "/dashboard", label: "Triage" },
-  { href: "/onboarding", label: "Onboarding Quiz" },
+  { href: "/feed", label: "Feed" },
+  { href: "/dashboard", label: "My Campaign" },
   { href: "/leaderboards", label: "Leaderboards" },
   { href: "/about", label: "About Us" },
 ] as const;
 
 export function SiteFooter() {
   return (
-    <footer className="mt-auto border-t border-zinc-200 dark:border-zinc-800">
+    <footer className="mt-auto border-t-2 border-gold bg-zinc-950">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-10 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <Link
-            href="/"
-            className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-950 dark:text-zinc-50"
+            href="/feed"
+            className="font-display text-xs font-medium uppercase tracking-[0.2em] text-gold"
           >
             Where 2 Run
           </Link>

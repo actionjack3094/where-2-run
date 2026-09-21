@@ -132,7 +132,7 @@ export function TakeStanceModal() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex h-10 w-fit items-center justify-center rounded-md bg-zinc-100 px-4 text-sm font-medium text-zinc-950 transition-colors hover:bg-white"
+        className="inline-flex h-10 w-fit items-center justify-center rounded-md bg-accent px-4 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
       >
         Take a Stance
       </button>

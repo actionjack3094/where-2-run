@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/auth-helpers-nextjs";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
+import { BackCandidateButton } from "@/components/pledges/BackCandidateButton";
 import { formatElectability, toNumber } from "@/lib/electability";
 import type { CandidateStats, ElectabilityScore } from "@/types/database.types";
 
@@ -206,7 +207,7 @@ export default async function LeaderboardsPage() {
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
               Leaderboards
             </p>
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-100">
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-parchment">
               District 9
             </h1>
             <p className="mt-2 text-sm leading-6 text-zinc-400">
@@ -214,12 +215,6 @@ export default async function LeaderboardsPage() {
               record.
             </p>
           </div>
-          <Link
-            href="/spectator"
-            className="inline-flex h-9 w-fit items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 px-3 text-xs font-medium uppercase tracking-widest text-zinc-100 transition-colors hover:bg-zinc-700"
-          >
-            Donor Feed
-          </Link>
         </header>
 
         {error ? (
@@ -236,7 +231,7 @@ export default async function LeaderboardsPage() {
             {entries.map((entry, index) => (
               <article
                 key={entry.id}
-                className="rounded-xl border border-zinc-800 bg-zinc-900 p-5"
+                className="rounded-xl border border-gold/50 bg-zinc-900 p-5 shadow-[inset_3px_0_0_0_var(--accent)]"
               >
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex min-w-0 items-start gap-4">
@@ -246,7 +241,7 @@ export default async function LeaderboardsPage() {
                     <div className="min-w-0">
                       <Link
                         href={`/candidate/${entry.id}`}
-                        className="text-lg font-semibold leading-snug tracking-tight text-zinc-100 transition-colors hover:text-zinc-300"
+                        className="font-display text-lg font-semibold leading-snug tracking-tight text-parchment transition-colors hover:text-gold"
                       >
                         {entry.username}
                       </Link>
@@ -278,12 +273,10 @@ export default async function LeaderboardsPage() {
                       </dl>
                     </div>
                   </div>
-                  <Link
-                    href="/spectator"
-                    className="inline-flex h-9 shrink-0 items-center justify-center rounded-md bg-zinc-100 px-3 text-xs font-medium uppercase tracking-widest text-zinc-950 transition-colors hover:bg-white"
-                  >
-                    Back Candidate
-                  </Link>
+                  <BackCandidateButton
+                    candidate={{ id: entry.id, username: entry.username }}
+                    className="shrink-0"
+                  />
                 </div>
               </article>
             ))}

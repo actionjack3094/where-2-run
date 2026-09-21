@@ -68,7 +68,7 @@ export default async function FeedPage() {
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
               Civic Feed
             </p>
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-100">
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-parchment">
               My Ballot Feed
             </h1>
           </div>
@@ -84,13 +84,13 @@ export default async function FeedPage() {
             {feed.map((post, index) => (
               <article
                 key={postKey(post, index)}
-                className="rounded-xl border border-zinc-800 bg-zinc-900 p-5"
+                className="rounded-xl border border-gold/50 bg-zinc-900 p-5 shadow-[inset_3px_0_0_0_var(--accent)]"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <h2 className="text-lg font-semibold leading-snug tracking-tight text-zinc-100">
+                  <h2 className="text-lg font-semibold leading-snug tracking-tight text-parchment">
                     {post.claim}
                   </h2>
-                  <p className="shrink-0 font-mono text-xs font-medium uppercase text-blue-400">
+                  <p className="shrink-0 font-mono text-xs font-medium uppercase text-accent">
                     {formatMatchPercent(post.similarity)}
                   </p>
                 </div>
@@ -100,7 +100,7 @@ export default async function FeedPage() {
                 <div className="mt-5 flex flex-wrap gap-2">
                   <button
                     type="button"
-                    className="inline-flex h-9 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 px-3 text-xs font-medium uppercase tracking-widest text-zinc-100 transition-colors hover:bg-zinc-700"
+                    className="inline-flex h-9 items-center justify-center rounded-md border border-gold/50 bg-zinc-800 px-3 text-xs font-medium uppercase tracking-widest text-parchment transition-colors hover:border-gold hover:bg-zinc-700"
                   >
                     Endorse
                   </button>

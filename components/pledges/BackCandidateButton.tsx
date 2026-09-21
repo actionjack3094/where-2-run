@@ -17,9 +17,9 @@ export function BackCandidateButton({
     <Button
       type="button"
       size="sm"
-      variant="outline"
+      variant="default"
       className={className}
-      aria-label={`Back ${candidate.username}`}
+      aria-label={`Donate $50 to ${candidate.username}`}
       onClick={() =>
         openPledge({
           candidateId: candidate.id,
@@ -27,7 +27,7 @@ export function BackCandidateButton({
         })
       }
     >
-      Back
+      Donate $50
     </Button>
   );
 }

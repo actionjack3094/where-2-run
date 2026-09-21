@@ -253,12 +253,12 @@ export default function TriageDashboardPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <Link
-            href="/"
+            href="/feed"
             className="w-fit text-xs font-medium uppercase tracking-[0.2em] text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-50"
           >
             Where 2 Run
           </Link>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight">Triage</h1>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight">My Campaign</h1>
           <p className="mt-2 max-w-xl text-sm text-zinc-500 dark:text-zinc-400">
             {active.hint}
           </p>
