@@ -146,6 +146,7 @@ export async function executeAppeal(input: {
   revalidatePath(`/arena/${debate.id}`);
   revalidatePath("/leaderboards");
   revalidatePath(`/profile/${evaluation.candidate_id}`);
+  revalidatePath(`/candidate/${evaluation.candidate_id}`);
 
   return {
     ok: true as const,

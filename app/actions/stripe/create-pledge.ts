@@ -239,6 +239,7 @@ export async function createPledge(
     }
 
     revalidatePath(`/profile/${candidateId}`);
+    revalidatePath(`/candidate/${candidateId}`);
     revalidatePath("/spectator");
 
     return {
@@ -343,6 +344,7 @@ export async function completePledge(
     if (updateError) throw new Error(updateError.message);
 
     revalidatePath(`/profile/${pledge.candidate_id}`);
+    revalidatePath(`/candidate/${pledge.candidate_id}`);
     revalidatePath("/spectator");
     return { ok: true as const, pledgeId: pledge.id, status: "pending" as const };
   } catch (caught) {

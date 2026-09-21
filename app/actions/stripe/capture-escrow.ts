@@ -130,6 +130,7 @@ export async function captureEscrow(
   }
 
   revalidatePath(`/profile/${trimmedCandidateId}`);
+  revalidatePath(`/candidate/${trimmedCandidateId}`);
   revalidatePath("/my-campaign");
   revalidatePath("/spectator");
 
