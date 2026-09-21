@@ -57,6 +57,57 @@ export function canFileAddendum(evaluation: {
   return isMarginalConfidence(evaluation.confidence_score);
 }
 
+export type ConfidenceBand = "pending" | "thin" | "marginal" | "decisive";
+
+export function governingEvaluation<
+  T extends {
+    confidence_score: number | string | null;
+    status: string;
+    ensemble_result?: boolean | null;
+  },
+>(evaluations: T[]) {
+  if (!evaluations.length) return null;
+  const appealable = evaluations.filter((row) => canFileAddendum(row));
+  const pool = appealable.length ? appealable : evaluations;
+  return pool.reduce((lowest, row) =>
+    parseScore(row.confidence_score) < parseScore(lowest.confidence_score) ? row : lowest,
+  );
+}
+
+export function confidenceThresholdCopy(
+  score: number | string | null | undefined,
+  hasEvaluation: boolean,
+) {
+  if (!hasEvaluation) {
+    return {
+      band: "pending" as const satisfies ConfidenceBand,
+      label: "Awaiting AI rubric",
+      detail: `Appeal unlocks when confidence sits between ${MARGINAL_CONFIDENCE_MIN.toFixed(2)} and ${MARGINAL_CONFIDENCE_MAX.toFixed(2)}.`,
+    };
+  }
+
+  const value = parseScore(score);
+  if (value >= 0.9) {
+    return {
+      band: "decisive" as const satisfies ConfidenceBand,
+      label: "Decisive",
+      detail: `${value.toFixed(2)} ≥ 0.90. Score stands; no addendum.`,
+    };
+  }
+  if (isMarginalConfidence(value)) {
+    return {
+      band: "marginal" as const satisfies ConfidenceBand,
+      label: "Marginal",
+      detail: `${value.toFixed(2)} is inside ${MARGINAL_CONFIDENCE_MIN.toFixed(2)}–${MARGINAL_CONFIDENCE_MAX.toFixed(2)}. Local jury addendum unlocked.`,
+    };
+  }
+  return {
+    band: "thin" as const satisfies ConfidenceBand,
+    label: "Too thin",
+    detail: `${value.toFixed(2)} < ${MARGINAL_CONFIDENCE_MIN.toFixed(2)}. Score stands.`,
+  };
+}
+
 export function ensembleTally(passCount: number, failCount: number) {
   const high = Math.max(passCount, failCount);
   const low = Math.min(passCount, failCount);

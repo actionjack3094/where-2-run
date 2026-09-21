@@ -11,6 +11,11 @@ const links = [
     match: (path: string) => path.startsWith("/feed"),
   },
   {
+    href: "/arena",
+    label: "Arena",
+    match: (path: string) => path.startsWith("/arena"),
+  },
+  {
     href: "/my-campaign",
     label: "My Campaign",
     match: (path: string) =>
