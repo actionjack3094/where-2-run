@@ -51,7 +51,7 @@ export interface UserProfile {
   is_eligible_federal: boolean;
   is_eligible_local: boolean;
   elo_rating: number;
-  stance_vector: StanceVector | null;
+  stance_vector: string | number[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -129,7 +129,7 @@ export interface CandidateStats {
   win_percentage: number;
   total_pledged: number | string;
   elo_rating: number;
-  stance_vector: StanceVector | null;
+  stance_vector: string | number[] | null;
 }
 
 export interface ElectabilityScore {
@@ -186,6 +186,17 @@ export interface MatchedFeedPost {
   argument: string;
   similarity: number | string;
 }
+
+export type PrimaryOpponentRow = {
+  id: string;
+  username: string;
+  verification_tier: string | null;
+  elo_rating: number;
+  target_district_id: string | null;
+  stance_vector: string | number[] | null;
+  cosine_distance: number;
+  similarity: number;
+};
 
 export type DebateCandidate = Pick<UserProfile, "id" | "username"> & {
   elo_rating?: number;
@@ -472,6 +483,13 @@ export interface Database {
           match_count: number;
         };
         Returns: MatchedFeedPost[];
+      };
+      find_primary_opponents: {
+        Args: {
+          p_user_id: string;
+          match_count?: number;
+        };
+        Returns: PrimaryOpponentRow[];
       };
     };
     Enums: Record<string, never>;

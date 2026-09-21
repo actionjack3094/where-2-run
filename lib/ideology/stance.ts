@@ -8,6 +8,9 @@ export const STANCE_AXES = [
   "immigration",
 ] as const satisfies readonly StanceAxis[];
 
+export const STANCE_DIMENSIONS = STANCE_AXES.length;
+export const PRIMARY_OPPONENT_LIMIT = 3;
+
 export type StanceChoice = {
   id: string;
   label: string;
@@ -142,7 +145,19 @@ export function isMissingStanceColumn(error: { message?: string; code?: string }
   return (
     error.code === "42703" ||
     error.code === "PGRST204" ||
+    error.code === "42804" ||
     /stance_vector/i.test(message)
+  );
+}
+
+export function isMissingMatchmakerRpc(error: { message?: string; code?: string } | null) {
+  if (!error) return false;
+  const message = error.message ?? "";
+  return (
+    error.code === "42883" ||
+    error.code === "PGRST202" ||
+    /find_primary_opponents/i.test(message) ||
+    /schema cache/i.test(message)
   );
 }
 
@@ -175,4 +190,29 @@ export function buildStanceVector(
   }
 
   return vector;
+}
+
+export function stanceVectorToArray(vector: StanceVector): number[] {
+  return STANCE_AXES.map((axis) => roundStanceAxis(vector[axis]));
+}
+
+export function formatPgStanceVector(vector: StanceVector): string {
+  return `[${stanceVectorToArray(vector).map((value) => value.toFixed(4)).join(",")}]`;
+}
+
+export function hasStanceVector(value: unknown) {
+  if (value == null) return false;
+  if (Array.isArray(value)) return value.length >= STANCE_DIMENSIONS;
+  if (typeof value === "string") return value.trim().length > 2;
+  if (typeof value === "object") {
+    return STANCE_AXES.every((axis) =>
+      Number.isFinite((value as Record<string, unknown>)[axis]),
+    );
+  }
+  return false;
+}
+
+export function cosineDistanceToMatchPercent(distance: number) {
+  if (!Number.isFinite(distance)) return 0;
+  return Math.round(Math.max(0, Math.min(1, 1 - distance)) * 100);
 }

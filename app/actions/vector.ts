@@ -4,7 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireActionUserId } from "@/lib/arena/auth";
 import { createAdminClient } from "@/lib/db/supabase-admin";
-import { buildStanceVector, isMissingStanceColumn } from "@/lib/ideology/stance";
+import {
+  buildStanceVector,
+  formatPgStanceVector,
+  isMissingStanceColumn,
+} from "@/lib/ideology/stance";
 import type { StanceAxis } from "@/types/database.types";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
@@ -61,7 +65,7 @@ export async function saveBaselineStanceVector(
   const { error } = await admin
     .from("users")
     .update({
-      stance_vector: stanceVector,
+      stance_vector: formatPgStanceVector(stanceVector),
       updated_at: new Date().toISOString(),
     })
     .eq("id", userId);
@@ -69,7 +73,7 @@ export async function saveBaselineStanceVector(
   if (error) {
     if (isMissingStanceColumn(error)) {
       throw new Error(
-        "stance_vector is not on profiles yet. Apply the stance vector migration.",
+        "stance_vector must be vector(5). Apply the pgvector matchmaker migration.",
       );
     }
     throw new Error(error.message);

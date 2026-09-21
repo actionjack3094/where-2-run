@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ArenaProvingGround } from "@/components/campaign/ArenaProvingGround";
 import { BallotRoadmap } from "@/components/campaign/BallotRoadmap";
 import { MatchedElections } from "@/components/campaign/MatchedElections";
 import { cn } from "@/lib/utils";
@@ -198,6 +199,7 @@ export default function MyCampaignPage() {
         className="mx-auto w-full max-w-5xl px-6 pb-16"
       >
         <div className="border-t border-gold/30 pt-12">
+          <ArenaProvingGround />
           <div className="mb-12 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
