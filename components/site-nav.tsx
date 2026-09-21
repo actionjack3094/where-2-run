@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ModeToggle } from "@/components/app-shell";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -12,9 +11,10 @@ const links = [
     match: (path: string) => path.startsWith("/feed"),
   },
   {
-    href: "/dashboard",
+    href: "/my-campaign",
     label: "My Campaign",
-    match: (path: string) => path.startsWith("/dashboard"),
+    match: (path: string) =>
+      path.startsWith("/my-campaign") || path.startsWith("/dashboard"),
   },
   {
     href: "/leaderboards",
@@ -28,8 +28,8 @@ export function SiteNav() {
   const pathname = usePathname();
 
   return (
-    <header className="border-b-2 border-gold bg-zinc-950 shadow-[inset_0_3px_0_0_var(--accent)]">
-      <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-6 py-3 sm:h-14 sm:flex-nowrap sm:py-0">
+    <header className="border-b-2 border-gold bg-zinc-950 shadow-[inset_0_3px_0_0_var(--gold)]">
+      <div className="mx-auto flex w-full max-w-5xl items-center gap-x-4 px-6 py-3 sm:h-14 sm:py-0">
         <Link
           href="/feed"
           aria-label="Where 2 Run home"
@@ -37,7 +37,7 @@ export function SiteNav() {
         >
           Where 2 Run
         </Link>
-        <nav className="order-last flex w-full min-w-0 items-center gap-4 overflow-x-auto text-nowrap sm:order-none sm:ml-auto sm:w-auto">
+        <nav className="ml-auto flex min-w-0 items-center gap-4 overflow-x-auto text-nowrap">
           {links.map((link) => {
             const active = link.match(pathname);
             return (
@@ -47,7 +47,7 @@ export function SiteNav() {
                 className={cn(
                   "text-[11px] font-medium uppercase tracking-widest transition-colors",
                   active
-                    ? "text-accent"
+                    ? "text-gold"
                     : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200",
                 )}
               >
@@ -56,7 +56,6 @@ export function SiteNav() {
             );
           })}
         </nav>
-        <ModeToggle className="ml-auto sm:ml-0" />
       </div>
     </header>
   );

@@ -52,7 +52,7 @@ export function ChallengeButton({ postId }: { postId: string }) {
         type="button"
         onClick={() => void handleClick()}
         disabled={busy || !postId}
-        className="inline-flex h-9 items-center justify-center rounded-md border border-red-900/80 bg-red-950/60 px-3 text-xs font-medium uppercase tracking-widest text-red-300 transition-colors hover:bg-red-950 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex h-9 items-center justify-center rounded-md bg-accent px-3 text-xs font-medium uppercase tracking-widest text-accent-foreground transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
       >
         {busy ? "Challenging..." : "Challenge"}
       </button>

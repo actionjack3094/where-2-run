@@ -18,7 +18,7 @@ function sentenceCount(text: string) {
     .filter(Boolean).length;
 }
 
-export function TakeStanceModal() {
+export function TakeStanceModal({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
   const titleId = useId();
   const [open, setOpen] = useState(false);
@@ -132,7 +132,12 @@ export function TakeStanceModal() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex h-10 w-fit items-center justify-center rounded-md bg-accent px-4 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
+        className={cn(
+          "inline-flex items-center justify-center rounded-md font-medium text-accent-foreground transition-colors hover:bg-accent-hover",
+          compact
+            ? "h-9 bg-accent px-3 text-xs uppercase tracking-widest"
+            : "h-10 w-fit bg-accent px-4 text-sm",
+        )}
       >
         Take a Stance
       </button>

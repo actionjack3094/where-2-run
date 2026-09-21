@@ -29,7 +29,7 @@
   --font-display: var(--font-cinzel);
 }
 
-[data-app-mode="voter"] {
+[data-feed-role="voter"] {
   --accent: #1d4ed8;
   --accent-hover: #1e40af;
   --accent-foreground: #ffffff;
@@ -37,7 +37,7 @@
   --accent-ring: #60a5fa;
 }
 
-[data-app-mode="candidate"] {
+[data-feed-role="candidate"] {
   --accent: #be123c;
   --accent-hover: #9f1239;
   --accent-foreground: #ffffff;

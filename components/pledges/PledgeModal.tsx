@@ -114,7 +114,11 @@ export function PledgeModal({
           <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
             Stripe escrow
           </p>
-          <CardTitle id={titleId}>Donate $50 — {target.candidateName}</CardTitle>
+          <CardTitle id={titleId}>
+            {Number.isFinite(amount)
+              ? `Donate ${formatUsd(amount)} — ${target.candidateName}`
+              : `Donate — ${target.candidateName}`}
+          </CardTitle>
           <CardDescription>
             Authorize a card hold with Stripe. The pledge stays in escrow until capture — nothing
             is charged yet.

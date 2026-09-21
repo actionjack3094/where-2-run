@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Cinzel, Geist, Geist_Mono } from "next/font/google";
-import { AppShell } from "@/components/app-shell";
 import { PledgeHost } from "@/components/pledges/PledgeHost";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
@@ -34,13 +33,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} dark h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <AppShell>
-          <PledgeHost>
+        <PledgeHost>
+          <div className="flex min-h-full flex-1 flex-col">
             <SiteNav />
             {children}
             <SiteFooter />
-          </PledgeHost>
-        </AppShell>
+          </div>
+        </PledgeHost>
       </body>
     </html>
   );
