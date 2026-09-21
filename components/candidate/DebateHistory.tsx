@@ -5,7 +5,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { formatRelativeTime } from "@/lib/pledges";
 import { cn } from "@/lib/utils";
 import type { CandidateArenaMatch } from "@/lib/candidate-profile";
 
@@ -70,7 +69,7 @@ export function DebateHistory({ matches }: { matches: CandidateArenaMatch[] }) {
                       ? `vs ${match.opponentName}`
                       : "Open seat"}
                     {" · "}
-                    {formatRelativeTime(match.occurredAt)}
+                    <time dateTime={match.occurredAt}>{match.occurredAtLabel}</time>
                   </p>
                   <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
                     <div>

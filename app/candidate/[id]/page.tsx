@@ -12,10 +12,14 @@ import {
 } from "@/components/ui/card";
 import { loadPublicCandidate } from "@/lib/candidate-profile";
 
-export async function generateMetadata(
-  props: PageProps<"/candidate/[id]">,
-): Promise<Metadata> {
-  const { id } = await props.params;
+type CandidatePageProps = {
+  params: Promise<{ id: string }>;
+};
+
+export async function generateMetadata({
+  params,
+}: CandidatePageProps): Promise<Metadata> {
+  const { id } = await params;
   const { profile } = await loadPublicCandidate(id);
   const name = profile?.username;
 
@@ -27,8 +31,8 @@ export async function generateMetadata(
   };
 }
 
-export default async function CandidatePage(props: PageProps<"/candidate/[id]">) {
-  const { id } = await props.params;
+export default async function CandidatePage({ params }: CandidatePageProps) {
+  const { id } = await params;
   const { profile, error } = await loadPublicCandidate(id);
 
   return (

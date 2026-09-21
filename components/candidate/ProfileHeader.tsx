@@ -35,7 +35,7 @@ export function ProfileHeader({
             Public candidate
           </p>
           <h1 className="mt-2 flex items-center gap-2 font-display text-3xl font-semibold tracking-tight text-parchment sm:text-4xl">
-            <span className="min-w-0 truncate">{name}</span>
+            <span className="min-w-0 break-words">{name}</span>
             <VerificationBadge tier={verificationTier} size="lg" />
           </h1>
           <p className="mt-3 flex items-start gap-2 text-sm leading-6 text-zinc-400">

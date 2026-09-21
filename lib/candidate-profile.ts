@@ -14,7 +14,7 @@ import {
 } from "@/lib/civic-fencing";
 import { isMissingRelation } from "@/lib/coalitions";
 import { createAdminClient } from "@/lib/db/supabase-admin";
-import { parseAmount } from "@/lib/pledges";
+import { formatRelativeTime, parseAmount } from "@/lib/pledges";
 import type {
   CampaignPledge,
   DebateEvaluation,
@@ -47,6 +47,7 @@ export type CandidateArenaMatch = {
   status: string;
   opponentName: string | null;
   occurredAt: string;
+  occurredAtLabel: string;
   confidenceScore: number | null;
   primaryScore: number | null;
   evaluationStatus: string | null;
@@ -135,19 +136,17 @@ async function loadEscrowTotals(candidateId: string) {
     const admin = createAdminClient();
     const { data, error } = await admin
       .from("campaign_pledges")
-      .select("amount, stripe_setup_intent_id, status")
+      .select("amount")
       .eq("candidate_id", candidateId)
-      .eq("status", "pending");
+      .eq("status", "pending")
+      .not("stripe_setup_intent_id", "is", null);
 
     if (error) {
       if (isMissingRelation(error)) return { total: 0, count: 0 };
       throw new Error(error.message);
     }
 
-    const active = ((data ?? []) as Pick<
-      CampaignPledge,
-      "amount" | "stripe_setup_intent_id" | "status"
-    >[]).filter((row) => Boolean(row.stripe_setup_intent_id));
+    const active = ((data ?? []) as Pick<CampaignPledge, "amount">[]);
 
     return {
       total: active.reduce((sum, row) => sum + parseAmount(row.amount), 0),
@@ -254,13 +253,15 @@ export const loadPublicCandidate = cache(async (
         ? unwrapCandidate(debate.candidate_b)
         : unwrapCandidate(debate.candidate_a);
     const verdict = verdictFor(evaluation);
+    const occurredAt = debate.expires_at || debate.created_at;
 
     return {
       debateId: debate.id,
       topic: debate.topic,
       status: debate.status,
       opponentName: opponent?.username ?? null,
-      occurredAt: debate.expires_at || debate.created_at,
+      occurredAt,
+      occurredAtLabel: formatRelativeTime(occurredAt),
       confidenceScore: evaluation ? parseScore(evaluation.confidence_score) : null,
       primaryScore: evaluation ? parseScore(evaluation.primary_score) : null,
       evaluationStatus: evaluation?.status ?? null,
