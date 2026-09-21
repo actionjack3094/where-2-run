@@ -12,18 +12,27 @@ export type LeaderboardEntry = {
   electability: number;
   districtId: string | null;
   districtName: string | null;
+  verificationTier: string | null;
 };
 
 type StatsSlice = Pick<
   CandidateStats,
-  "id" | "username" | "debates_won" | "debates_played" | "target_district_id"
+  | "id"
+  | "username"
+  | "debates_won"
+  | "debates_played"
+  | "target_district_id"
+  | "verification_tier"
 >;
 
 export type ScoreSlice = Pick<
   ElectabilityScore,
   "user_id" | "district_id" | "electability_multiplier"
 > & {
-  users?: Pick<UserProfile, "id" | "username"> | Pick<UserProfile, "id" | "username">[] | null;
+  users?:
+    | Pick<UserProfile, "id" | "username" | "verification_tier">
+    | Pick<UserProfile, "id" | "username" | "verification_tier">[]
+    | null;
   districts?: Pick<District, "id" | "name"> | Pick<District, "id" | "name">[] | null;
 };
 
@@ -97,6 +106,7 @@ export function mergeLeaderboardEntries({
       electability: 0,
       districtId: district.id,
       districtName: district.name,
+      verificationTier: row.verification_tier ?? null,
     });
   }
 
@@ -117,6 +127,7 @@ export function mergeLeaderboardEntries({
             debates_won: current.wins,
             debates_played: current.wins + current.losses,
             target_district_id: current.districtId,
+            verification_tier: current.verificationTier ?? "unverified",
           }
         : undefined,
       row,
@@ -132,6 +143,7 @@ export function mergeLeaderboardEntries({
       electability,
       districtId: district.id,
       districtName: district.name,
+      verificationTier: user?.verification_tier ?? current?.verificationTier ?? null,
     });
   }
 

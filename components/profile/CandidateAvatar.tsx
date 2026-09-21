@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { VerificationBadge } from "@/components/verification/VerificationBadge";
 import { cn } from "@/lib/utils";
 
 const SIZE_CLASS = {
@@ -44,11 +45,13 @@ export function CandidateIdentity({
   username,
   size = "md",
   nameClassName,
+  verificationTier,
 }: {
   id: string;
   username: string;
   size?: keyof typeof SIZE_CLASS;
   nameClassName?: string;
+  verificationTier?: string | null;
 }) {
   return (
     <Link
@@ -56,13 +59,19 @@ export function CandidateIdentity({
       className="flex min-w-0 items-center gap-3 rounded-md outline-none transition-colors hover:text-gold focus-visible:ring-2 focus-visible:ring-gold/70"
     >
       <CandidateAvatar name={username} size={size} />
-      <span
-        className={cn(
-          "min-w-0 truncate font-display font-semibold tracking-tight text-parchment hover:text-gold",
-          nameClassName,
-        )}
-      >
-        {username}
+      <span className="flex min-w-0 items-center gap-1.5">
+        <span
+          className={cn(
+            "min-w-0 truncate font-display font-semibold tracking-tight text-parchment hover:text-gold",
+            nameClassName,
+          )}
+        >
+          {username}
+        </span>
+        <VerificationBadge
+          tier={verificationTier}
+          size={size === "lg" ? "lg" : "sm"}
+        />
       </span>
     </Link>
   );

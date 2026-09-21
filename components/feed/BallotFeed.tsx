@@ -10,14 +10,17 @@ import {
   TakeStanceModal,
 } from "@/components/TakeStanceModal";
 import { unwrapCandidate } from "@/lib/arena/display";
+import { ensureArenaUser } from "@/lib/arena/identity";
 import { supabase } from "@/lib/db/supabase";
 import { STORAGE_KEYS } from "@/lib/session";
+import { isMissingVerificationColumn, parseVerificationTier } from "@/lib/verification";
 import type {
   CivicPost,
   DebateCandidate,
   DebateWithCandidates,
   District,
   MatchedFeedPost,
+  VerificationTier,
 } from "@/types/database.types";
 
 const ACTIVE_DEBATE_STATUSES = ["matching", "active", "voting"] as const;
@@ -72,9 +75,31 @@ export function BallotFeed() {
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [stage, setStage] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
+  const [viewerTier, setViewerTier] = useState<VerificationTier>("unverified");
 
   async function loadFeed() {
     setError(null);
+
+    try {
+      const arenaUser = await ensureArenaUser();
+      const { data: viewerRow, error: viewerError } = await supabase
+        .from("users")
+        .select("verification_tier")
+        .eq("id", arenaUser.id)
+        .maybeSingle();
+
+      if (viewerError && !isMissingVerificationColumn(viewerError)) {
+        throw new Error(viewerError.message);
+      }
+
+      setViewerTier(
+        parseVerificationTier(
+          (viewerRow as { verification_tier?: string } | null)?.verification_tier,
+        ),
+      );
+    } catch {
+      setViewerTier("unverified");
+    }
 
     const { data: districtRows, error: districtError } = await supabase
       .from("districts")
@@ -334,6 +359,7 @@ export function BallotFeed() {
               candidateA={item.candidateA}
               candidateB={item.candidateB}
               votingOpen={item.votingOpen}
+              verificationTier={viewerTier}
             />
           ) : (
             <div className="mt-5 flex flex-wrap items-start gap-2">

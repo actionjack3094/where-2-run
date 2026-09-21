@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { CivicFence, CivicFenceNote } from "@/components/verification/CivicFence";
 import { ensureArenaUser } from "@/lib/arena/identity";
 import { supabase } from "@/lib/db/supabase";
 import { cn } from "@/lib/utils";
+import { CIVIC_FENCE_HINT, meetsVerificationTier } from "@/lib/verification";
 
 const LIKES_KEY = "where2run.feedLikes";
 
@@ -27,11 +29,13 @@ export function VoterPostActions({
   candidateA,
   candidateB,
   votingOpen,
+  verificationTier,
 }: {
   debateId: string;
   candidateA: CandidatePreview;
   candidateB: CandidatePreview;
   votingOpen: boolean;
+  verificationTier?: string | null;
 }) {
   const [liked, setLiked] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
@@ -40,6 +44,7 @@ export function VoterPostActions({
   const [votingFor, setVotingFor] = useState<"a" | "b" | null>(null);
   const [votedFor, setVotedFor] = useState<"a" | "b" | null>(null);
   const [voteError, setVoteError] = useState<string | null>(null);
+  const fenced = !meetsVerificationTier(verificationTier, "voter_verified");
 
   useEffect(() => {
     setLiked(readLikedIds().includes(debateId));
@@ -56,6 +61,7 @@ export function VoterPostActions({
 
   function submitComment(event: React.FormEvent) {
     event.preventDefault();
+    if (fenced) return;
     const next = comment.trim();
     if (!next) return;
     setComments((current) => [...current, next]);
@@ -64,7 +70,7 @@ export function VoterPostActions({
   }
 
   async function handleVote(side: "a" | "b") {
-    if (votingFor || votedFor || !votingOpen) return;
+    if (fenced || votingFor || votedFor || !votingOpen) return;
     setVotingFor(side);
     setVoteError(null);
     try {
@@ -109,44 +115,58 @@ export function VoterPostActions({
         >
           {liked ? "Liked" : "Like"}
         </button>
-        <button
-          type="button"
-          aria-expanded={commentOpen}
-          onClick={() => setCommentOpen((open) => !open)}
-          className="inline-flex h-9 items-center justify-center rounded-md border border-accent/50 bg-zinc-800 px-3 text-xs font-medium uppercase tracking-widest text-parchment transition-colors hover:border-accent hover:bg-zinc-700"
-        >
-          Comment
-        </button>
+        <CivicFence fenced={fenced}>
+          <button
+            type="button"
+            aria-expanded={commentOpen}
+            aria-disabled={fenced}
+            title={fenced ? CIVIC_FENCE_HINT : undefined}
+            onClick={() => {
+              if (fenced) return;
+              setCommentOpen((open) => !open);
+            }}
+            disabled={fenced}
+            className="inline-flex h-9 items-center justify-center rounded-md border border-accent/50 bg-zinc-800 px-3 text-xs font-medium uppercase tracking-widest text-parchment transition-colors hover:border-accent hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Comment
+          </button>
+        </CivicFence>
         {canVote ? (
           <>
-            <button
-              type="button"
-              onClick={() => void handleVote("a")}
-              disabled={Boolean(votingFor || votedFor)}
-              aria-pressed={votedFor === "a"}
-              className={cn(
-                "inline-flex h-9 items-center justify-center rounded-md border px-3 text-xs font-medium uppercase tracking-widest transition-colors disabled:cursor-not-allowed disabled:opacity-60",
-                votedFor === "a"
-                  ? "border-accent bg-accent text-accent-foreground"
-                  : "border-accent/50 bg-zinc-800 text-parchment hover:border-accent hover:bg-zinc-700",
-              )}
-            >
-              {votingFor === "a" ? "Voting…" : `Vote ${candidateA?.username ?? "A"}`}
-            </button>
-            <button
-              type="button"
-              onClick={() => void handleVote("b")}
-              disabled={Boolean(votingFor || votedFor)}
-              aria-pressed={votedFor === "b"}
-              className={cn(
-                "inline-flex h-9 items-center justify-center rounded-md border px-3 text-xs font-medium uppercase tracking-widest transition-colors disabled:cursor-not-allowed disabled:opacity-60",
-                votedFor === "b"
-                  ? "border-accent bg-accent text-accent-foreground"
-                  : "border-accent/50 bg-zinc-800 text-parchment hover:border-accent hover:bg-zinc-700",
-              )}
-            >
-              {votingFor === "b" ? "Voting…" : `Vote ${candidateB?.username ?? "B"}`}
-            </button>
+            <CivicFence fenced={fenced}>
+              <button
+                type="button"
+                onClick={() => void handleVote("a")}
+                disabled={fenced || Boolean(votingFor || votedFor)}
+                aria-pressed={votedFor === "a"}
+                title={fenced ? CIVIC_FENCE_HINT : undefined}
+                className={cn(
+                  "inline-flex h-9 items-center justify-center rounded-md border px-3 text-xs font-medium uppercase tracking-widest transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                  votedFor === "a"
+                    ? "border-accent bg-accent text-accent-foreground"
+                    : "border-accent/50 bg-zinc-800 text-parchment hover:border-accent hover:bg-zinc-700",
+                )}
+              >
+                {votingFor === "a" ? "Voting…" : `Vote ${candidateA?.username ?? "A"}`}
+              </button>
+            </CivicFence>
+            <CivicFence fenced={fenced}>
+              <button
+                type="button"
+                onClick={() => void handleVote("b")}
+                disabled={fenced || Boolean(votingFor || votedFor)}
+                aria-pressed={votedFor === "b"}
+                title={fenced ? CIVIC_FENCE_HINT : undefined}
+                className={cn(
+                  "inline-flex h-9 items-center justify-center rounded-md border px-3 text-xs font-medium uppercase tracking-widest transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                  votedFor === "b"
+                    ? "border-accent bg-accent text-accent-foreground"
+                    : "border-accent/50 bg-zinc-800 text-parchment hover:border-accent hover:bg-zinc-700",
+                )}
+              >
+                {votingFor === "b" ? "Voting…" : `Vote ${candidateB?.username ?? "B"}`}
+              </button>
+            </CivicFence>
           </>
         ) : (
           <Link
@@ -158,9 +178,11 @@ export function VoterPostActions({
         )}
       </div>
 
+      {fenced ? <CivicFenceNote /> : null}
+
       {voteError ? <p className="text-xs text-red-300">{voteError}</p> : null}
 
-      {commentOpen ? (
+      {commentOpen && !fenced ? (
         <form className="flex flex-col gap-2" onSubmit={submitComment}>
           <textarea
             value={comment}

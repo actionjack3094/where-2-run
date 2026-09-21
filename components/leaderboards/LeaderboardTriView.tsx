@@ -94,11 +94,13 @@ export function LeaderboardTriView() {
         supabase.from("districts").select("id, name, zip_code").order("name"),
         supabase
           .from("candidate_stats")
-          .select("id, username, debates_won, debates_played, target_district_id"),
+          .select(
+            "id, username, debates_won, debates_played, target_district_id, verification_tier",
+          ),
         supabase
           .from("electability_scores")
           .select(
-            "user_id, district_id, electability_multiplier, users(id, username), districts(id, name)",
+            "user_id, district_id, electability_multiplier, users(id, username, verification_tier), districts(id, name)",
           )
           .order("electability_multiplier", { ascending: false }),
         supabase
@@ -120,7 +122,12 @@ export function LeaderboardTriView() {
       const districts = (districtRows ?? []) as Pick<District, "id" | "name" | "zip_code">[];
       const stats = (statsRows ?? []) as Pick<
         CandidateStats,
-        "id" | "username" | "debates_won" | "debates_played" | "target_district_id"
+        | "id"
+        | "username"
+        | "debates_won"
+        | "debates_played"
+        | "target_district_id"
+        | "verification_tier"
       >[];
       const scores = (scoreRows ?? []) as ScoreSlice[];
       const debates = (debateRows ?? []) as Pick<
@@ -303,6 +310,7 @@ function RankingTable({
                         username={entry.username}
                         size="sm"
                         nameClassName="text-base"
+                        verificationTier={entry.verificationTier}
                       />
                       {showDistrict && entry.districtName ? (
                         <p className="pl-11 text-[11px] uppercase tracking-widest text-zinc-500">

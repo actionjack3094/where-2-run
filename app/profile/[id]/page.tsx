@@ -13,7 +13,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { CoalitionBadge } from "@/components/coalitions/CoalitionBadge";
+import { VerificationBadge } from "@/components/verification/VerificationBadge";
 import { isUuid } from "@/lib/arena/display";
+import { hasTrustBadge, verificationLabel } from "@/lib/verification";
 import { loadActiveCoalitionsForCandidate } from "@/lib/coalitions";
 import {
   formatElectability,
@@ -93,6 +95,16 @@ const loadPublicProfile = cache(async (id: string): Promise<{
   }
 
   const stats = statsRow as CandidateStats;
+
+  const { data: userRow } = await supabase
+    .from("users")
+    .select("verification_tier")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (userRow?.verification_tier) {
+    stats.verification_tier = userRow.verification_tier;
+  }
   const { data: scoreRows, error: scoreError } = await supabase
     .from("electability_scores")
     .select("*, districts(*)")
@@ -207,15 +219,20 @@ function ReadyProfile({ profile }: { profile: PublicProfile }) {
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
               Public Profile
             </p>
-            <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-parchment">
-              {stats.username}
+            <h1 className="mt-2 flex items-center gap-2 font-display text-3xl font-semibold tracking-tight text-parchment">
+              <span className="min-w-0 truncate">{stats.username}</span>
+              <VerificationBadge tier={stats.verification_tier} size="lg" />
             </h1>
             <p className="mt-2 text-sm leading-6 text-zinc-400">
               Debate record{" "}
               <span className="font-medium tabular-nums text-parchment">
                 {formatRecord(record.wins, record.losses)}
               </span>
-              {stats.is_verified ? " · Verified" : null}
+              {hasTrustBadge(stats.verification_tier)
+                ? ` · ${verificationLabel(stats.verification_tier)}`
+                : stats.is_verified
+                  ? " · Verified"
+                  : null}
             </p>
             {coalitions.length > 0 ? (
               <div className="mt-3 flex flex-wrap gap-2">
