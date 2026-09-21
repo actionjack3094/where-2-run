@@ -143,6 +143,13 @@ Deno.serve(async (req) => {
 
     if (userError) throw userError;
 
+    try {
+      await admin.rpc("complete_expired_debates");
+      await admin.rpc("apply_debate_elo", { debate_uuid: record.debate_id });
+    } catch (eloError) {
+      console.error("ELO update failed after grading", eloError);
+    }
+
     return json({
       ok: true,
       author_id: author.id,

@@ -12,16 +12,33 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ensureArenaUser } from "@/lib/arena/identity";
+import { ELO_BRACKET, inEloBracket, parseElo } from "@/lib/arena/elo";
 import { getExpiryState, TOTAL_ROUNDS } from "@/lib/arena/time";
 import { supabase } from "@/lib/db/supabase";
 import { STORAGE_KEYS } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import type {
+  CandidateStats,
   DebateCandidate,
   DebateStatus,
   DebateWithCandidates,
   District,
 } from "@/types/database.types";
+
+type RankedDebate = DebateWithCandidates & {
+  opponentElo: number;
+  inBracket: boolean;
+  openChallenge: boolean;
+};
+
+function opponentId(debate: DebateWithCandidates, viewerId: string | null) {
+  if (viewerId && debate.candidate_a_id === viewerId) return debate.candidate_b_id;
+  return debate.candidate_a_id;
+}
+
+function isOpenChallenge(debate: DebateWithCandidates) {
+  return debate.status === "matching" || !debate.candidate_b_id;
+}
 
 const ACTIVE_STATUSES: DebateStatus[] = ["matching", "active", "voting"];
 
@@ -43,9 +60,10 @@ function statusLabel(status: string, expired: boolean) {
 export default function ArenaPage() {
   const router = useRouter();
   const [district, setDistrict] = useState<District | null>(null);
-  const [debates, setDebates] = useState<DebateWithCandidates[]>([]);
+  const [debates, setDebates] = useState<RankedDebate[]>([]);
   const [stage, setStage] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
+  const [viewerElo, setViewerElo] = useState(1200);
   const [modalOpen, setModalOpen] = useState(false);
 
   async function loadFeed() {
@@ -68,18 +86,47 @@ export default function ArenaPage() {
     window.sessionStorage.setItem(STORAGE_KEYS.districtId, selected.id);
     setDistrict(selected);
 
-    const { data, error: debateError } = await supabase
-      .from("debates")
-      .select(
-        `
+    const viewer = await ensureArenaUser().catch(() => null);
+    const { data: selfStats } = viewer
+      ? await supabase
+          .from("candidate_stats")
+          .select("id, elo_rating")
+          .eq("id", viewer.id)
+          .maybeSingle()
+      : { data: null };
+    const myElo = parseElo(
+      (selfStats as Pick<CandidateStats, "elo_rating"> | null)?.elo_rating,
+    );
+    setViewerElo(myElo);
+
+    const withEloSelect = `
+        *,
+        candidate_a:users!debates_candidate_a_id_fkey ( id, username, elo_rating ),
+        candidate_b:users!debates_candidate_b_id_fkey ( id, username, elo_rating )
+      `;
+    const withoutEloSelect = `
         *,
         candidate_a:users!debates_candidate_a_id_fkey ( id, username ),
         candidate_b:users!debates_candidate_b_id_fkey ( id, username )
-      `,
-      )
+      `;
+
+    let { data, error: debateError } = await supabase
+      .from("debates")
+      .select(withEloSelect)
       .eq("district_id", selected.id)
       .in("status", ACTIVE_STATUSES)
       .order("created_at", { ascending: false });
+
+    if (debateError) {
+      const fallback = await supabase
+        .from("debates")
+        .select(withoutEloSelect)
+        .eq("district_id", selected.id)
+        .in("status", ACTIVE_STATUSES)
+        .order("created_at", { ascending: false });
+      data = fallback.data;
+      debateError = fallback.error;
+    }
 
     if (debateError) {
       setError(debateError.message);
@@ -87,7 +134,62 @@ export default function ArenaPage() {
       return;
     }
 
-    setDebates((data ?? []) as DebateWithCandidates[]);
+    const rows = (data ?? []) as DebateWithCandidates[];
+    const viewerId = viewer?.id ?? null;
+    const opponentIds = [
+      ...new Set(
+        rows
+          .map((debate) => opponentId(debate, viewerId))
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+
+    const bracketQuery = opponentIds.length
+      ? await supabase
+          .from("candidate_stats")
+          .select("id, elo_rating")
+          .in("id", opponentIds)
+          .gte("elo_rating", myElo - ELO_BRACKET)
+          .lte("elo_rating", myElo + ELO_BRACKET)
+      : { data: [] as Pick<CandidateStats, "id" | "elo_rating">[], error: null };
+
+    const statsRows = bracketQuery.error ? [] : (bracketQuery.data ?? []);
+
+    const bracketIds = new Set(
+      (statsRows as Pick<CandidateStats, "id" | "elo_rating">[]).map((row) => row.id),
+    );
+
+    const ranked: RankedDebate[] = rows
+      .map((debate) => {
+        const candidateA = unwrapCandidate(debate.candidate_a);
+        const candidateB = unwrapCandidate(debate.candidate_b);
+        const oppId = opponentId(debate, viewerId);
+        const fromJoin =
+          oppId && candidateA?.id === oppId
+            ? candidateA.elo_rating
+            : oppId && candidateB?.id === oppId
+              ? candidateB.elo_rating
+              : undefined;
+        const elo = parseElo(fromJoin);
+        const openChallenge = isOpenChallenge(debate);
+        return {
+          ...debate,
+          opponentElo: elo,
+          openChallenge,
+          inBracket: openChallenge
+            ? Boolean(oppId && (bracketIds.has(oppId) || inEloBracket(myElo, elo)))
+            : true,
+        };
+      })
+      .sort((left, right) => {
+        if (left.inBracket !== right.inBracket) return left.inBracket ? -1 : 1;
+        if (left.openChallenge !== right.openChallenge) {
+          return left.openChallenge ? -1 : 1;
+        }
+        return Date.parse(right.created_at) - Date.parse(left.created_at);
+      });
+
+    setDebates(ranked);
     setStage("ready");
   }
 
@@ -108,7 +210,7 @@ export default function ArenaPage() {
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">Arena</h1>
           <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
             {district
-              ? `Active debates in ${district.name}.`
+              ? `Active debates in ${district.name}. Your ELO ${viewerElo} · matching ±${ELO_BRACKET}.`
               : "Asynchronous debates for your selected district."}
           </p>
         </div>
@@ -149,39 +251,27 @@ export default function ArenaPage() {
       )}
 
       {stage === "ready" && debates.length > 0 && (
-        <section className="mt-10 flex flex-col gap-3">
-          {debates.map((debate) => {
-            const candidateA = unwrapCandidate(debate.candidate_a);
-            const candidateB = unwrapCandidate(debate.candidate_b);
-            const expiry = getExpiryState(debate.expires_at);
-            return (
-              <Link key={debate.id} href={`/arena/${debate.id}`} className="block">
-                <Card className="transition-colors hover:border-zinc-400 dark:hover:border-zinc-500">
-                  <CardHeader className="gap-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge>{statusLabel(debate.status, expiry.tone === "expired")}</Badge>
-                      <Badge>
-                        Round {Math.min(debate.current_round, TOTAL_ROUNDS)} of {TOTAL_ROUNDS}
-                      </Badge>
-                      <Badge
-                        className={cn(
-                          expiry.tone === "expired" && "border-zinc-950 text-zinc-950 dark:border-zinc-50 dark:text-zinc-50",
-                          expiry.tone === "soon" && "border-amber-500 text-amber-700 dark:text-amber-400",
-                        )}
-                      >
-                        {expiry.label}
-                      </Badge>
-                    </div>
-                    <CardTitle className="text-lg leading-snug">{debate.topic}</CardTitle>
-                    <CardDescription>
-                      {candidateA?.username ?? "Open seat"} vs {candidateB?.username ?? "Open seat"}
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              </Link>
-            );
-          })}
-        </section>
+        <div className="mt-10 flex flex-col gap-10">
+          <DebateGroup
+            title="Open challenges"
+            description={`Opponents within ${ELO_BRACKET} ELO of your rating.`}
+            empty="No open challenges in your ELO bracket yet."
+            debates={debates.filter((debate) => debate.openChallenge && debate.inBracket)}
+          />
+          <DebateGroup
+            title="Live floor"
+            description="Debates already seated in this district."
+            empty="No seated debates on the floor."
+            debates={debates.filter((debate) => !debate.openChallenge)}
+          />
+          <DebateGroup
+            title="Wider field"
+            description="Open challenges outside your 100-point bracket."
+            empty=""
+            debates={debates.filter((debate) => debate.openChallenge && !debate.inBracket)}
+            hideWhenEmpty
+          />
+        </div>
       )}
 
       {modalOpen && (
@@ -195,6 +285,88 @@ export default function ArenaPage() {
         />
       )}
     </main>
+  );
+}
+
+function DebateGroup({
+  title,
+  description,
+  empty,
+  debates,
+  hideWhenEmpty = false,
+}: {
+  title: string;
+  description: string;
+  empty: string;
+  debates: RankedDebate[];
+  hideWhenEmpty?: boolean;
+}) {
+  if (hideWhenEmpty && debates.length === 0) return null;
+
+  return (
+    <section>
+      <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
+        Matchmaking
+      </p>
+      <h2 className="mt-2 text-xl font-semibold tracking-tight">{title}</h2>
+      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{description}</p>
+      {debates.length === 0 ? (
+        <p className="mt-4 text-sm text-zinc-500">{empty}</p>
+      ) : (
+        <div className="mt-4 flex flex-col gap-3">
+          {debates.map((debate) => (
+            <DebateCard key={debate.id} debate={debate} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function DebateCard({ debate }: { debate: RankedDebate }) {
+  const candidateA = unwrapCandidate(debate.candidate_a);
+  const candidateB = unwrapCandidate(debate.candidate_b);
+  const expiry = getExpiryState(debate.expires_at);
+
+  return (
+    <Link href={`/arena/${debate.id}`} className="block">
+      <Card className="transition-colors hover:border-zinc-400 dark:hover:border-zinc-500">
+        <CardHeader className="gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge>{statusLabel(debate.status, expiry.tone === "expired")}</Badge>
+            <Badge>
+              Round {Math.min(debate.current_round, TOTAL_ROUNDS)} of {TOTAL_ROUNDS}
+            </Badge>
+            <Badge
+              className={cn(
+                expiry.tone === "expired" &&
+                  "border-zinc-950 text-zinc-950 dark:border-zinc-50 dark:text-zinc-50",
+                expiry.tone === "soon" && "border-amber-500 text-amber-700 dark:text-amber-400",
+              )}
+            >
+              {expiry.label}
+            </Badge>
+            {debate.openChallenge ? (
+              <Badge
+                className={
+                  debate.inBracket
+                    ? "border-gold text-gold"
+                    : "border-zinc-700 text-zinc-500"
+                }
+              >
+                {debate.inBracket ? "ELO match" : "Outside bracket"} · {debate.opponentElo}
+              </Badge>
+            ) : (
+              <Badge>ELO {debate.opponentElo}</Badge>
+            )}
+          </div>
+          <CardTitle className="text-lg leading-snug">{debate.topic}</CardTitle>
+          <CardDescription>
+            {candidateA?.username ?? "Open seat"} vs {candidateB?.username ?? "Open seat"}
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    </Link>
   );
 }
 

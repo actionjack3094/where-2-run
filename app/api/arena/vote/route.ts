@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUserId } from "@/lib/arena/auth";
+import { settleExpiredDebateElo } from "@/lib/arena/apply-elo";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 
 export async function POST(request: Request) {
@@ -74,6 +75,12 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "You already voted in this debate." }, { status: 409 });
       }
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    try {
+      await settleExpiredDebateElo(admin, matchId);
+    } catch (eloError) {
+      console.error("ELO update failed after vote", eloError);
     }
 
     return NextResponse.json({ ok: true }, { status: 200 });

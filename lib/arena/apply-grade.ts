@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { settleExpiredDebateElo } from "@/lib/arena/apply-elo";
 import { formatVector, gradeDebateText } from "@/lib/ideology/grade";
 import type { Database } from "@/types/database.types";
 
@@ -17,6 +18,7 @@ export async function applyDebateGrade(
   record: ArgumentRecord,
 ) {
   if (record.graded_at) {
+    await settleExpiredDebateElo(admin, record.debate_id);
     return { skipped: "already_graded" as const };
   }
 
@@ -30,7 +32,10 @@ export async function applyDebateGrade(
     .maybeSingle();
 
   if (claimError) throw claimError;
-  if (!claimed) return { skipped: "already_graded" as const };
+  if (!claimed) {
+    await settleExpiredDebateElo(admin, record.debate_id);
+    return { skipped: "already_graded" as const };
+  }
 
   const [{ data: author, error: authorError }, { data: debate, error: debateError }] =
     await Promise.all([
@@ -41,7 +46,7 @@ export async function applyDebateGrade(
         .maybeSingle(),
       admin
         .from("debates")
-        .select("id, topic, district_id")
+        .select("id, topic, district_id, status, expires_at, candidate_a_id, candidate_b_id")
         .eq("id", record.debate_id)
         .maybeSingle(),
     ]);
@@ -78,6 +83,12 @@ export async function applyDebateGrade(
     .eq("id", author.id);
 
   if (userError) throw userError;
+
+  try {
+    await settleExpiredDebateElo(admin, record.debate_id);
+  } catch (eloError) {
+    console.error("ELO update failed after grading", eloError);
+  }
 
   return {
     skipped: null,
