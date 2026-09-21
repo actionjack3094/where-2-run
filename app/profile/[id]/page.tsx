@@ -12,7 +12,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { CoalitionBadge } from "@/components/coalitions/CoalitionBadge";
 import { isUuid } from "@/lib/arena/display";
+import { loadActiveCoalitionsForCandidate } from "@/lib/coalitions";
 import {
   formatElectability,
   formatMatchPct,
@@ -22,7 +24,7 @@ import {
   type ElectabilityMatch,
 } from "@/lib/electability";
 import { formatRecord, recordFromStats } from "@/lib/leaderboard";
-import type { CandidateStats, District, ElectabilityScore } from "@/types/database.types";
+import type { CandidateStats, Coalition, District, ElectabilityScore } from "@/types/database.types";
 
 type ProfileParams = { id: string };
 
@@ -35,6 +37,7 @@ type PublicProfile = {
   record: { wins: number; losses: number };
   matches: ElectabilityMatch[];
   filedDistrict: District | null;
+  coalitions: Coalition[];
 };
 
 async function createSupabase() {
@@ -133,12 +136,18 @@ const loadPublicProfile = cache(async (id: string): Promise<{
     filedDistrict = (districtRow as District | null) ?? null;
   }
 
+  const { coalitions, error: coalitionError } = await loadActiveCoalitionsForCandidate(id);
+  if (coalitionError) {
+    return { profile: null, error: coalitionError };
+  }
+
   return {
     profile: {
       stats,
       record: recordFromStats(stats),
       matches: rankMatches(matches).slice(0, 5),
       filedDistrict,
+      coalitions,
     },
     error: null,
   };
@@ -187,7 +196,7 @@ export default async function PublicProfilePage({
 }
 
 function ReadyProfile({ profile }: { profile: PublicProfile }) {
-  const { stats, record, matches, filedDistrict } = profile;
+  const { stats, record, matches, filedDistrict, coalitions } = profile;
 
   return (
     <>
@@ -208,6 +217,13 @@ function ReadyProfile({ profile }: { profile: PublicProfile }) {
               </span>
               {stats.is_verified ? " · Verified" : null}
             </p>
+            {coalitions.length > 0 ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {coalitions.map((coalition) => (
+                  <CoalitionBadge key={coalition.id} name={coalition.name} size="sm" />
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
         <BackCandidateButton
@@ -261,6 +277,37 @@ function ReadyProfile({ profile }: { profile: PublicProfile }) {
               <MatchRow key={match.id} match={match} rank={index + 1} />
             ))}
           </div>
+        )}
+      </section>
+
+      <section className="mt-14">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+          Alliances
+        </p>
+        <h2 className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment">
+          Coalitions & Endorsements
+        </h2>
+        <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+          Electoral caucuses this campaign has seated, shown as gold endorsements.
+        </p>
+        {coalitions.length === 0 ? (
+          <p className="mt-8 text-sm leading-6 text-zinc-400">
+            This campaign has not seated in a coalition yet.
+          </p>
+        ) : (
+          <ul className="mt-6 flex flex-col gap-3">
+            {coalitions.map((coalition) => (
+              <li
+                key={coalition.id}
+                className="rounded-xl border border-gold/50 bg-zinc-900 p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)]"
+              >
+                <CoalitionBadge name={coalition.name} />
+                <p className="mt-3 text-sm leading-6 text-zinc-400">
+                  {coalition.charter_statement}
+                </p>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
     </>

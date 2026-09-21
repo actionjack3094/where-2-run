@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BallotRoadmap } from "@/components/campaign/BallotRoadmap";
 import { MatchedElections } from "@/components/campaign/MatchedElections";
@@ -96,6 +97,12 @@ export default function MyCampaignPage() {
             One municipal question at a time. Endorse, oppose, or skip — the deck
             loops without end.
           </p>
+          <Link
+            href="/my-campaign/coalitions"
+            className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+          >
+            Coalition Hub
+          </Link>
         </header>
 
         <p className="mt-8 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
@@ -177,6 +184,25 @@ export default function MyCampaignPage() {
         className="mx-auto w-full max-w-5xl px-6 pb-16"
       >
         <div className="border-t border-gold/30 pt-12">
+          <div className="mb-12 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+                Alliances
+              </p>
+              <h2 className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment">
+                Coalitions & Endorsements
+              </h2>
+              <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+                Charter a caucus and invite aligned campaigns across districts.
+              </p>
+            </div>
+            <Link
+              href="/my-campaign/coalitions"
+              className="inline-flex h-12 shrink-0 items-center justify-center rounded-md bg-gold-strong px-5 font-display text-sm font-semibold uppercase tracking-[0.18em] text-zinc-950 transition-colors hover:bg-gold"
+            >
+              Open Coalition Hub
+            </Link>
+          </div>
           <BallotRoadmap />
           <MatchedElections />
         </div>

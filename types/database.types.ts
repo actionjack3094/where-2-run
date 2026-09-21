@@ -142,6 +142,24 @@ export interface CivicPost {
   created_at: string;
 }
 
+export type CoalitionMemberStatus = "pending" | "active";
+
+export interface Coalition {
+  id: string;
+  name: string;
+  charter_statement: string;
+  founder_id: string;
+  created_at: string;
+}
+
+export interface CoalitionMember {
+  id: string;
+  coalition_id: string;
+  candidate_id: string;
+  status: CoalitionMemberStatus | string;
+  created_at: string;
+}
+
 export interface MatchedFeedPost {
   post_id?: string;
   id?: string;
@@ -349,6 +367,43 @@ export interface Database {
             columns: ["district_id"];
             isOneToOne: false;
             referencedRelation: "districts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      coalitions: {
+        Row: Coalition;
+        Insert: Partial<Coalition> &
+          Pick<Coalition, "name" | "charter_statement" | "founder_id">;
+        Update: Partial<Coalition>;
+        Relationships: [
+          {
+            foreignKeyName: "coalitions_founder_id_fkey";
+            columns: ["founder_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      coalition_members: {
+        Row: CoalitionMember;
+        Insert: Partial<CoalitionMember> &
+          Pick<CoalitionMember, "coalition_id" | "candidate_id">;
+        Update: Partial<CoalitionMember>;
+        Relationships: [
+          {
+            foreignKeyName: "coalition_members_coalition_id_fkey";
+            columns: ["coalition_id"];
+            isOneToOne: false;
+            referencedRelation: "coalitions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "coalition_members_candidate_id_fkey";
+            columns: ["candidate_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
             referencedColumns: ["id"];
           },
         ];
