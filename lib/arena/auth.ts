@@ -42,3 +42,9 @@ export async function requireAuthenticatedUserId(request: Request) {
 
   return headerUser?.id ?? null;
 }
+
+export async function requireActionUserId(accessToken?: string | null) {
+  const headers = new Headers();
+  if (accessToken) headers.set("authorization", `Bearer ${accessToken}`);
+  return requireAuthenticatedUserId(new Request("http://localhost/action", { headers }));
+}
