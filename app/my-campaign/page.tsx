@@ -1,12 +1,45 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArenaProvingGround } from "@/components/campaign/ArenaProvingGround";
 import { MatchedElections } from "@/components/campaign/MatchedElections";
+import { getServerUser } from "@/lib/db/supabase-server";
+import { loadWarRoom } from "@/lib/war-room";
 import { BallotAccessRoadmap } from "./components/BallotAccessRoadmap";
+import { EscrowTable } from "./components/EscrowTable";
+import { MatchmakerFeed } from "./components/MatchmakerFeed";
+import { WarRoomMetrics } from "./components/WarRoomMetrics";
 import { IdeologicalEngine } from "./ideological-engine";
 
-export default function MyCampaignPage() {
+export default async function MyCampaignPage() {
+  const user = await getServerUser();
+  if (!user) {
+    redirect("/onboarding");
+  }
+
+  const { metrics, escrow } = await loadWarRoom(user.id);
+
   return (
     <main className="flex min-h-full w-full flex-1 flex-col overflow-x-hidden bg-zinc-950 text-zinc-100">
+      <section className="mx-auto w-full max-w-5xl px-6 pt-10">
+        <header>
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+            Private desk
+          </p>
+          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment">
+            War Room
+          </h1>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+            Escrow, ELO, and the three districts whose median voter sits closest
+            to this ticket.
+          </p>
+        </header>
+        <div className="mt-8">
+          <WarRoomMetrics metrics={metrics} />
+        </div>
+        <MatchmakerFeed />
+        <EscrowTable rows={escrow} />
+      </section>
+
       <IdeologicalEngine />
 
       <section

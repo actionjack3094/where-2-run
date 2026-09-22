@@ -1,13 +1,20 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { getServerUser } from "@/lib/db/supabase-server";
 
 export const metadata: Metadata = {
-  title: "My Campaign · WHERE 2 RUN",
+  title: "War Room · WHERE 2 RUN",
   description:
-    "Take a stance, verify identity, file for ballot access, charter coalitions, and rank the seats you qualify to enter.",
+    "Private campaign desk: escrow raised, locked ELO, matched districts, and uncaptured SetupIntents.",
 };
 
-export default function MyCampaignLayout({
+export default async function MyCampaignLayout({
   children,
 }: LayoutProps<"/my-campaign">) {
+  const user = await getServerUser();
+  if (!user) {
+    redirect("/onboarding");
+  }
+
   return children;
 }
