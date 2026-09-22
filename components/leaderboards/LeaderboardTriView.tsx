@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BackCandidateButton } from "@/components/pledges/BackCandidateButton";
 import { CandidateIdentity } from "@/components/profile/CandidateAvatar";
@@ -15,6 +16,11 @@ import {
   type ScoreSlice,
 } from "@/lib/leaderboard";
 import { STORAGE_KEYS } from "@/lib/session";
+import {
+  ELECTION_LINK_COLUMNS,
+  resolveElectionLink,
+  type ElectionLinkRow,
+} from "@/lib/election-links";
 import type { CandidateStats, Debate, District, UserProfile } from "@/types/database.types";
 
 type BoardId = "contests" | "ballot" | "national";
@@ -85,6 +91,7 @@ export function LeaderboardTriView() {
         { data: statsRows, error: statsError },
         { data: scoreRows, error: scoreError },
         { data: debateRows, error: debateError },
+        { data: electionRows },
       ] = await Promise.all([
         supabase
           .from("users")
@@ -107,6 +114,7 @@ export function LeaderboardTriView() {
           .from("debates")
           .select("district_id, candidate_a_id, candidate_b_id")
           .or(`candidate_a_id.eq.${arenaUser.id},candidate_b_id.eq.${arenaUser.id}`),
+        supabase.from("elections").select(ELECTION_LINK_COLUMNS),
       ]);
 
       if (profileError) throw new Error(profileError.message);
@@ -134,6 +142,7 @@ export function LeaderboardTriView() {
         Debate,
         "district_id" | "candidate_a_id" | "candidate_b_id"
       >[];
+      const elections = (electionRows ?? []) as ElectionLinkRow[];
 
       const home =
         districts.find((entry) => entry.id === storedDistrictId) ??
@@ -203,9 +212,9 @@ export function LeaderboardTriView() {
         .slice(0, NATIONAL_STANDING_LIMIT);
 
       setBoards({
-        contests,
-        ballot,
-        national,
+        contests: attachElectionLinks(contests, elections),
+        ballot: attachElectionLinks(ballot, elections),
+        national: attachElectionLinks(national, elections),
         homeDistrictName: home?.name ?? null,
       });
       setStage("ready");
@@ -254,6 +263,21 @@ export function LeaderboardTriView() {
       ))}
     </div>
   );
+}
+
+function attachElectionLinks(
+  entries: LeaderboardEntry[],
+  elections: ElectionLinkRow[],
+): LeaderboardEntry[] {
+  return entries.map((entry) => {
+    const link = resolveElectionLink(elections, { districtId: entry.districtId });
+    if (!link) return { ...entry, electionSlug: null };
+    return {
+      ...entry,
+      electionSlug: link.slug,
+      districtName: link.officeName,
+    };
+  });
 }
 
 function RankingTable({
@@ -312,7 +336,14 @@ function RankingTable({
                         nameClassName="text-base"
                         verificationTier={entry.verificationTier}
                       />
-                      {showDistrict && entry.districtName ? (
+                      {showDistrict && entry.districtName && entry.electionSlug ? (
+                        <Link
+                          href={`/elections/${entry.electionSlug}`}
+                          className="block pl-11 text-[11px] uppercase tracking-widest text-zinc-500 transition-colors hover:text-gold"
+                        >
+                          {entry.districtName}
+                        </Link>
+                      ) : showDistrict && entry.districtName ? (
                         <p className="pl-11 text-[11px] uppercase tracking-widest text-zinc-500">
                           {entry.districtName}
                         </p>

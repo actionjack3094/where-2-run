@@ -138,7 +138,7 @@ const DEBATE_SELECT_MINIMAL = `
   candidate_b:users!debates_candidate_b_id_fkey ( id, username, elo_rating )
 `;
 
-function mapDebateRow(row: DebateQueryRow, officeName: string): ArenaFeedDebate {
+function mapDebateRow(row: DebateQueryRow, election: Pick<Election, "slug" | "office_name">): ArenaFeedDebate {
   const district = unwrapOne(row.district);
   const evaluations = row.evaluations ?? row.debate_evaluations ?? [];
   return {
@@ -149,7 +149,8 @@ function mapDebateRow(row: DebateQueryRow, officeName: string): ArenaFeedDebate 
     expires_at: row.expires_at,
     created_at: row.created_at,
     districtId: district?.id ?? row.district_id,
-    districtName: district?.name ?? officeName,
+    districtName: election.office_name,
+    electionSlug: election.slug,
     matchPercent: null,
     candidateA: toFeedCandidate(row.candidate_a),
     candidateB: toFeedCandidate(row.candidate_b),
@@ -197,7 +198,7 @@ async function loadElectionDebates(
   }
 
   return ((query.data ?? []) as DebateQueryRow[]).map((row) =>
-    mapDebateRow(row, election.office_name),
+    mapDebateRow(row, election),
   );
 }
 

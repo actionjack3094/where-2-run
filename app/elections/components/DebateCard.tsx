@@ -62,7 +62,14 @@ export function DebateCard({ debate }: { debate: ArenaFeedDebate }) {
           <span className="rounded-full border border-primary/40 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-primary">
             {statusLabel(debate.status)}
           </span>
-          {debate.districtName ? (
+          {debate.districtName && debate.electionSlug ? (
+            <Link
+              href={`/elections/${debate.electionSlug}`}
+              className="rounded-full border border-border px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+            >
+              {debate.districtName}
+            </Link>
+          ) : debate.districtName ? (
             <span className="rounded-full border border-border px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               {debate.districtName}
             </span>

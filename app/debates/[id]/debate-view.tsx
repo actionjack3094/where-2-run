@@ -28,6 +28,11 @@ import { ensureArenaUser, type ArenaUser } from "@/lib/arena/identity";
 import { getExpiryState, TOTAL_ROUNDS } from "@/lib/arena/time";
 import { supabase } from "@/lib/db/supabase";
 import { STORAGE_KEYS } from "@/lib/session";
+import {
+  ELECTION_LINK_COLUMNS,
+  resolveElectionLink,
+  type ElectionLinkRow,
+} from "@/lib/election-links";
 import { cn } from "@/lib/utils";
 import type {
   Argument,
@@ -84,6 +89,7 @@ export function DebateView({
   const [judgeBusy, setJudgeBusy] = useState(false);
   const [judgeError, setJudgeError] = useState<string | null>(null);
   const [appealOpen, setAppealOpen] = useState(false);
+  const [electionSlug, setElectionSlug] = useState<string | null>(null);
   const voteLockRef = useRef(false);
   const graderWaitRef = useRef(0);
   const judgeRequestRef = useRef(0);
@@ -123,6 +129,15 @@ export function DebateView({
     if (!evaluationsResult.error) {
       setEvaluations((evaluationsResult.data ?? []) as DebateEvaluation[]);
     }
+
+    const { data: electionRows } = await supabase
+      .from("elections")
+      .select(ELECTION_LINK_COLUMNS);
+    const race = resolveElectionLink((electionRows ?? []) as ElectionLinkRow[], {
+      electionId: (data as DebateWithCandidates).election_id,
+      districtId: (data as DebateWithCandidates).district_id,
+    });
+    setElectionSlug(race?.slug ?? null);
   }
 
   useEffect(() => {
@@ -454,7 +469,7 @@ export function DebateView({
       <main className="mx-auto flex min-h-full w-full max-w-3xl flex-1 flex-col px-6 py-10">
         <p className="text-sm text-zinc-600 dark:text-zinc-300">{error ?? "Debate not found."}</p>
         <Button asChild variant="ghost" className="mt-4 w-fit">
-          <Link href="/elections">Back to Elections</Link>
+          <Link href="/feed">Back to Feed</Link>
         </Button>
       </main>
     );
@@ -464,10 +479,10 @@ export function DebateView({
     <main className="mx-auto flex min-h-full w-full max-w-3xl flex-1 flex-col px-6 py-10">
       <div className="flex flex-wrap items-center gap-4">
         <Link
-          href="/elections"
+          href={electionSlug ? `/elections/${electionSlug}` : "/feed"}
           className="text-xs font-medium uppercase tracking-widest text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-50"
         >
-          ← Elections
+          {electionSlug ? "← Race profile" : "← Feed"}
         </Link>
         <Link
           href="/spectator"

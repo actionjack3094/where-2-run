@@ -3,6 +3,11 @@ import { cookies } from "next/headers";
 import { unwrapCandidate } from "@/lib/arena/display";
 import { parseElo } from "@/lib/arena/elo";
 import { isMissingRelation } from "@/lib/coalitions";
+import {
+  ELECTION_LINK_COLUMNS,
+  resolveElectionLink,
+  type ElectionLinkRow,
+} from "@/lib/election-links";
 import { hasStanceVector } from "@/lib/ideology/stance";
 import { cosineSimilarity, parseVector, similarityToPercent } from "@/lib/ideology/vector";
 import type {
@@ -170,6 +175,13 @@ export async function loadArenaFeed(): Promise<ArenaFeedResult> {
   }
 
   const rows = (query.data ?? []) as DebateQueryRow[];
+  const { data: electionRows, error: electionError } = await supabase
+    .from("elections")
+    .select(ELECTION_LINK_COLUMNS);
+  const elections =
+    electionError && isMissingRelation(electionError)
+      ? []
+      : ((electionRows ?? []) as ElectionLinkRow[]);
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -217,6 +229,10 @@ export async function loadArenaFeed(): Promise<ArenaFeedResult> {
           : (evaluationsByDebate.get(row.id) ?? []);
       const matchScore = debateMatchScore(candidateAJoin, candidateBJoin, viewer);
       const seated = Boolean(candidateAJoin && candidateBJoin);
+      const election = resolveElectionLink(elections, {
+        electionId: row.election_id,
+        districtId: district?.id ?? row.district_id,
+      });
 
       return {
         debate: {
@@ -227,7 +243,8 @@ export async function loadArenaFeed(): Promise<ArenaFeedResult> {
           expires_at: row.expires_at,
           created_at: row.created_at,
           districtId: district?.id ?? row.district_id,
-          districtName: district?.name ?? null,
+          districtName: election?.officeName ?? district?.name ?? null,
+          electionSlug: election?.slug ?? null,
           matchPercent: matchScore > 0 ? similarityToPercent(matchScore) : null,
           candidateA: toCandidate(row.candidate_a),
           candidateB: toCandidate(row.candidate_b),

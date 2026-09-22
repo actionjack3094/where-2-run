@@ -13,6 +13,11 @@ import { unwrapCandidate } from "@/lib/arena/display";
 import { ensureArenaUser } from "@/lib/arena/identity";
 import { supabase } from "@/lib/db/supabase";
 import { STORAGE_KEYS } from "@/lib/session";
+import {
+  ELECTION_LINK_COLUMNS,
+  resolveElectionLink,
+  type ElectionLinkRow,
+} from "@/lib/election-links";
 import { isMissingVerificationColumn, parseVerificationTier } from "@/lib/verification";
 import type {
   CivicPost,
@@ -34,6 +39,7 @@ export type FeedItem =
       body: string;
       status: string;
       districtName: string;
+      electionSlug: string | null;
       candidateA: DebateCandidate | null;
       candidateB: DebateCandidate | null;
       votingOpen: boolean;
@@ -124,7 +130,7 @@ export function BallotFeed() {
       window.sessionStorage.setItem(STORAGE_KEYS.districtId, home.id);
     }
 
-    const [{ data: posts, error: postsError }, { data: debates, error: debateError }, { data: civic, error: civicError }] =
+    const [{ data: posts, error: postsError }, { data: debates, error: debateError }, { data: civic, error: civicError }, { data: electionRows }] =
       await Promise.all([
         supabase.rpc("get_matched_feed", {
           viewer_embedding: "[0.5, -0.2, 0.8]",
@@ -148,6 +154,7 @@ export function BallotFeed() {
           .eq("status", "open")
           .order("created_at", { ascending: false })
           .limit(20),
+        supabase.from("elections").select(ELECTION_LINK_COLUMNS),
       ]);
 
     if (postsError && debateError && civicError) {
@@ -156,6 +163,7 @@ export function BallotFeed() {
       return;
     }
 
+    const elections = (electionRows ?? []) as ElectionLinkRow[];
     const similarityById = new Map<string, number | string>();
     for (const post of (posts ?? []) as MatchedFeedPost[]) {
       const id = post.id || post.post_id;
@@ -211,6 +219,10 @@ export function BallotFeed() {
       .map((debate) => {
         const candidateA = unwrapCandidate(debate.candidate_a);
         const candidateB = unwrapCandidate(debate.candidate_b);
+        const election = resolveElectionLink(elections, {
+          electionId: debate.election_id,
+          districtId: debate.district_id,
+        });
         return {
           role: "voter" as const,
           id: debate.id,
@@ -218,7 +230,8 @@ export function BallotFeed() {
           title: debate.topic,
           body: `${candidateA?.username ?? "Open seat"} vs ${candidateB?.username ?? "awaiting challenger"}`,
           status: debate.status,
-          districtName: home?.name ?? DEFAULT_STANCE_DISTRICT,
+          districtName: election?.officeName ?? home?.name ?? DEFAULT_STANCE_DISTRICT,
+          electionSlug: election?.slug ?? null,
           candidateA,
           candidateB,
           votingOpen:
@@ -304,6 +317,13 @@ export function BallotFeed() {
               <p className="shrink-0 font-mono text-xs font-medium uppercase text-accent-ring">
                 {formatMatchPercent(item.similarity)}
               </p>
+            ) : item.electionSlug ? (
+              <Link
+                href={`/elections/${item.electionSlug}`}
+                className="shrink-0 text-[11px] font-medium uppercase tracking-widest text-accent-ring hover:text-gold"
+              >
+                {item.districtName}
+              </Link>
             ) : (
               <p className="shrink-0 text-[11px] font-medium uppercase tracking-widest text-accent-ring">
                 {item.districtName}

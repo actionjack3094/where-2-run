@@ -410,7 +410,7 @@ function BountyCardForm({
         elements,
         redirect: "if_required",
         confirmParams: {
-          return_url: `${window.location.origin}/elections`,
+          return_url: window.location.href,
         },
       });
       if (error) throw new Error(error.message);

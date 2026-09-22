@@ -11,12 +11,6 @@ const links = [
     match: (path: string) => path.startsWith("/feed"),
   },
   {
-    href: "/elections",
-    label: "Elections",
-    match: (path: string) =>
-      path.startsWith("/elections") || path.startsWith("/debates"),
-  },
-  {
     href: "/leaderboards",
     label: "Leaderboards",
     match: (path: string) =>

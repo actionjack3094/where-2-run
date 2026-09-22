@@ -13,6 +13,7 @@ export type ArenaFeedDebate = {
   created_at: string;
   districtId: string | null;
   districtName: string | null;
+  electionSlug: string | null;
   matchPercent: number | null;
   candidateA: ArenaFeedCandidate | null;
   candidateB: ArenaFeedCandidate | null;

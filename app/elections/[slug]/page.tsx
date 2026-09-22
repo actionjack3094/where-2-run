@@ -19,10 +19,10 @@ export async function generateMetadata({
   const office = hub?.election.office_name;
 
   return {
-    title: office ? `${office} · Elections · WHERE 2 RUN` : "Election · WHERE 2 RUN",
+    title: office ? `${office} · WHERE 2 RUN` : "Election · WHERE 2 RUN",
     description: office
-      ? `Median voter, draft field, ballot-access rules, and policy debates for ${office}.`
-      : "Election hub on WHERE 2 RUN.",
+      ? `Median voter, draft field, and ballot-access rules for ${office}.`
+      : "Race profile on WHERE 2 RUN.",
   };
 }
 
@@ -51,7 +51,7 @@ export default async function ElectionPage({ params }: ElectionPageProps) {
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-16 px-6 py-10 pb-16">
         <header>
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-gold">
-            Election hub
+            Race profile
           </p>
           <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment sm:text-4xl">
             {hub.election.office_name}

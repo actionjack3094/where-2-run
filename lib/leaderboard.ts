@@ -12,6 +12,7 @@ export type LeaderboardEntry = {
   electability: number;
   districtId: string | null;
   districtName: string | null;
+  electionSlug: string | null;
   verificationTier: string | null;
 };
 
@@ -106,6 +107,7 @@ export function mergeLeaderboardEntries({
       electability: 0,
       districtId: district.id,
       districtName: district.name,
+      electionSlug: null,
       verificationTier: row.verification_tier ?? null,
     });
   }
@@ -143,6 +145,7 @@ export function mergeLeaderboardEntries({
       electability,
       districtId: district.id,
       districtName: district.name,
+      electionSlug: current?.electionSlug ?? null,
       verificationTier: user?.verification_tier ?? current?.verificationTier ?? null,
     });
   }
