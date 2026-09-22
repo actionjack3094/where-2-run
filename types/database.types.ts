@@ -275,6 +275,13 @@ export interface CoalitionMember {
   created_at: string;
 }
 
+export interface CoalitionEndorsement {
+  id: string;
+  endorser_id: string;
+  endorsed_id: string;
+  created_at: string;
+}
+
 export interface MatchedFeedPost {
   post_id?: string;
   id?: string;
@@ -661,6 +668,28 @@ export interface Database {
           },
         ];
       };
+      coalition_endorsements: {
+        Row: CoalitionEndorsement;
+        Insert: Partial<CoalitionEndorsement> &
+          Pick<CoalitionEndorsement, "endorser_id" | "endorsed_id">;
+        Update: Partial<CoalitionEndorsement>;
+        Relationships: [
+          {
+            foreignKeyName: "coalition_endorsements_endorser_id_fkey";
+            columns: ["endorser_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "coalition_endorsements_endorsed_id_fkey";
+            columns: ["endorsed_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       candidate_stats: {
@@ -725,6 +754,10 @@ export interface Database {
           match_count: number;
         };
         Returns: MatchedDistrictRow[];
+      };
+      calculate_user_compatibility: {
+        Args: { user_a: string; user_b: string };
+        Returns: number | null;
       };
       update_ideology_vector_ema: {
         Args: {

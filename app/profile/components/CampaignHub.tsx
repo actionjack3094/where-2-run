@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { CoalitionNetwork } from "@/app/profile/components/CoalitionNetwork";
 import { treasurerFilingLink } from "@/lib/compliance/treasurer";
-import { ideologicalCompatibilityPercent } from "@/lib/ideology/six-axis";
 import { formatUsd } from "@/lib/pledges";
-import type { CoalitionContact, ProfileHubData } from "@/lib/profile/hub";
+import type { ProfileHubData } from "@/lib/profile/hub";
 
 export function CampaignHub({ profile }: { profile: ProfileHubData }) {
   const filing = profile.election
@@ -14,18 +13,6 @@ export function CampaignHub({ profile }: { profile: ProfileHubData }) {
       })
     : null;
   const total = profile.bounties.reduce((sum, bounty) => sum + bounty.amount, 0);
-  const network = [...profile.network].sort((left, right) => {
-    if (left.role !== right.role) return left.role === "ally" ? -1 : 1;
-    const leftScore = ideologicalCompatibilityPercent(
-      profile.ideologyVector,
-      left.ideologyVector,
-    );
-    const rightScore = ideologicalCompatibilityPercent(
-      profile.ideologyVector,
-      right.ideologyVector,
-    );
-    return (rightScore ?? -1) - (leftScore ?? -1);
-  });
 
   return (
     <div className="mt-10 flex flex-col gap-14">
@@ -131,74 +118,7 @@ export function CampaignHub({ profile }: { profile: ProfileHubData }) {
         ) : null}
       </section>
 
-      <section aria-labelledby="coalition-network-heading">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-          Coalition network
-        </p>
-        <h2
-          id="coalition-network-heading"
-          className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment"
-        >
-          Followers and endorsed allies
-        </h2>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
-          Compatibility is the closeness of each person&apos;s ideology vector to
-          this campaign.
-        </p>
-
-        {network.length === 0 ? (
-          <p className="mt-8 text-sm leading-6 text-zinc-400">
-            No followers or endorsed allies on this campaign yet.
-          </p>
-        ) : (
-          <ul className="mt-6 flex flex-col gap-3">
-            {network.map((person) => (
-              <NetworkRow
-                key={`${person.role}-${person.id}`}
-                person={person}
-                ideologyVector={profile.ideologyVector}
-              />
-            ))}
-          </ul>
-        )}
-      </section>
+      <CoalitionNetwork candidateId={profile.userId} />
     </div>
-  );
-}
-
-function NetworkRow({
-  person,
-  ideologyVector,
-}: {
-  person: CoalitionContact;
-  ideologyVector: number[];
-}) {
-  const compatibility = ideologicalCompatibilityPercent(
-    ideologyVector,
-    person.ideologyVector,
-  );
-
-  return (
-    <li className="flex items-center justify-between gap-4 rounded-xl border border-gold/40 bg-zinc-900 px-5 py-4">
-      <div className="min-w-0">
-        <Link
-          href={`/profile/${person.id}`}
-          className="block truncate font-medium text-parchment hover:text-gold"
-        >
-          {person.name}
-        </Link>
-        <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
-          {person.role === "ally" ? "Endorsed ally" : "Follower"}
-        </p>
-      </div>
-      <p className="shrink-0 text-right">
-        <span className="block font-display text-xl font-semibold tabular-nums text-gold">
-          {compatibility == null ? "—" : `${compatibility}%`}
-        </span>
-        <span className="mt-1 block text-[10px] font-medium uppercase tracking-widest text-zinc-500">
-          Compatibility
-        </span>
-      </p>
-    </li>
   );
 }

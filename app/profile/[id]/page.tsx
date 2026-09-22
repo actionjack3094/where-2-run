@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { cache } from "react";
+import { CoalitionNetwork } from "@/app/profile/components/CoalitionNetwork";
 import { IdeologyRadar } from "@/app/profile/components/IdeologyRadar";
 import { PledgeEscrowButton } from "@/components/pledges/PledgeEscrowButton";
 import { CandidateAvatar } from "@/components/profile/CandidateAvatar";
@@ -313,6 +314,8 @@ function ReadyProfile({ profile }: { profile: PublicProfile }) {
           </div>
         )}
       </section>
+
+      <CoalitionNetwork candidateId={stats.id} className="mt-14" />
 
       <section className="mt-14">
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
