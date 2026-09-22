@@ -56,3 +56,9 @@ export function cosineSimilarity(a: number[], b: number[]): number {
 export function similarityToPercent(similarity: number): number {
   return Math.round(clamp01(similarity) * 100);
 }
+
+export function formatPgIdeologyVector(values: number[]): string {
+  return `[${normalizeVector(values)
+    .map((value) => value.toFixed(6))
+    .join(",")}]`;
+}

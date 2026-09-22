@@ -146,6 +146,19 @@ export interface CampaignPledge {
   updated_at: string;
 }
 
+export interface Candidate {
+  id: string;
+  display_name: string;
+  office_sought: string | null;
+  bio: string | null;
+  residency_state: string | null;
+  ideology_vector: IdeologyVector | string;
+  pac_agreement_accepted: boolean;
+  pac_agreement_accepted_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CandidateStats {
   id: string;
   username: string;
@@ -264,6 +277,10 @@ type CandidateStatsRow = Omit<CandidateStats, "ideology_vector"> & {
   ideology_vector: string | IdeologyVector | null;
 };
 
+type CandidateRow = Omit<Candidate, "ideology_vector"> & {
+  ideology_vector: string | IdeologyVector;
+};
+
 export interface Database {
   public: {
     Tables: {
@@ -283,6 +300,20 @@ export interface Database {
             columns: ["target_district_id"];
             isOneToOne: false;
             referencedRelation: "districts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      candidates: {
+        Row: CandidateRow;
+        Insert: Partial<CandidateRow> & Pick<CandidateRow, "id" | "display_name" | "ideology_vector">;
+        Update: Partial<CandidateRow>;
+        Relationships: [
+          {
+            foreignKeyName: "candidates_id_fkey";
+            columns: ["id"];
+            isOneToOne: true;
+            referencedRelation: "users";
             referencedColumns: ["id"];
           },
         ];

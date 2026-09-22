@@ -153,6 +153,59 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
+.ideology-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 0.375rem;
+  width: 100%;
+  cursor: pointer;
+  border-radius: 9999px;
+  outline: none;
+}
+
+.ideology-slider:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--gold) 35%, transparent);
+}
+
+.ideology-slider::-webkit-slider-runnable-track {
+  height: 0.375rem;
+  border-radius: 9999px;
+  background: transparent;
+}
+
+.ideology-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: -0.3875rem;
+  border-radius: 9999px;
+  background: var(--gold);
+  border: 2px solid var(--gold-strong);
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--gold) 22%, transparent);
+}
+
+.ideology-slider::-moz-range-track {
+  height: 0.375rem;
+  border-radius: 9999px;
+  background: rgb(39 39 42);
+}
+
+.ideology-slider::-moz-range-progress {
+  height: 0.375rem;
+  border-radius: 9999px;
+  background: var(--gold);
+}
+
+.ideology-slider::-moz-range-thumb {
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 9999px;
+  background: var(--gold);
+  border: 2px solid var(--gold-strong);
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--gold) 22%, transparent);
+}
+
 h1,
 h2,
 h3,
