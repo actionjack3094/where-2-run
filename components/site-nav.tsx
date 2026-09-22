@@ -11,21 +11,24 @@ const links = [
     match: (path: string) => path.startsWith("/feed"),
   },
   {
-    href: "/arena",
-    label: "Arena",
-    match: (path: string) => path.startsWith("/arena"),
-  },
-  {
-    href: "/my-campaign",
-    label: "My Campaign",
+    href: "/elections",
+    label: "Elections",
     match: (path: string) =>
-      path.startsWith("/my-campaign") || path.startsWith("/dashboard"),
+      path.startsWith("/elections") || path.startsWith("/debates"),
   },
   {
     href: "/leaderboards",
     label: "Leaderboards",
     match: (path: string) =>
       path.startsWith("/leaderboards") || path.startsWith("/district"),
+  },
+  {
+    href: "/profile",
+    label: "My Profile",
+    match: (path: string) =>
+      path.startsWith("/profile") ||
+      path.startsWith("/my-campaign") ||
+      path.startsWith("/dashboard"),
   },
 ] as const;
 

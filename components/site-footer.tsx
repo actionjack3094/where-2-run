@@ -2,9 +2,9 @@ import Link from "next/link";
 
 const links = [
   { href: "/feed", label: "Feed" },
-  { href: "/arena", label: "Arena" },
-  { href: "/my-campaign", label: "My Campaign" },
+  { href: "/elections", label: "Elections" },
   { href: "/leaderboards", label: "Leaderboards" },
+  { href: "/profile", label: "My Profile" },
   { href: "/about", label: "About Us" },
 ] as const;
 

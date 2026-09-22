@@ -64,6 +64,6 @@ export async function createComment(
 
   if (error) throw new Error(error.message);
 
-  revalidatePath(`/arena/${trimmedDebateId}`);
+  revalidatePath(`/debates/${trimmedDebateId}`);
   return { ok: true as const };
 }

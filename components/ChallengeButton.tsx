@@ -37,7 +37,7 @@ export function ChallengeButton({ postId }: { postId: string }) {
         throw new Error(payload.error ?? "Could not start the challenge.");
       }
 
-      router.push(`/arena/${payload.match_id}`);
+      router.push(`/debates/${payload.match_id}`);
     } catch (caught) {
       setError(
         caught instanceof Error ? caught.message : "Could not start the challenge.",

@@ -290,7 +290,7 @@ export function BallotFeed() {
 
           <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             {item.role === "voter" ? (
-              <Link href={`/arena/${item.id}`} className="min-w-0">
+              <Link href={`/debates/${item.id}`} className="min-w-0">
                 <h2 className="text-lg font-semibold leading-snug tracking-tight text-parchment hover:text-accent-ring">
                   {item.title}
                 </h2>

@@ -132,6 +132,6 @@ export async function evaluateDebate(
     evaluations.push(await evaluateCandidate(admin, debate, candidateId));
   }
 
-  revalidatePath(`/arena/${debate.id}`);
+  revalidatePath(`/debates/${debate.id}`);
   return { ok: true as const, evaluations };
 }

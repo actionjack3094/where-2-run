@@ -143,7 +143,7 @@ export async function executeAppeal(input: {
     (siblingRows ?? [locked]) as DebateEvaluation[],
   );
 
-  revalidatePath(`/arena/${debate.id}`);
+  revalidatePath(`/debates/${debate.id}`);
   revalidatePath("/leaderboards");
   revalidatePath(`/profile/${evaluation.candidate_id}`);
   revalidatePath(`/candidate/${evaluation.candidate_id}`);

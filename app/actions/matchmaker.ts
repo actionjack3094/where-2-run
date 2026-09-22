@@ -186,7 +186,7 @@ export async function challengeToDebate(
   }
 
   revalidatePath("/my-campaign");
-  revalidatePath("/arena");
-  revalidatePath(`/arena/${debate.id}`);
+  revalidatePath("/elections");
+  revalidatePath(`/debates/${debate.id}`);
   return { matchId: debate.id };
 }

@@ -155,7 +155,7 @@ export async function recordEscrowPledge(
 
     revalidatePath(`/profile/${candidateId}`);
     revalidatePath(`/candidate/${candidateId}`);
-    revalidatePath("/arena");
+    revalidatePath("/elections");
     revalidatePath("/spectator");
     revalidatePath("/my-campaign");
 

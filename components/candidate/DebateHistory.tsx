@@ -46,7 +46,7 @@ export function DebateHistory({ matches }: { matches: CandidateArenaMatch[] }) {
         <ul className="mt-6 max-h-[36rem] space-y-3 overflow-y-auto pr-1">
           {matches.map((match) => (
             <li key={match.debateId}>
-              <Link href={`/arena/${match.debateId}`} className="block">
+              <Link href={`/debates/${match.debateId}`} className="block">
                 <article className="rounded-xl border border-gold/50 bg-zinc-900 p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)] transition-colors hover:border-gold">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded-full border border-gold/40 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-widest text-gold">

@@ -61,6 +61,7 @@ export interface UserProfile {
 export interface Debate {
   id: string;
   district_id: string | null;
+  election_id: string | null;
   topic: string;
   candidate_a_id: string | null;
   candidate_b_id: string | null;
@@ -69,6 +70,40 @@ export interface Debate {
   expires_at: string;
   elo_applied_at: string | null;
   created_at: string;
+}
+
+export type FilingTreasurerRequirements = {
+  form?: string;
+  office?: string;
+  notes?: string;
+  steps?: string[];
+};
+
+export type FilingRequirements = {
+  jurisdiction?: string;
+  office?: string;
+  level?: string;
+  state?: string;
+  filing_deadline?: string;
+  residency_deadline?: string;
+  residency?: string;
+  petition_signatures?: number | string;
+  filing_fee?: string;
+  ballot_access?: string[];
+  treasurer?: FilingTreasurerRequirements;
+  source?: string;
+};
+
+export interface Election {
+  id: string;
+  slug: string;
+  office_name: string;
+  median_voter_vector: IdeologyVector | string | null;
+  incumbent_name: string | null;
+  filing_requirements: FilingRequirements | Record<string, unknown>;
+  district_id: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Argument {
@@ -334,6 +369,20 @@ export interface Database {
           },
         ];
       };
+      elections: {
+        Row: Election;
+        Insert: Partial<Election> & Pick<Election, "slug" | "office_name">;
+        Update: Partial<Election>;
+        Relationships: [
+          {
+            foreignKeyName: "elections_district_id_fkey";
+            columns: ["district_id"];
+            isOneToOne: false;
+            referencedRelation: "districts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       debates: {
         Row: Debate;
         Insert: Partial<Debate> & Pick<Debate, "topic">;
@@ -344,6 +393,13 @@ export interface Database {
             columns: ["district_id"];
             isOneToOne: false;
             referencedRelation: "districts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "debates_election_id_fkey";
+            columns: ["election_id"];
+            isOneToOne: false;
+            referencedRelation: "elections";
             referencedColumns: ["id"];
           },
           {
@@ -499,7 +555,7 @@ export interface Database {
             foreignKeyName: "campaign_pledges_election_id_fkey";
             columns: ["election_id"];
             isOneToOne: false;
-            referencedRelation: "districts";
+            referencedRelation: "elections";
             referencedColumns: ["id"];
           },
           {

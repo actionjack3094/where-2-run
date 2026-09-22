@@ -42,7 +42,7 @@ function ChallengeToDebateButton({
       await ensureArenaUser();
       const token = await accessToken();
       const result = await challengeToDebate(opponentId, token);
-      router.push(`/arena/${result.matchId}`);
+      router.push(`/debates/${result.matchId}`);
     } catch (caught) {
       setError(
         caught instanceof Error ? caught.message : "Could not open the debate.",

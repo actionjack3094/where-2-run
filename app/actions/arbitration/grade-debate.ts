@@ -751,9 +751,9 @@ export async function gradeDebate(
     grades.push(await gradeCandidate(admin, debate, candidateId));
   }
 
-  revalidatePath(`/arena/${debate.id}`);
+  revalidatePath(`/debates/${debate.id}`);
   revalidatePath("/leaderboards");
-  revalidatePath("/arena");
+  revalidatePath("/elections");
   revalidatePath("/my-campaign");
   for (const candidateId of candidateIds) {
     revalidatePath(`/profile/${candidateId}`);

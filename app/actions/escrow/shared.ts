@@ -42,6 +42,16 @@ export function parseUnlockCondition(value: string | null | undefined) {
   return trimmed;
 }
 
+async function electionIdFromDistrict(admin: AdminClient, districtId: string) {
+  const { data, error } = await admin
+    .from("elections")
+    .select("id")
+    .or(`id.eq.${districtId},district_id.eq.${districtId}`)
+    .maybeSingle();
+  if (error && !isMissingRelation(error)) throw new Error(error.message);
+  return (data as { id: string } | null)?.id ?? districtId;
+}
+
 export async function resolveElectionId(
   admin: AdminClient,
   candidateId: string,
@@ -51,12 +61,23 @@ export async function resolveElectionId(
   if (trimmed) {
     if (!isUuid(trimmed)) throw new Error("A valid election is required.");
     const { data, error } = await admin
+      .from("elections")
+      .select("id")
+      .eq("id", trimmed)
+      .maybeSingle();
+    if (error && !isMissingRelation(error)) throw new Error(error.message);
+    if (data) return (data as { id: string }).id;
+
+    const fromDistrict = await electionIdFromDistrict(admin, trimmed);
+    if (fromDistrict) return fromDistrict;
+
+    const { data: district, error: districtError } = await admin
       .from("districts")
       .select("id")
       .eq("id", trimmed)
       .maybeSingle();
-    if (error) throw new Error(error.message);
-    if (!data) throw new Error("That seat is not on the map.");
+    if (districtError) throw new Error(districtError.message);
+    if (!district) throw new Error("That seat is not on the map.");
     return trimmed;
   }
 
@@ -69,7 +90,7 @@ export async function resolveElectionId(
 
   const filed = (candidate as { target_district_id: string | null } | null)
     ?.target_district_id;
-  if (filed) return filed;
+  if (filed) return electionIdFromDistrict(admin, filed);
 
   const { data: scores, error: scoreError } = await admin
     .from("electability_scores")
@@ -80,7 +101,7 @@ export async function resolveElectionId(
   if (scoreError && !isMissingRelation(scoreError)) throw new Error(scoreError.message);
 
   const matched = ((scores ?? []) as { district_id: string }[])[0]?.district_id;
-  if (matched) return matched;
+  if (matched) return electionIdFromDistrict(admin, matched);
 
   throw new Error(
     "This campaign is not matched to a seat yet, so escrow cannot be opened.",

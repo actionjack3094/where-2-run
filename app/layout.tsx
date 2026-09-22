@@ -23,7 +23,7 @@ const cinzel = Cinzel({
 
 export const metadata: Metadata = {
   title: "WHERE 2 RUN",
-  description: "Find the district that matches your ideology, then enter the arena.",
+  description: "Find the district that matches your ideology, then enter the race.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

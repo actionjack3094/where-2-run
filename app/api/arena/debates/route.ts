@@ -6,6 +6,7 @@ export async function POST(request: Request) {
     const body = (await request.json()) as {
       topic?: string;
       districtId?: string | null;
+      electionId?: string | null;
       candidateAId?: string;
     };
 
@@ -18,11 +19,37 @@ export async function POST(request: Request) {
     }
 
     const admin = createAdminClient();
+    let electionId = body.electionId?.trim() || null;
+    let districtId = body.districtId?.trim() || null;
+
+    if (electionId) {
+      const { data: election } = await admin
+        .from("elections")
+        .select("id, district_id")
+        .eq("id", electionId)
+        .maybeSingle();
+      if (election) {
+        electionId = election.id;
+        districtId = districtId ?? election.district_id ?? election.id;
+      }
+    } else if (districtId) {
+      const { data: election } = await admin
+        .from("elections")
+        .select("id, district_id")
+        .or(`id.eq.${districtId},district_id.eq.${districtId}`)
+        .maybeSingle();
+      if (election) {
+        electionId = election.id;
+        districtId = election.district_id ?? districtId;
+      }
+    }
+
     const { data, error } = await admin
       .from("debates")
       .insert({
         topic,
-        district_id: body.districtId ?? null,
+        district_id: districtId,
+        election_id: electionId,
         candidate_a_id: body.candidateAId,
         status: "matching",
         current_round: 1,

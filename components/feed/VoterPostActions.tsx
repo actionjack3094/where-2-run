@@ -170,7 +170,7 @@ export function VoterPostActions({
           </>
         ) : (
           <Link
-            href={`/arena/${debateId}`}
+            href={`/debates/${debateId}`}
             className="inline-flex h-9 items-center justify-center rounded-md border border-accent/50 bg-zinc-800 px-3 text-xs font-medium uppercase tracking-widest text-parchment transition-colors hover:border-accent hover:bg-zinc-700"
           >
             Watch debate
