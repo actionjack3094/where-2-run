@@ -134,6 +134,24 @@ export function sixAxisMatchPercent(a: SixAxisVector, b: SixAxisVector) {
   return Math.round(clamp01(cosineSixAxis(a, b)) * 100);
 }
 
+export function euclideanDistance(a: readonly number[], b: readonly number[]) {
+  const length = Math.max(a.length, b.length);
+  let sum = 0;
+  for (let index = 0; index < length; index += 1) {
+    const delta = (a[index] ?? 0) - (b[index] ?? 0);
+    sum += delta * delta;
+  }
+  return Math.sqrt(sum);
+}
+
+/** 100 when the six-axis vectors coincide, 0 at opposite corners of the unit cube. */
+export function ideologicalCompatibilityPercent(a: unknown, b: unknown) {
+  if (parseVector(a).length === 0 || parseVector(b).length === 0) return null;
+  const distance = euclideanDistance(toSixAxisVector(a), toSixAxisVector(b));
+  const farthest = Math.sqrt(SIX_AXIS_DIMENSIONS);
+  return Math.round(clamp01(1 - distance / farthest) * 100);
+}
+
 export function formatSixAxisVector(vector: SixAxisVector) {
   return `[${vector.map((value) => value.toFixed(6)).join(",")}]`;
 }
