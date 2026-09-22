@@ -42,7 +42,22 @@ describe("treasurerFilingLink", () => {
   it("links a Texas election to Form CTA", () => {
     expect(treasurerFilingLink({ level: "local", state: "Texas" })).toMatchObject({
       href: TEXAS_FORM_CTA_HREF,
-      label: "Texas Form CTA",
+      label: "TEC Form CTA",
+      cardTitle: "Texas Ethics Commission Requirements",
+    });
+  });
+
+  it("reads federal and Texas races from the election slug", () => {
+    expect(treasurerFilingLink({ slug: "us-house-tx-21-2026", state: "TX" })).toMatchObject({
+      href: FEC_FORM_1_HREF,
+      cardTitle: "Federal Election Commission Requirements",
+    });
+    expect(treasurerFilingLink({ slug: "us-senate-tx-2026" })).toMatchObject({
+      href: FEC_FORM_1_HREF,
+    });
+    expect(treasurerFilingLink({ slug: "tx-austin-city-council-d9-2026" })).toMatchObject({
+      href: TEXAS_FORM_CTA_HREF,
+      label: "TEC Form CTA",
     });
   });
 

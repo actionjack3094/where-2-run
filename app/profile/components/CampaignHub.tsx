@@ -1,5 +1,6 @@
 "use client";
 
+import { Lock } from "lucide-react";
 import { CoalitionNetwork } from "@/app/profile/components/CoalitionNetwork";
 import { treasurerFilingLink } from "@/lib/compliance/treasurer";
 import { formatUsd } from "@/lib/pledges";
@@ -8,6 +9,7 @@ import type { ProfileHubData } from "@/lib/profile/hub";
 export function CampaignHub({ profile }: { profile: ProfileHubData }) {
   const filing = profile.election
     ? treasurerFilingLink({
+        slug: profile.election.slug,
         level: profile.election.level,
         state: profile.election.state,
       })
@@ -75,47 +77,72 @@ export function CampaignHub({ profile }: { profile: ProfileHubData }) {
         ) : null}
       </section>
 
-      <section aria-labelledby="appoint-treasurer-heading">
+      <section aria-labelledby="compliance-ballot-heading">
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-          Compliance dossier
+          Treasurer
         </p>
         <h2
-          id="appoint-treasurer-heading"
+          id="compliance-ballot-heading"
           className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment"
         >
-          Appoint Treasurer
+          Compliance & Ballot Access
         </h2>
         <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
           {profile.election
-            ? `File the treasurer appointment for ${profile.election.officeName} before this campaign accepts contributions.`
-            : "Match an election before the treasurer form for this campaign can be chosen."}
+            ? `File the treasurer appointment for ${profile.election.officeName} before this campaign can route escrowed funds.`
+            : "Match an election to see the federal or Texas filing form for this campaign."}
         </p>
 
-        {profile.election ? (
-          <p className="mt-4 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
-            {profile.election.level} · {profile.election.state ?? "State unpublished"}
-          </p>
-        ) : null}
-
         {filing ? (
-          <a
-            href={filing.href}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-6 inline-flex h-12 items-center justify-center rounded-md bg-gold-strong px-5 font-display text-sm font-semibold uppercase tracking-[0.18em] text-zinc-950 transition-colors hover:bg-gold"
-          >
-            {filing.label}
-          </a>
+          <article className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-5">
+            <h3 className="font-display text-lg font-semibold tracking-tight text-parchment">
+              {filing.cardTitle}
+            </h3>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">{filing.detail}</p>
+            <a
+              href={filing.href}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-5 inline-flex h-12 items-center justify-center rounded-md bg-gold-strong px-5 font-display text-sm font-semibold uppercase tracking-[0.18em] text-zinc-950 transition-colors hover:bg-gold"
+            >
+              {filing.label}
+            </a>
+          </article>
         ) : (
           <p className="mt-6 max-w-xl text-sm leading-6 text-zinc-400">
             {profile.election
-              ? "Appoint a campaign treasurer with this state's filing office before the campaign accepts contributions."
+              ? "This seat does not map to an FEC or Texas Ethics Commission treasurer form."
               : "Once a seat is matched, the federal or Texas filing link appears here."}
           </p>
         )}
-        {filing ? (
-          <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-400">{filing.detail}</p>
-        ) : null}
+
+        <div className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-5">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="font-medium text-parchment">Formally Appointed Treasurer</p>
+              <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                Locked for new candidates
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked="true"
+              aria-disabled="true"
+              disabled
+              aria-label="Formally Appointed Treasurer, locked on"
+              className="relative inline-flex h-7 w-12 shrink-0 cursor-not-allowed items-center rounded-full bg-gold-strong px-0.5"
+            >
+              <span className="inline-flex size-6 translate-x-5 items-center justify-center rounded-full bg-zinc-950 text-gold">
+                <Lock className="size-3" aria-hidden />
+              </span>
+            </button>
+          </div>
+          <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-400">
+            This box must be checked, and verified by the platform, before Stripe escrows can
+            route to a campaign bank account.
+          </p>
+        </div>
       </section>
 
       <CoalitionNetwork candidateId={profile.userId} />

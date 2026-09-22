@@ -8,6 +8,7 @@ export type DraftBounty = {
 
 export type MatchedElection = {
   id: string;
+  slug: string;
   officeName: string;
   level: string;
   state: string | null;

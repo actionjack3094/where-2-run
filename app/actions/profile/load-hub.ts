@@ -26,6 +26,7 @@ type PledgeRow = Pick<
 
 type ElectionRow = {
   id: string;
+  slug: string;
   office_name: string;
   district_id: string | null;
   filing_requirements: unknown;
@@ -90,7 +91,7 @@ export async function loadProfileHub(): Promise<ProfileHub> {
         .eq("user_id", user.id),
       supabase
         .from("elections")
-        .select("id, office_name, district_id, filing_requirements"),
+        .select("id, slug, office_name, district_id, filing_requirements"),
     ]);
 
   const fatal =
@@ -173,6 +174,7 @@ export async function loadProfileHub(): Promise<ProfileHub> {
   const election: MatchedElection | null = matched
     ? {
         id: matched.id,
+        slug: matched.slug,
         officeName: matched.office_name,
         level: requirements.level ?? district?.level ?? "local",
         state: requirements.state ?? district?.state ?? profile?.residency_state ?? null,
