@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AppealModal } from "@/app/arena/components/AppealModal";
-import { PledgeEscrowButton } from "@/components/pledges/PledgeEscrowButton";
+import { BountyButton } from "@/app/arena/components/BountyModal";
 import { CandidateAvatar } from "@/components/profile/CandidateAvatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -292,7 +292,7 @@ function PledgeActionRow({
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
         {winner ? (
-          <PledgeEscrowButton
+          <BountyButton
             candidateId={winner.id}
             candidateName={winner.username}
             electionId={electionId}

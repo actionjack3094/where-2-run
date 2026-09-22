@@ -138,6 +138,7 @@ export interface CampaignPledge {
   candidate_id: string;
   election_id: string;
   amount: number | string;
+  unlock_condition: string | null;
   stripe_customer_id: string;
   stripe_payment_method_id: string | null;
   stripe_setup_intent_id: string | null;

@@ -1,0 +1,76 @@
+"use server";
+
+import { requireActionUserId } from "@/lib/arena/auth";
+import { createAdminClient } from "@/lib/db/supabase-admin";
+import { getStripe } from "@/lib/stripe";
+import {
+  parsePledgeAmount,
+  parseUnlockCondition,
+  requireCandidate,
+  resolveElectionId,
+  reuseOrCreateCustomer,
+  stripeMessage,
+} from "@/app/actions/escrow/shared";
+
+export type CreateSetupIntentInput = {
+  candidateId: string;
+  amount: number;
+  unlockCondition: string;
+  electionId?: string | null;
+  accessToken?: string | null;
+};
+
+export type CreateSetupIntentResult = {
+  ok: true;
+  clientSecret: string;
+  setupIntentId: string;
+  customerId: string;
+};
+
+export async function createSetupIntent(
+  input: CreateSetupIntentInput,
+): Promise<CreateSetupIntentResult> {
+  const candidateId = input.candidateId?.trim() ?? "";
+  const { amount } = parsePledgeAmount(Number(input.amount));
+  const unlockCondition = parseUnlockCondition(input.unlockCondition);
+
+  const donorId = await requireActionUserId(input.accessToken);
+  if (!donorId) throw new Error("Sign in to vault a bounty.");
+  if (donorId === candidateId) {
+    throw new Error("You cannot escrow a bounty on your own campaign.");
+  }
+
+  const admin = createAdminClient();
+  await requireCandidate(admin, candidateId);
+
+  try {
+    const stripe = getStripe();
+    const electionId = await resolveElectionId(admin, candidateId, input.electionId);
+    const customerId = await reuseOrCreateCustomer(admin, stripe, donorId);
+    const setupIntent = await stripe.setupIntents.create({
+      customer: customerId,
+      usage: "off_session",
+      payment_method_types: ["card"],
+      metadata: {
+        donor_id: donorId,
+        candidate_id: candidateId,
+        election_id: electionId,
+        amount: amount.toFixed(2),
+        unlock_condition: unlockCondition,
+      },
+    });
+
+    if (!setupIntent.client_secret) {
+      throw new Error("Stripe did not return a SetupIntent client secret.");
+    }
+
+    return {
+      ok: true,
+      clientSecret: setupIntent.client_secret,
+      setupIntentId: setupIntent.id,
+      customerId,
+    };
+  } catch (error) {
+    throw new Error(stripeMessage(error, "Could not open this escrow SetupIntent."));
+  }
+}
