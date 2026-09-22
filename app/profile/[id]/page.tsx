@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { cache } from "react";
+import { IdeologyRadar } from "@/app/profile/components/IdeologyRadar";
 import { PledgeEscrowButton } from "@/components/pledges/PledgeEscrowButton";
 import { CandidateAvatar } from "@/components/profile/CandidateAvatar";
 import {
@@ -40,6 +41,7 @@ type PublicProfile = {
   matches: ElectabilityMatch[];
   filedDistrict: District | null;
   coalitions: Coalition[];
+  ideologyVector: unknown;
 };
 
 async function createSupabase() {
@@ -95,6 +97,12 @@ const loadPublicProfile = cache(async (id: string): Promise<{
   }
 
   const stats = statsRow as CandidateStats;
+
+  const { data: ticketRow } = await supabase
+    .from("candidates")
+    .select("ideology_vector")
+    .eq("id", id)
+    .maybeSingle();
 
   const { data: userRow } = await supabase
     .from("users")
@@ -160,6 +168,9 @@ const loadPublicProfile = cache(async (id: string): Promise<{
       matches: rankMatches(matches).slice(0, 5),
       filedDistrict,
       coalitions,
+      ideologyVector:
+        (ticketRow as { ideology_vector?: unknown } | null)?.ideology_vector ??
+        stats.ideology_vector,
     },
     error: null,
   };
@@ -208,7 +219,8 @@ export default async function PublicProfilePage({
 }
 
 function ReadyProfile({ profile }: { profile: PublicProfile }) {
-  const { stats, record, matches, filedDistrict, coalitions } = profile;
+  const { stats, record, matches, filedDistrict, coalitions, ideologyVector } =
+    profile;
 
   return (
     <>
@@ -254,6 +266,10 @@ function ReadyProfile({ profile }: { profile: PublicProfile }) {
       <section className="mt-8 grid grid-cols-2 gap-3">
         <StatCard label="Wins" value={record.wins} />
         <StatCard label="Losses" value={record.losses} />
+      </section>
+
+      <section className="mt-14">
+        <IdeologyRadar candidateId={stats.id} vector={ideologyVector} />
       </section>
 
       <section className="mt-14">
