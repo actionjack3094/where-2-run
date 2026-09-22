@@ -95,6 +95,7 @@ export interface DebateEvaluation {
   addendum_text: string | null;
   ensemble_result: boolean | null;
   status: DebateEvaluationStatus | string;
+  elo_rating?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -139,6 +140,7 @@ export interface CampaignPledge {
   election_id: string;
   amount: number | string;
   unlock_condition: string | null;
+  debate_id?: string | null;
   stripe_customer_id: string;
   stripe_payment_method_id: string | null;
   stripe_setup_intent_id: string | null;
@@ -500,6 +502,13 @@ export interface Database {
             referencedRelation: "districts";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "campaign_pledges_debate_id_fkey";
+            columns: ["debate_id"];
+            isOneToOne: false;
+            referencedRelation: "debates";
+            referencedColumns: ["id"];
+          },
         ];
       };
       civic_posts: {
@@ -629,6 +638,10 @@ export interface Database {
       apply_debate_elo: {
         Args: { debate_uuid: string };
         Returns: undefined;
+      };
+      lock_arbitration_elo: {
+        Args: { p_debate_id: string; p_candidate_id: string };
+        Returns: { elo_rating: number; locked: boolean }[];
       };
       normalize_zip: {
         Args: { value: string };

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { evaluateDebate } from "@/app/actions/ai/evaluate-debate";
+import { gradeDebate } from "@/app/actions/arbitration/grade-debate";
 import { AppealModal } from "@/app/arena/components/AppealModal";
 import { CommentSection } from "@/components/comments/CommentSection";
 import { BackCandidateButton } from "@/components/pledges/BackCandidateButton";
@@ -233,13 +233,13 @@ export function DebateView({
       setJudgeError(null);
       try {
         const { data: sessionData } = await supabase.auth.getSession();
-        const result = await evaluateDebate(debateId, sessionData.session?.access_token);
+        const result = await gradeDebate(debateId, sessionData.session?.access_token);
         if (cancelled || judgeRequestRef.current !== requestId) return;
         setEvaluations(result.evaluations);
       } catch (err) {
         if (cancelled || judgeRequestRef.current !== requestId) return;
         setJudgeError(
-          err instanceof Error ? err.message : "The Primary Judge could not score this debate.",
+          err instanceof Error ? err.message : "The arbitration engine could not score this debate.",
         );
       } finally {
         if (!cancelled && judgeRequestRef.current === requestId) setJudgeBusy(false);

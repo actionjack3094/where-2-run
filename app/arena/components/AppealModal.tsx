@@ -28,7 +28,11 @@ export function AppealModal({
   onSettled: (evaluation: DebateEvaluation) => void;
 }) {
   const titleId = useId();
-  const [draft, setDraft] = useState(evaluation.addendum_text ?? "");
+  const courtPrompt =
+    evaluation.status === "evaluated" ? evaluation.addendum_text?.trim() || null : null;
+  const [draft, setDraft] = useState(
+    evaluation.status === "appealed" ? (evaluation.addendum_text ?? "") : "",
+  );
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const unlocked = canFileAddendum(evaluation);
@@ -96,11 +100,20 @@ export function AppealModal({
             <span className="font-medium text-zinc-200">
               {evaluation.rubric_flag?.replace(/_/g, " ") ?? "the flagged item"}
             </span>
-            . Three models vote pass or fail; majority (3–0 or 2–1) locks your ELO.
+            . Answer the Clarification Addendum with district-specific policy. Three models
+            vote pass or fail; majority locks your ELO.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="flex flex-col gap-4" onSubmit={(event) => void handleSubmit(event)}>
+            {courtPrompt ? (
+              <blockquote className="rounded-lg border border-primary/25 bg-zinc-950/60 px-3 py-2 text-sm leading-6 text-parchment">
+                <p className="text-[10px] font-medium uppercase tracking-widest text-primary">
+                  Clarification Addendum
+                </p>
+                <p className="mt-1.5">{courtPrompt}</p>
+              </blockquote>
+            ) : null}
             <label className="flex flex-col gap-1.5 text-sm">
               <span className="text-xs font-medium uppercase tracking-widest text-zinc-400">
                 Addendum

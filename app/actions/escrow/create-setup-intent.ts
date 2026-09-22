@@ -1,6 +1,7 @@
 "use server";
 
 import { requireActionUserId } from "@/lib/arena/auth";
+import { isUuid } from "@/lib/arena/display";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 import { getStripe } from "@/lib/stripe";
 import {
@@ -17,6 +18,7 @@ export type CreateSetupIntentInput = {
   amount: number;
   unlockCondition: string;
   electionId?: string | null;
+  debateId?: string | null;
   accessToken?: string | null;
 };
 
@@ -47,6 +49,9 @@ export async function createSetupIntent(
     const stripe = getStripe();
     const electionId = await resolveElectionId(admin, candidateId, input.electionId);
     const customerId = await reuseOrCreateCustomer(admin, stripe, donorId);
+    const debateId = isUuid(input.debateId?.trim() ?? "")
+      ? input.debateId!.trim()
+      : "";
     const setupIntent = await stripe.setupIntents.create({
       customer: customerId,
       usage: "off_session",
@@ -57,6 +62,7 @@ export async function createSetupIntent(
         election_id: electionId,
         amount: amount.toFixed(2),
         unlock_condition: unlockCondition,
+        ...(debateId ? { debate_id: debateId } : {}),
       },
     });
 

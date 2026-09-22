@@ -120,6 +120,7 @@ export function DebateCard({ debate }: { debate: ArenaFeedDebate }) {
         </section>
 
         <PledgeActionRow
+          debateId={debate.id}
           candidateA={debate.candidateA}
           candidateB={debate.candidateB}
           electionId={debate.districtId}
@@ -247,12 +248,14 @@ function ConfidenceMeter({
 }
 
 function PledgeActionRow({
+  debateId,
   candidateA,
   candidateB,
   electionId,
   appealReady,
   onAppeal,
 }: {
+  debateId: string;
   candidateA: ArenaFeedCandidate | null;
   candidateB: ArenaFeedCandidate | null;
   electionId: string | null;
@@ -296,6 +299,7 @@ function PledgeActionRow({
             candidateId={winner.id}
             candidateName={winner.username}
             electionId={electionId}
+            debateId={debateId}
             className="w-full max-w-none sm:max-w-xs"
           />
         ) : (

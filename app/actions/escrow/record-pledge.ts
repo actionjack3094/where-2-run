@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireActionUserId } from "@/lib/arena/auth";
+import { isUuid } from "@/lib/arena/display";
 import { isMissingRelation } from "@/lib/coalitions";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 import {
@@ -24,6 +25,7 @@ export type RecordEscrowPledgeInput = {
   amount: number;
   unlockCondition: string;
   electionId?: string | null;
+  debateId?: string | null;
   accessToken?: string | null;
 };
 
@@ -84,6 +86,9 @@ export async function recordEscrowPledge(
     const electionId =
       metadata.election_id ||
       (await resolveElectionId(admin, candidateId, input.electionId));
+    const debateIdRaw =
+      input.debateId?.trim() || metadata.debate_id || "";
+    const debateId = isUuid(debateIdRaw) ? debateIdRaw : null;
 
     const { data: existing, error: existingError } = await admin
       .from("campaign_pledges")
@@ -108,6 +113,7 @@ export async function recordEscrowPledge(
       election_id: electionId,
       amount,
       unlock_condition: unlockCondition,
+      ...(debateId ? { debate_id: debateId } : {}),
       stripe_customer_id: customerId,
       stripe_payment_method_id: paymentMethodIdOf(setupIntent.payment_method),
       stripe_setup_intent_id: setupIntent.id,
@@ -120,11 +126,12 @@ export async function recordEscrowPledge(
       .select("id")
       .single();
 
-    if (insertError && /unlock_condition/i.test(insertError.message ?? "")) {
-      const { unlock_condition: _unlock, ...withoutCondition } = insertPayload;
+    if (insertError && /unlock_condition|debate_id/i.test(insertError.message ?? "")) {
+      const { unlock_condition: _unlock, debate_id: _debate, ...withoutExtras } =
+        insertPayload;
       const retry = await admin
         .from("campaign_pledges")
-        .insert(withoutCondition)
+        .insert(withoutExtras)
         .select("id")
         .single();
       pledge = retry.data;

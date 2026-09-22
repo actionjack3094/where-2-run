@@ -57,11 +57,13 @@ export function BountyButton({
   candidateId,
   candidateName,
   electionId,
+  debateId,
   className,
 }: {
   candidateId: string;
   candidateName: string;
   electionId?: string | null;
+  debateId?: string | null;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -82,6 +84,7 @@ export function BountyButton({
           candidateId={candidateId}
           candidateName={candidateName}
           electionId={electionId}
+          debateId={debateId}
           onClose={() => setOpen(false)}
         />
       ) : null}
@@ -93,11 +96,13 @@ export function BountyModal({
   candidateId,
   candidateName,
   electionId,
+  debateId,
   onClose,
 }: {
   candidateId: string;
   candidateName: string;
   electionId?: string | null;
+  debateId?: string | null;
   onClose: () => void;
 }) {
   const titleId = useId();
@@ -157,6 +162,7 @@ export function BountyModal({
         amount,
         unlockCondition,
         electionId,
+        debateId,
         accessToken: await accessToken(),
       });
       setClientSecret(result.clientSecret);
@@ -222,6 +228,7 @@ export function BountyModal({
                 amount={amount}
                 candidateId={candidateId}
                 electionId={electionId}
+                debateId={debateId}
                 setupIntentId={setupIntentId}
                 unlockCondition={unlockCondition}
                 busy={busy}
@@ -363,6 +370,7 @@ function BountyCardForm({
   amount,
   candidateId,
   electionId,
+  debateId,
   setupIntentId,
   unlockCondition,
   busy,
@@ -376,6 +384,7 @@ function BountyCardForm({
   amount: number;
   candidateId: string;
   electionId?: string | null;
+  debateId?: string | null;
   setupIntentId: string;
   unlockCondition: BountyUnlockConditionId;
   busy: boolean;
@@ -415,6 +424,7 @@ function BountyCardForm({
         amount,
         unlockCondition,
         electionId,
+        debateId,
         accessToken: await accessToken(),
       });
       onVaulted();
