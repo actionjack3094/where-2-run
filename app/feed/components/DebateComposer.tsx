@@ -1,7 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
+import { MoreHorizontal, X } from "lucide-react";
 import { publishStance } from "@/app/actions/feed/publish-stance";
 import { Button } from "@/components/ui/button";
 import { ensureArenaUser } from "@/lib/arena/identity";
@@ -92,6 +94,7 @@ function RichTextArea({
 
 export function DebateComposer({ prompt }: { prompt: CalibrationPrompt }) {
   const router = useRouter();
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [mode, setMode] = useState<ComposerMode>("calibration");
   const [choiceId, setChoiceId] = useState<string | null>(null);
   const [claim, setClaim] = useState("");
@@ -101,6 +104,27 @@ export function DebateComposer({ prompt }: { prompt: CalibrationPrompt }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isModalOpen) return;
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape" && !submitting) setIsModalOpen(false);
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isModalOpen, submitting]);
+
+  function closeModal() {
+    if (submitting) return;
+    setIsModalOpen(false);
+  }
 
   async function accessToken() {
     await ensureArenaUser();
@@ -190,14 +214,50 @@ export function DebateComposer({ prompt }: { prompt: CalibrationPrompt }) {
   }
 
   return (
-    <section className="sticky top-14 z-20 -mx-6 border-b border-zinc-800 bg-zinc-950/95 px-6 py-4 backdrop-blur">
-      <div className="rounded-xl border border-gold/40 bg-zinc-900 p-4 shadow-[inset_3px_0_0_0_var(--gold)]">
+    <>
+      <button
+        type="button"
+        onClick={() => setIsModalOpen(true)}
+        aria-haspopup="dialog"
+        aria-expanded={isModalOpen}
+        className="sticky top-14 z-20 mt-8 flex w-full items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 text-left transition-colors hover:border-zinc-600"
+      >
+        <span className="text-sm text-zinc-500">Take a stance...</span>
+        <MoreHorizontal className="size-4 shrink-0 text-zinc-400" aria-hidden />
+      </button>
+
+      {isModalOpen
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+              onClick={closeModal}
+            >
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="stance-composer-title"
+                className="relative max-h-[min(90vh,44rem)] w-full max-w-2xl overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-900 p-4 text-zinc-100 shadow-2xl"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  disabled={submitting}
+                  className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-md text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 disabled:opacity-40"
+                  aria-label="Close"
+                >
+                  <X className="size-4" />
+                </button>
+                <div className="rounded-xl border border-gold/40 bg-zinc-900 p-4 pr-10 shadow-[inset_3px_0_0_0_var(--gold)]">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-gold">
               Stance composer
             </p>
-            <h2 className="mt-1 font-display text-base font-semibold tracking-tight text-parchment">
+            <h2
+              id="stance-composer-title"
+              className="mt-1 font-display text-base font-semibold tracking-tight text-parchment"
+            >
               File a position
             </h2>
           </div>
@@ -301,7 +361,12 @@ export function DebateComposer({ prompt }: { prompt: CalibrationPrompt }) {
             </Button>
           </form>
         )}
-      </div>
-    </section>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
   );
 }
