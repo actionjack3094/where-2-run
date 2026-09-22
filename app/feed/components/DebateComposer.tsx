@@ -239,128 +239,135 @@ export function DebateComposer({ prompt }: { prompt: CalibrationPrompt }) {
                 className="relative max-h-[min(90vh,44rem)] w-full max-w-2xl overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-900 p-4 text-zinc-100 shadow-2xl"
                 onClick={(event) => event.stopPropagation()}
               >
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  disabled={submitting}
-                  className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-md text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 disabled:opacity-40"
-                  aria-label="Close"
-                >
-                  <X className="size-4" />
-                </button>
-                <div className="rounded-xl border border-gold/40 bg-zinc-900 p-4 pr-10 shadow-[inset_3px_0_0_0_var(--gold)]">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-gold">
-              Stance composer
-            </p>
-            <h2
-              id="stance-composer-title"
-              className="mt-1 font-display text-base font-semibold tracking-tight text-parchment"
-            >
-              File a position
-            </h2>
-          </div>
-          <div className="grid grid-cols-2 rounded-md border border-zinc-700 p-0.5">
-            {(
-              [
-                ["calibration", "Quick Calibration"],
-                ["custom", "Custom Stance"],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={mode === value}
-                onClick={() => {
-                  setMode(value);
-                  setError(null);
-                }}
-                className={cn(
-                  "h-8 rounded px-3 text-[10px] font-medium uppercase tracking-widest transition-colors",
-                  mode === value
-                    ? "bg-gold text-zinc-950"
-                    : "text-zinc-400 hover:text-parchment",
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
+                <div className="rounded-xl border border-gold/40 bg-zinc-900 p-4 shadow-[inset_3px_0_0_0_var(--gold)]">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-gold">
+                        Stance composer
+                      </p>
+                      <h2
+                        id="stance-composer-title"
+                        className="mt-1 font-display text-base font-semibold tracking-tight text-parchment"
+                      >
+                        File a position
+                      </h2>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={closeModal}
+                      disabled={submitting}
+                      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 disabled:opacity-40"
+                      aria-label="Close"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  </div>
 
-        {mode === "calibration" ? (
-          <form className="mt-4 flex flex-col gap-3" onSubmit={(event) => void submitCalibration(event)}>
-            <p className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
-              {prompt.issueLabel}
-            </p>
-            <p className="text-sm leading-6 text-zinc-200">{prompt.prompt}</p>
-            <fieldset className="grid gap-2">
-              <legend className="sr-only">Calibration options</legend>
-              {prompt.options.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  aria-pressed={choiceId === option.id}
-                  onClick={() => setChoiceId(option.id)}
-                  className={cn(
-                    "rounded-md border px-3 py-2 text-left text-sm leading-6 transition-colors",
-                    choiceId === option.id
-                      ? "border-gold bg-gold/10 text-parchment"
-                      : "border-zinc-700 bg-zinc-950 text-zinc-300 hover:border-zinc-500",
+                  <div className="mt-4 grid grid-cols-2 rounded-md border border-zinc-700 p-0.5">
+                    {(
+                      [
+                        ["calibration", "Quick Calibration"],
+                        ["custom", "Custom Stance"],
+                      ] as const
+                    ).map(([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-pressed={mode === value}
+                        onClick={() => {
+                          setMode(value);
+                          setError(null);
+                        }}
+                        className={cn(
+                          "h-8 rounded px-3 text-[10px] font-medium uppercase tracking-widest transition-colors",
+                          mode === value
+                            ? "bg-gold text-zinc-950"
+                            : "text-zinc-400 hover:text-parchment",
+                        )}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {mode === "calibration" ? (
+                    <form
+                      className="mt-4 flex flex-col gap-3"
+                      onSubmit={(event) => void submitCalibration(event)}
+                    >
+                      <p className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
+                        {prompt.issueLabel}
+                      </p>
+                      <p className="text-sm leading-6 text-zinc-200">{prompt.prompt}</p>
+                      <fieldset className="grid gap-2">
+                        <legend className="sr-only">Calibration options</legend>
+                        {prompt.options.map((option) => (
+                          <button
+                            key={option.id}
+                            type="button"
+                            aria-pressed={choiceId === option.id}
+                            onClick={() => setChoiceId(option.id)}
+                            className={cn(
+                              "rounded-md border px-3 py-2 text-left text-sm leading-6 transition-colors",
+                              choiceId === option.id
+                                ? "border-gold bg-gold/10 text-parchment"
+                                : "border-zinc-700 bg-zinc-950 text-zinc-300 hover:border-zinc-500",
+                            )}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </fieldset>
+                      {error ? <p className="text-sm text-red-300">{error}</p> : null}
+                      {notice ? <p className="text-sm text-accent-ring">{notice}</p> : null}
+                      <Button type="submit" variant="gold" className="w-fit" disabled={submitting}>
+                        {submitting ? "Locking in…" : "Lock in stance"}
+                      </Button>
+                    </form>
+                  ) : (
+                    <form
+                      className="mt-4 flex flex-col gap-3"
+                      onSubmit={(event) => void submitCustom(event)}
+                    >
+                      <p className="text-sm leading-6 text-zinc-400">
+                        Write the argument. Zoning, CapMetro, and parking map to City Council;
+                        capital gains and federal tax map to a congressional race.
+                      </p>
+                      <label className="flex flex-col gap-1.5 text-sm">
+                        <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
+                          Claim (optional)
+                        </span>
+                        <input
+                          value={claim}
+                          onChange={(event) => setClaim(event.target.value)}
+                          placeholder="Austin should eliminate minimum parking mandates"
+                          className="h-10 rounded-md border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-zinc-400"
+                        />
+                      </label>
+                      <div className="flex flex-col gap-1.5">
+                        <span
+                          id="custom-stance-label"
+                          className="text-[10px] font-medium uppercase tracking-widest text-zinc-500"
+                        >
+                          Policy argument
+                        </span>
+                        <RichTextArea
+                          key={editorKey}
+                          labelledBy="custom-stance-label"
+                          disabled={submitting}
+                          onChange={(nextHtml, nextPlain) => {
+                            setHtml(nextHtml);
+                            setPlain(nextPlain);
+                          }}
+                        />
+                      </div>
+                      {error ? <p className="text-sm text-red-300">{error}</p> : null}
+                      {notice ? <p className="text-sm text-accent-ring">{notice}</p> : null}
+                      <Button type="submit" variant="gold" className="w-fit" disabled={submitting}>
+                        {submitting ? "Mapping to a race…" : "Publish stance"}
+                      </Button>
+                    </form>
                   )}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </fieldset>
-            {error ? <p className="text-sm text-red-300">{error}</p> : null}
-            {notice ? <p className="text-sm text-accent-ring">{notice}</p> : null}
-            <Button type="submit" variant="gold" className="w-fit" disabled={submitting}>
-              {submitting ? "Locking in…" : "Lock in stance"}
-            </Button>
-          </form>
-        ) : (
-          <form className="mt-4 flex flex-col gap-3" onSubmit={(event) => void submitCustom(event)}>
-            <p className="text-sm leading-6 text-zinc-400">
-              Write the argument. Zoning, CapMetro, and parking map to City Council; capital
-              gains and federal tax map to a congressional race.
-            </p>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
-                Claim (optional)
-              </span>
-              <input
-                value={claim}
-                onChange={(event) => setClaim(event.target.value)}
-                placeholder="Austin should eliminate minimum parking mandates"
-                className="h-10 rounded-md border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-zinc-400"
-              />
-            </label>
-            <div className="flex flex-col gap-1.5">
-              <span
-                id="custom-stance-label"
-                className="text-[10px] font-medium uppercase tracking-widest text-zinc-500"
-              >
-                Policy argument
-              </span>
-              <RichTextArea
-                key={editorKey}
-                labelledBy="custom-stance-label"
-                disabled={submitting}
-                onChange={(nextHtml, nextPlain) => {
-                  setHtml(nextHtml);
-                  setPlain(nextPlain);
-                }}
-              />
-            </div>
-            {error ? <p className="text-sm text-red-300">{error}</p> : null}
-            {notice ? <p className="text-sm text-accent-ring">{notice}</p> : null}
-            <Button type="submit" variant="gold" className="w-fit" disabled={submitting}>
-              {submitting ? "Mapping to a race…" : "Publish stance"}
-            </Button>
-          </form>
-        )}
                 </div>
               </div>
             </div>,
