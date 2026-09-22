@@ -726,6 +726,14 @@ export interface Database {
         };
         Returns: MatchedDistrictRow[];
       };
+      update_ideology_vector_ema: {
+        Args: {
+          p_user_id: string;
+          p_stance_vector: string;
+          p_alpha?: number;
+        };
+        Returns: string;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
