@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { MyContests } from "@/app/leaderboards/components/MyContests";
 import { BackCandidateButton } from "@/components/pledges/BackCandidateButton";
 import { CandidateIdentity } from "@/components/profile/CandidateAvatar";
 import { DEFAULT_STANCE_DISTRICT } from "@/components/TakeStanceModal";
@@ -15,12 +16,14 @@ import {
   type LeaderboardEntry,
   type ScoreSlice,
 } from "@/lib/leaderboard";
+import type { ContestRow } from "@/lib/leaderboards/contests";
 import { STORAGE_KEYS } from "@/lib/session";
 import {
   ELECTION_LINK_COLUMNS,
   resolveElectionLink,
   type ElectionLinkRow,
 } from "@/lib/election-links";
+import { cn } from "@/lib/utils";
 import type { CandidateStats, Debate, District, UserProfile } from "@/types/database.types";
 
 type BoardId = "contests" | "ballot" | "national";
@@ -42,9 +45,10 @@ const BOARDS: {
   {
     id: "contests",
     title: "My Contests",
-    hint: () => "Elections where you are ranked or already on the ticket.",
+    hint: () =>
+      "Recommended races scored by primary alignment, general viability, and debate ELO.",
     empty: () =>
-      "You are not ranked in a contest yet. File a district or win a debate to open this board.",
+      "No recommended races yet. File a district or take a stance to open this board.",
   },
   {
     id: "ballot",
@@ -66,7 +70,16 @@ const BOARDS: {
   },
 ];
 
-export function LeaderboardTriView() {
+export function LeaderboardTriView({
+  contests,
+  signedIn,
+  contestsError,
+}: {
+  contests: ContestRow[];
+  signedIn: boolean;
+  contestsError: string | null;
+}) {
+  const [board, setBoard] = useState<BoardId>("contests");
   const [stage, setStage] = useState<LoadStage>("loading");
   const [error, setError] = useState<string | null>(null);
   const [boards, setBoards] = useState<Boards>({
@@ -181,7 +194,7 @@ export function LeaderboardTriView() {
         consistency_score: number | string | null;
       }[];
 
-      const contests = contestIds.size
+      const contestBoard = contestIds.size
         ? mergeLeaderboardEntries({
             stats: stats.filter(
               (row) => row.target_district_id && contestIds.has(row.target_district_id),
@@ -212,7 +225,7 @@ export function LeaderboardTriView() {
         .slice(0, NATIONAL_STANDING_LIMIT);
 
       setBoards({
-        contests: attachElectionLinks(contests, elections),
+        contests: attachElectionLinks(contestBoard, elections),
         ballot: attachElectionLinks(ballot, elections),
         national: attachElectionLinks(national, elections),
         homeDistrictName: home?.name ?? null,
@@ -228,39 +241,76 @@ export function LeaderboardTriView() {
     void loadBoards();
   }, []);
 
-  if (stage === "loading") {
-    return <p className="mt-16 text-sm leading-6 text-zinc-400">Tallying the field…</p>;
-  }
-
-  if (stage === "error") {
-    return (
-      <div className="mt-16 space-y-4">
-        <p className="text-sm leading-6 text-zinc-400">
-          {error ?? "Could not load these leaderboards."}
-        </p>
-        <button
-          type="button"
-          onClick={() => void loadBoards()}
-          className="inline-flex h-9 items-center justify-center rounded-md border border-gold/50 bg-zinc-800 px-3 text-xs font-medium uppercase tracking-widest text-parchment"
-        >
-          Try again
-        </button>
-      </div>
-    );
-  }
+  const active = BOARDS.find((entry) => entry.id === board) ?? BOARDS[0];
 
   return (
-    <div className="mt-10 flex flex-col gap-12">
-      {BOARDS.map((board) => (
-        <RankingTable
-          key={board.id}
-          title={board.title}
-          hint={board.hint(boards.homeDistrictName)}
-          empty={board.empty(boards.homeDistrictName)}
-          entries={boards[board.id]}
-          showDistrict={board.id !== "ballot"}
-        />
-      ))}
+    <div className="mt-10">
+      <div
+        role="tablist"
+        aria-label="Leaderboards"
+        className="flex flex-wrap gap-2"
+      >
+        {BOARDS.map((entry) => {
+          const selected = entry.id === board;
+          return (
+            <button
+              key={entry.id}
+              type="button"
+              role="tab"
+              id={`leaderboard-tab-${entry.id}`}
+              aria-selected={selected}
+              aria-controls={`leaderboard-panel-${entry.id}`}
+              onClick={() => setBoard(entry.id)}
+              className={cn(
+                "inline-flex h-10 items-center justify-center rounded-full px-4 text-[11px] font-medium uppercase tracking-widest transition-colors",
+                selected
+                  ? "bg-gold-strong text-zinc-950"
+                  : "border border-gold/40 text-zinc-400 hover:border-gold hover:text-parchment",
+              )}
+            >
+              {entry.title}
+            </button>
+          );
+        })}
+      </div>
+
+      <div
+        role="tabpanel"
+        id={`leaderboard-panel-${active.id}`}
+        aria-labelledby={`leaderboard-tab-${active.id}`}
+        className="mt-8"
+      >
+        {active.id === "contests" ? (
+          <MyContests
+            contests={contests}
+            signedIn={signedIn}
+            error={contestsError}
+          />
+        ) : stage === "loading" ? (
+          <p className="text-sm leading-6 text-zinc-400">Tallying the field…</p>
+        ) : stage === "error" ? (
+          <div className="space-y-4">
+            <p className="text-sm leading-6 text-zinc-400">
+              {error ?? "Could not load these leaderboards."}
+            </p>
+            <button
+              type="button"
+              onClick={() => void loadBoards()}
+              className="inline-flex h-9 items-center justify-center rounded-md border border-gold/50 bg-zinc-800 px-3 text-xs font-medium uppercase tracking-widest text-parchment"
+            >
+              Try again
+            </button>
+          </div>
+        ) : (
+          <RankingTable
+            title={active.title}
+            hint={active.hint(boards.homeDistrictName)}
+            empty={active.empty(boards.homeDistrictName)}
+            entries={boards[active.id]}
+            showDistrict={active.id !== "ballot"}
+          />
+        )}
+      </div>
     </div>
   );
 }
