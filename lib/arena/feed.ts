@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { unwrapCandidate } from "@/lib/arena/display";
 import { parseElo } from "@/lib/arena/elo";
+import { readElectionOcdId } from "@/lib/civic-fencing";
 import { isMissingRelation } from "@/lib/coalitions";
 import {
   ELECTION_LINK_COLUMNS,
@@ -182,6 +183,25 @@ export async function loadArenaFeed(): Promise<ArenaFeedResult> {
     electionError && isMissingRelation(electionError)
       ? []
       : ((electionRows ?? []) as ElectionLinkRow[]);
+
+  const electionIds = [
+    ...new Set(
+      rows.map((row) => row.election_id).filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  const ocdByElection = new Map<string, string>();
+  if (electionIds.length) {
+    const { data: ocdRows, error: ocdError } = await supabase
+      .from("elections")
+      .select("id, ocd_id")
+      .in("id", electionIds);
+    if (!ocdError) {
+      for (const row of (ocdRows ?? []) as { id: string; ocd_id?: string | null }[]) {
+        const ocdId = row.ocd_id?.trim();
+        if (ocdId) ocdByElection.set(row.id, ocdId);
+      }
+    }
+  }
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -245,6 +265,10 @@ export async function loadArenaFeed(): Promise<ArenaFeedResult> {
           districtId: district?.id ?? row.district_id,
           districtName: election?.officeName ?? district?.name ?? null,
           electionSlug: election?.slug ?? null,
+          electionId: readElectionOcdId(
+            row.election_id,
+            row.election_id ? ocdByElection.get(row.election_id) : null,
+          ),
           matchPercent: matchScore > 0 ? similarityToPercent(matchScore) : null,
           candidateA: toCandidate(row.candidate_a),
           candidateB: toCandidate(row.candidate_b),

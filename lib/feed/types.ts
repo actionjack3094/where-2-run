@@ -15,6 +15,10 @@ export type SocialFeedDebateItem = {
   candidateA: DebateCandidate | null;
   candidateB: DebateCandidate | null;
   votingOpen: boolean;
+  /** Governing AI confidence, 0–1. Jury UI renders only inside 0.60–0.89. */
+  aiScore: number | null;
+  /** OCD-format election division used for civic fencing. */
+  electionId: string | null;
 };
 
 export type SocialFeedStanceItem = {
@@ -53,6 +57,7 @@ export type SocialFeedResult = {
   hasMore: boolean;
   error: string | null;
   viewerTier: VerificationTier;
+  viewerOcdIdentifiers: string[];
   calibration: CalibrationPrompt;
 };
 

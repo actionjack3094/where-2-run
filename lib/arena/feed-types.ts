@@ -14,6 +14,8 @@ export type ArenaFeedDebate = {
   districtId: string | null;
   districtName: string | null;
   electionSlug: string | null;
+  /** OCD-format election division used for civic fencing. */
+  electionId: string | null;
   matchPercent: number | null;
   candidateA: ArenaFeedCandidate | null;
   candidateB: ArenaFeedCandidate | null;

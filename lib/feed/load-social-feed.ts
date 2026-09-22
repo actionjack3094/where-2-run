@@ -1,4 +1,6 @@
 import { unwrapCandidate } from "@/lib/arena/display";
+import { governingEvaluation, parseScore } from "@/lib/arena/evaluations";
+import { readElectionOcdId } from "@/lib/civic-fencing";
 import { isMissingRelation } from "@/lib/coalitions";
 import { createServerSupabase, getServerUser } from "@/lib/db/supabase-server";
 import {
@@ -16,6 +18,7 @@ import { parseVerificationTier } from "@/lib/verification";
 import type {
   CivicPost,
   DebateCandidate,
+  DebateEvaluation,
   DebateWithCandidates,
   VerificationTier,
 } from "@/types/database.types";
@@ -27,6 +30,11 @@ type CivicPostRow = Pick<
   CivicPost,
   "id" | "claim" | "argument" | "status" | "district_id" | "created_at" | "author_id"
 >;
+
+function asOcdArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((entry): entry is string => typeof entry === "string" && entry.trim() !== "");
+}
 
 function createdAtValue(value: string) {
   const time = Date.parse(value);
@@ -57,6 +65,7 @@ export async function loadSocialFeed(page: number): Promise<SocialFeedResult> {
     hasMore: false,
     error: null,
     viewerTier: "unverified",
+    viewerOcdIdentifiers: [],
     calibration,
   };
 
@@ -64,15 +73,19 @@ export async function loadSocialFeed(page: number): Promise<SocialFeedResult> {
   const user = await getServerUser();
 
   let viewerTier: VerificationTier = "unverified";
+  let viewerOcdIdentifiers: string[] = [];
   if (user?.id) {
     const { data: profile } = await supabase
       .from("users")
-      .select("verification_tier")
+      .select("verification_tier, ocd_identifiers")
       .eq("id", user.id)
       .maybeSingle();
-    viewerTier = parseVerificationTier(
-      (profile as { verification_tier?: string } | null)?.verification_tier,
-    );
+    const row = profile as {
+      verification_tier?: string;
+      ocd_identifiers?: unknown;
+    } | null;
+    viewerTier = parseVerificationTier(row?.verification_tier);
+    viewerOcdIdentifiers = asOcdArray(row?.ocd_identifiers);
   }
 
   const [
@@ -104,9 +117,14 @@ export async function loadSocialFeed(page: number): Promise<SocialFeedResult> {
   if (debateError && civicError) {
     const message = debateError.message || civicError.message;
     if (isMissingRelation(debateError) && isMissingRelation(civicError)) {
-      return { ...empty, viewerTier, error: "The civic feed tables are not available yet." };
+      return {
+        ...empty,
+        viewerTier,
+        viewerOcdIdentifiers,
+        error: "The civic feed tables are not available yet.",
+      };
     }
-    return { ...empty, viewerTier, error: message };
+    return { ...empty, viewerTier, viewerOcdIdentifiers, error: message };
   }
 
   const elections =
@@ -116,6 +134,44 @@ export async function loadSocialFeed(page: number): Promise<SocialFeedResult> {
 
   const debates = (debateError ? [] : (debateRows ?? [])) as DebateWithCandidates[];
   const civicPosts = (civicError ? [] : (civicRows ?? [])) as CivicPostRow[];
+
+  const debateIds = debates.map((debate) => debate.id);
+  const scoreByDebate = new Map<string, number | null>();
+  if (debateIds.length) {
+    const { data: evaluationRows, error: evaluationError } = await supabase
+      .from("debate_evaluations")
+      .select("debate_id, candidate_id, confidence_score, status, ensemble_result")
+      .in("debate_id", debateIds);
+    if (!evaluationError) {
+      const grouped = new Map<string, DebateEvaluation[]>();
+      for (const row of (evaluationRows ?? []) as DebateEvaluation[]) {
+        const current = grouped.get(row.debate_id) ?? [];
+        current.push(row);
+        grouped.set(row.debate_id, current);
+      }
+      for (const [debateId, rows] of grouped) {
+        const governing = governingEvaluation(rows);
+        scoreByDebate.set(debateId, governing ? parseScore(governing.confidence_score) : null);
+      }
+    }
+  }
+
+  const electionIds = [
+    ...new Set(debates.map((debate) => debate.election_id).filter((id): id is string => Boolean(id))),
+  ];
+  const ocdByElection = new Map<string, string>();
+  if (electionIds.length) {
+    const { data: ocdRows, error: ocdError } = await supabase
+      .from("elections")
+      .select("id, ocd_id")
+      .in("id", electionIds);
+    if (!ocdError) {
+      for (const row of (ocdRows ?? []) as { id: string; ocd_id?: string | null }[]) {
+        const ocdId = row.ocd_id?.trim();
+        if (ocdId) ocdByElection.set(row.id, ocdId);
+      }
+    }
+  }
 
   const authorIds = [...new Set(civicPosts.map((post) => post.author_id).filter(Boolean))];
   const { data: authorRows } = authorIds.length
@@ -145,6 +201,11 @@ export async function loadSocialFeed(page: number): Promise<SocialFeedResult> {
       votingOpen:
         (debate.status === "active" || debate.status === "voting") &&
         Boolean(candidateA && candidateB),
+      aiScore: scoreByDebate.get(debate.id) ?? null,
+      electionId: readElectionOcdId(
+        debate.election_id,
+        debate.election_id ? ocdByElection.get(debate.election_id) : null,
+      ),
     };
   });
 
@@ -181,6 +242,7 @@ export async function loadSocialFeed(page: number): Promise<SocialFeedResult> {
     hasMore,
     error: null,
     viewerTier,
+    viewerOcdIdentifiers,
     calibration: buildCalibrationPrompt(trendingTopic),
   };
 }

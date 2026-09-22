@@ -41,6 +41,35 @@ export function checkLocalEligibility(
   return userOcdArray.some((id) => normalizeOcdId(id) === target);
 }
 
+/** OCD division attached to a debate's election. UUID foreign keys are ignored. */
+export function readElectionOcdId(
+  electionId: string | null | undefined,
+  ocdId?: string | null,
+) {
+  const explicit = (ocdId ?? "").trim();
+  if (explicit) return explicit;
+  const raw = (electionId ?? "").trim();
+  if (raw.toLowerCase().startsWith("ocd-division/")) return raw;
+  return null;
+}
+
+export function juryDistrictLabel(
+  districtName: string | null | undefined,
+  electionOcdId: string | null | undefined,
+) {
+  const name = districtName?.trim();
+  if (name) return name;
+  return formatOcdDivision(electionOcdId) ?? "this district";
+}
+
+export function juryLockedCopy(
+  districtName: string | null | undefined,
+  electionOcdId: string | null | undefined,
+) {
+  const district = juryDistrictLabel(districtName, electionOcdId);
+  return `Locked: Only verified constituents of ${district} may vote on this appeal.`;
+}
+
 const STATE_NAMES: Record<string, string> = {
   al: "Alabama",
   ak: "Alaska",

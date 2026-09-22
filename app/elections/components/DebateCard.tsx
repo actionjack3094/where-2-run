@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { JuryAppealCard } from "@/app/feed/components/JuryAppealCard";
 import { AppealModal } from "@/components/debates/AppealModal";
 import { BountyButton } from "@/components/debates/BountyModal";
 import { CandidateAvatar } from "@/components/profile/CandidateAvatar";
@@ -125,6 +126,13 @@ export function DebateCard({ debate }: { debate: ArenaFeedDebate }) {
           <ConfidenceMeter value={confidence} hasEvaluation={Boolean(governing)} />
           <p className="mt-2 text-xs leading-5 text-muted-foreground">{threshold.detail}</p>
         </section>
+
+        <JuryAppealCard
+          debateId={debate.id}
+          aiScore={governing?.confidence_score ?? null}
+          electionId={debate.electionId}
+          districtName={debate.districtName}
+        />
 
         <PledgeActionRow
           debateId={debate.id}

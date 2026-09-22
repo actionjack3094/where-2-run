@@ -41,6 +41,7 @@ export default async function FeedPage(props: PageProps<"/feed">) {
             hasMore={feed.hasMore}
             items={feed.items}
             viewerTier={feed.viewerTier}
+            viewerOcdIdentifiers={feed.viewerOcdIdentifiers}
           />
         )}
       </div>

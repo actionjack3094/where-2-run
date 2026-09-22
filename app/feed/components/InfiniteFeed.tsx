@@ -11,11 +11,13 @@ export function InfiniteFeed({
   hasMore,
   items,
   viewerTier,
+  viewerOcdIdentifiers,
 }: {
   page: number;
   hasMore: boolean;
   items: SocialFeedItem[];
   viewerTier: VerificationTier;
+  viewerOcdIdentifiers: readonly string[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -42,7 +44,11 @@ export function InfiniteFeed({
 
   return (
     <div className="mt-8 pb-16">
-      <FeedTimeline items={items} viewerTier={viewerTier} />
+      <FeedTimeline
+        items={items}
+        viewerTier={viewerTier}
+        viewerOcdIdentifiers={viewerOcdIdentifiers}
+      />
       <div ref={sentinelRef} aria-hidden className="h-8 w-full" />
       {isPending ? (
         <p className="mt-2 text-center text-xs uppercase tracking-widest text-zinc-500">

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { JuryAppealCard } from "@/app/feed/components/JuryAppealCard";
 import { ChallengeButton } from "@/components/ChallengeButton";
 import { VoterPostActions } from "@/components/feed/VoterPostActions";
 import { CandidateIdentity } from "@/components/profile/CandidateAvatar";
@@ -17,9 +18,11 @@ function statusLabel(status: string) {
 export function FeedTimeline({
   items,
   viewerTier,
+  viewerOcdIdentifiers,
 }: {
   items: SocialFeedItem[];
   viewerTier: VerificationTier;
+  viewerOcdIdentifiers: readonly string[];
 }) {
   if (items.length === 0) {
     return (
@@ -113,6 +116,17 @@ export function FeedTimeline({
               <p className="mt-3 line-clamp-3 text-sm leading-6 text-zinc-400">{item.body}</p>
             </>
           )}
+
+          {item.kind === "debate" ? (
+            <JuryAppealCard
+              debateId={item.id}
+              aiScore={item.aiScore}
+              electionId={item.electionId}
+              districtName={item.districtName}
+              ocdIdentifiers={viewerOcdIdentifiers}
+              className="mt-4"
+            />
+          ) : null}
 
           {item.kind === "debate" ? (
             <VoterPostActions
