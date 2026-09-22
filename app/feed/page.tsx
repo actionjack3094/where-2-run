@@ -31,7 +31,7 @@ export default async function FeedPage(props: PageProps<"/feed">) {
           </p>
         </header>
 
-        <DebateComposer prompt={feed.calibration} />
+        <DebateComposer />
 
         {feed.error ? (
           <p className="mt-10 text-sm leading-6 text-zinc-400">{feed.error}</p>

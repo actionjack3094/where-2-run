@@ -8,18 +8,28 @@ import { publishStance } from "@/app/actions/feed/publish-stance";
 import { Button } from "@/components/ui/button";
 import { ensureArenaUser } from "@/lib/arena/identity";
 import { supabase } from "@/lib/db/supabase";
-import type { CalibrationPrompt } from "@/lib/feed/types";
-import { cn } from "@/lib/utils";
+import { toNumber } from "@/lib/electability";
 
-type ComposerMode = "calibration" | "custom";
+const AUTO_ASSIGN = "";
+const TOPIC_PLACEHOLDER =
+  "e.g., Austin should eliminate all single-family zoning within 1 mile of transit corridors.";
+const ARGUMENT_PLACEHOLDER =
+  "Make your opening case. This argument will establish your stance and initialize the debate record...";
+
+type TargetRace = {
+  id: string;
+  officeName: string;
+};
 
 function RichTextArea({
   labelledBy,
   disabled,
+  placeholder,
   onChange,
 }: {
   labelledBy: string;
   disabled?: boolean;
+  placeholder: string;
   onChange: (html: string, text: string) => void;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
@@ -74,7 +84,7 @@ function RichTextArea({
       <div className="relative">
         {empty ? (
           <p className="pointer-events-none absolute inset-x-3 top-2 text-sm leading-6 text-zinc-500">
-            Argue the mechanism: who pays, which ordinance, which jurisdiction.
+            {placeholder}
           </p>
         ) : null}
         <div
@@ -92,42 +102,91 @@ function RichTextArea({
   );
 }
 
+async function loadTargetRaces(): Promise<TargetRace[]> {
+  const arenaUser = await ensureArenaUser();
+  const { data: scores, error: scoreError } = await supabase
+    .from("electability_scores")
+    .select("district_id, ideological_match_pct, electability_multiplier")
+    .eq("user_id", arenaUser.id);
+
+  if (scoreError || !scores?.length) return [];
+
+  const ranked = [...scores].sort((left, right) => {
+    const electability =
+      toNumber(right.electability_multiplier) - toNumber(left.electability_multiplier);
+    if (electability !== 0) return electability;
+    return toNumber(right.ideological_match_pct) - toNumber(left.ideological_match_pct);
+  });
+
+  const rank = new Map<string, number>();
+  ranked.forEach((row, index) => {
+    if (!rank.has(row.district_id)) rank.set(row.district_id, index);
+  });
+
+  const { data: elections, error: electionError } = await supabase
+    .from("elections")
+    .select("id, office_name, district_id")
+    .in("district_id", [...rank.keys()]);
+
+  if (electionError || !elections?.length) return [];
+
+  return elections
+    .filter((row) => row.district_id && rank.has(row.district_id))
+    .sort(
+      (left, right) =>
+        (rank.get(left.district_id ?? "") ?? 99) - (rank.get(right.district_id ?? "") ?? 99),
+    )
+    .slice(0, 8)
+    .map((row) => ({ id: row.id, officeName: row.office_name }));
+}
+
 export function StanceModal({
   open,
   onOpenChange,
-  prompt,
-  initialMode = "calibration",
+  initialTopic = "",
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  prompt: CalibrationPrompt;
-  initialMode?: ComposerMode;
+  initialTopic?: string;
 }) {
   const router = useRouter();
-  const [mode, setMode] = useState<ComposerMode>(initialMode);
-  const [choiceId, setChoiceId] = useState<string | null>(null);
-  const [claim, setClaim] = useState("");
+  const [topic, setTopic] = useState("");
   const [html, setHtml] = useState("");
   const [plain, setPlain] = useState("");
+  const [electionId, setElectionId] = useState(AUTO_ASSIGN);
+  const [races, setRaces] = useState<TargetRace[]>([]);
   const [editorKey, setEditorKey] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const promptRef = useRef(prompt);
-  promptRef.current = prompt;
 
   useEffect(() => {
     if (!open) return;
-    const active = promptRef.current;
-    setMode(initialMode);
-    setChoiceId(null);
     setError(null);
     setNotice(null);
-    setClaim(initialMode === "custom" ? active.prompt : "");
+    setTopic(initialTopic);
     setHtml("");
     setPlain("");
+    setElectionId(AUTO_ASSIGN);
     setEditorKey((value) => value + 1);
-  }, [open, initialMode, prompt.id, prompt.prompt]);
+  }, [open, initialTopic]);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+
+    void loadTargetRaces()
+      .then((rows) => {
+        if (!cancelled) setRaces(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setRaces([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -156,50 +215,12 @@ export function StanceModal({
     return data.session?.access_token ?? null;
   }
 
-  async function submitCalibration(event: React.FormEvent) {
+  async function submit(event: React.FormEvent) {
     event.preventDefault();
-    const option = prompt.options.find((entry) => entry.id === choiceId);
-    if (!option) {
-      setError("Pick a position on this issue.");
+    if (!topic.trim()) {
+      setError("Name the proposition before publishing.");
       return;
     }
-
-    setSubmitting(true);
-    setError(null);
-    setNotice(null);
-
-    try {
-      const token = await accessToken();
-      const result = await publishStance(
-        {
-          mode: "calibration",
-          promptId: prompt.id,
-          promptText: prompt.prompt,
-          claim: prompt.prompt,
-          choiceId: option.id,
-          choiceLabel: option.label,
-          choiceScore: option.score,
-          axisId: prompt.axisId,
-        },
-        token,
-      );
-      setChoiceId(null);
-      setNotice(
-        result.electionName
-          ? `Locked in. Vector updated against ${result.electionName}.`
-          : "Locked in. Your ideology vector was recalibrated.",
-      );
-      router.push("/feed", { scroll: false });
-      router.refresh();
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not file this calibration.");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  async function submitCustom(event: React.FormEvent) {
-    event.preventDefault();
     if (plain.trim().length < 48) {
       setError("Give a fuller policy argument so we can map it to a race.");
       return;
@@ -214,17 +235,16 @@ export function StanceModal({
       const result = await publishStance(
         {
           mode: "custom",
-          promptId: prompt.id,
-          promptText: prompt.prompt,
-          axisId: prompt.axisId,
-          claim: claim.trim() || (initialMode === "custom" ? prompt.prompt : undefined),
+          claim: topic.trim(),
           body: html,
+          electionId: electionId || null,
         },
         token,
       );
-      setClaim("");
+      setTopic("");
       setHtml("");
       setPlain("");
+      setElectionId(AUTO_ASSIGN);
       setEditorKey((value) => value + 1);
       const mapped = result.electionName
         ? `Assigned to ${result.electionName}`
@@ -258,13 +278,13 @@ export function StanceModal({
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-gold">
-                Stance composer
+                Debate composer
               </p>
               <h2
                 id="stance-composer-title"
                 className="mt-1 font-display text-base font-semibold tracking-tight text-parchment"
               >
-                File a position
+                Start a debate
               </h2>
             </div>
             <button
@@ -278,113 +298,75 @@ export function StanceModal({
             </button>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 rounded-md border border-zinc-700 p-0.5">
-            {(
-              [
-                ["calibration", "Quick Calibration"],
-                ["custom", "Custom Stance"],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={mode === value}
-                onClick={() => {
-                  setMode(value);
-                  setError(null);
-                }}
-                className={cn(
-                  "h-8 rounded px-3 text-[10px] font-medium uppercase tracking-widest transition-colors",
-                  mode === value
-                    ? "bg-gold text-zinc-950"
-                    : "text-zinc-400 hover:text-parchment",
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <form className="mt-4 flex flex-col gap-3" onSubmit={(event) => void submit(event)}>
+            <label className="flex flex-col gap-1.5 text-sm">
+              <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
+                Topic / Proposition
+              </span>
+              <input
+                value={topic}
+                onChange={(event) => setTopic(event.target.value)}
+                placeholder={TOPIC_PLACEHOLDER}
+                disabled={submitting}
+                className="h-10 rounded-md border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-zinc-400 disabled:opacity-50"
+              />
+            </label>
 
-          {mode === "calibration" ? (
-            <form className="mt-4 flex flex-col gap-3" onSubmit={(event) => void submitCalibration(event)}>
-              <p className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
-                {prompt.issueLabel}
-              </p>
-              <p className="text-sm leading-6 text-zinc-200">{prompt.prompt}</p>
-              <fieldset className="grid gap-2">
-                <legend className="sr-only">Calibration options</legend>
-                {prompt.options.map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    aria-pressed={choiceId === option.id}
-                    onClick={() => setChoiceId(option.id)}
-                    className={cn(
-                      "rounded-md border px-3 py-2 text-left text-sm leading-6 transition-colors",
-                      choiceId === option.id
-                        ? "border-gold bg-gold/10 text-parchment"
-                        : "border-zinc-700 bg-zinc-950 text-zinc-300 hover:border-zinc-500",
-                    )}
-                  >
-                    {option.label}
-                  </button>
+            <div className="flex flex-col gap-1.5">
+              <span
+                id="custom-stance-label"
+                className="text-[10px] font-medium uppercase tracking-widest text-zinc-500"
+              >
+                Argument / Stance
+              </span>
+              <RichTextArea
+                key={editorKey}
+                labelledBy="custom-stance-label"
+                disabled={submitting}
+                placeholder={ARGUMENT_PLACEHOLDER}
+                onChange={(nextHtml, nextPlain) => {
+                  setHtml(nextHtml);
+                  setPlain(nextPlain);
+                }}
+              />
+            </div>
+
+            <label className="flex flex-col gap-1.5 text-sm">
+              <span
+                id="target-race-label"
+                className="text-[10px] font-medium uppercase tracking-widest text-zinc-500"
+              >
+                Target Race
+              </span>
+              <select
+                aria-labelledby="target-race-label"
+                value={electionId}
+                disabled={submitting}
+                onChange={(event) => setElectionId(event.target.value)}
+                className="h-10 rounded-md border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-zinc-400 disabled:opacity-50"
+              >
+                <option value={AUTO_ASSIGN}>
+                  Auto-Assign (AI Evaluates Jurisdictional Scope)
+                </option>
+                {races.map((race) => (
+                  <option key={race.id} value={race.id}>
+                    {race.officeName}
+                  </option>
                 ))}
-              </fieldset>
-              {error ? <p className="text-sm text-red-300">{error}</p> : null}
-              {notice ? <p className="text-sm text-accent-ring">{notice}</p> : null}
-              <Button type="submit" variant="gold" className="w-fit" disabled={submitting}>
-                {submitting ? "Locking in…" : "Lock in stance"}
-              </Button>
-            </form>
-          ) : (
-            <form className="mt-4 flex flex-col gap-3" onSubmit={(event) => void submitCustom(event)}>
-              {initialMode === "custom" ? (
-                <>
-                  <p className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
-                    {prompt.issueLabel}
-                  </p>
-                  <p className="text-sm leading-6 text-zinc-200">{prompt.prompt}</p>
-                </>
-              ) : null}
-              <p className="text-sm leading-6 text-zinc-400">
-                Write the argument. Zoning, CapMetro, and parking map to City Council; capital
-                gains and federal tax map to a congressional race.
-              </p>
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
-                  Claim (optional)
-                </span>
-                <input
-                  value={claim}
-                  onChange={(event) => setClaim(event.target.value)}
-                  placeholder="Austin should eliminate minimum parking mandates"
-                  className="h-10 rounded-md border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-zinc-400"
-                />
-              </label>
-              <div className="flex flex-col gap-1.5">
-                <span
-                  id="custom-stance-label"
-                  className="text-[10px] font-medium uppercase tracking-widest text-zinc-500"
-                >
-                  Policy argument
-                </span>
-                <RichTextArea
-                  key={editorKey}
-                  labelledBy="custom-stance-label"
-                  disabled={submitting}
-                  onChange={(nextHtml, nextPlain) => {
-                    setHtml(nextHtml);
-                    setPlain(nextPlain);
-                  }}
-                />
-              </div>
-              {error ? <p className="text-sm text-red-300">{error}</p> : null}
-              {notice ? <p className="text-sm text-accent-ring">{notice}</p> : null}
-              <Button type="submit" variant="gold" className="w-fit" disabled={submitting}>
-                {submitting ? "Mapping to a race…" : "Publish stance"}
-              </Button>
-            </form>
-          )}
+              </select>
+            </label>
+
+            <p className="inline-flex w-fit items-center rounded-full border border-gold/30 bg-zinc-950 px-2.5 py-1 text-[10px] font-medium uppercase tracking-widest text-gold/80">
+              Publishing calibrates your 6-axis ideology
+            </p>
+
+            {error ? <p className="text-sm text-red-300">{error}</p> : null}
+            {notice ? <p className="text-sm text-accent-ring">{notice}</p> : null}
+
+            <Button type="submit" variant="gold" className="w-fit" disabled={submitting}>
+              {submitting ? "Publishing…" : "Publish Debate & Record Stance"}
+            </Button>
+          </form>
         </div>
       </div>
     </div>,

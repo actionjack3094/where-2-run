@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { StanceModal } from "@/components/debate/StanceModal";
-import type { CalibrationPrompt } from "@/lib/feed/types";
 
-export function DebateComposer({ prompt }: { prompt: CalibrationPrompt }) {
+export function DebateComposer() {
   const [open, setOpen] = useState(false);
 
   return (
@@ -20,7 +19,7 @@ export function DebateComposer({ prompt }: { prompt: CalibrationPrompt }) {
         <span className="text-sm text-zinc-500">Take a stance...</span>
         <MoreHorizontal className="size-4 shrink-0 text-zinc-400" aria-hidden />
       </button>
-      <StanceModal open={open} onOpenChange={setOpen} prompt={prompt} />
+      <StanceModal open={open} onOpenChange={setOpen} />
     </>
   );
 }

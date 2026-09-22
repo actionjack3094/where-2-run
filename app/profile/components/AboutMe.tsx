@@ -4,8 +4,7 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent } from "rea
 import { updateVector } from "@/app/actions/vector";
 import { IdeologyRadar } from "@/app/profile/components/IdeologyRadar";
 import { StanceModal } from "@/components/debate/StanceModal";
-import type { CalibrationPrompt } from "@/lib/feed/types";
-import { QUIZ_QUESTIONS, type PolicyOption, type QuizQuestion } from "@/lib/ideology/questions";
+import { QUIZ_QUESTIONS, type PolicyOption } from "@/lib/ideology/questions";
 import { SIX_AXIS_IDS, SIX_AXIS_LABELS, type SixAxisId } from "@/lib/ideology/six-axis";
 import { formatRecord } from "@/lib/leaderboard";
 import type { ProfileHubData } from "@/lib/profile/hub";
@@ -15,18 +14,6 @@ const EXIT_MS = 280;
 
 function isSixAxisId(value: string): value is SixAxisId {
   return (SIX_AXIS_IDS as readonly string[]).includes(value);
-}
-
-function toCalibrationPrompt(question: QuizQuestion): CalibrationPrompt {
-  const axisId = isSixAxisId(question.id) ? question.id : "economy";
-  return {
-    id: question.id,
-    axisId,
-    axisIndex: Math.max(0, SIX_AXIS_IDS.indexOf(axisId)),
-    issueLabel: SIX_AXIS_LABELS[axisId],
-    prompt: question.prompt,
-    options: question.options,
-  };
 }
 
 export function AboutMe({
@@ -100,7 +87,7 @@ function CalibrationDeck({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stanceOpen, setStanceOpen] = useState(false);
-  const [stancePrompt, setStancePrompt] = useState<CalibrationPrompt | null>(null);
+  const [stanceTopic, setStanceTopic] = useState<string | null>(null);
   const origin = useRef(0);
   const timer = useRef(0);
 
@@ -241,7 +228,7 @@ function CalibrationDeck({
             type="button"
             disabled={pending || leaving}
             onClick={() => {
-              setStancePrompt(toCalibrationPrompt(question));
+              setStanceTopic(question.prompt);
               setStanceOpen(true);
             }}
             className="mt-4 w-full rounded-lg border border-gold bg-gold px-4 py-3 text-center font-display text-xs font-semibold uppercase tracking-[0.18em] text-zinc-950 transition-colors hover:bg-gold-strong disabled:pointer-events-none disabled:opacity-50"
@@ -257,12 +244,11 @@ function CalibrationDeck({
         </p>
       ) : null}
 
-      {stancePrompt ? (
+      {stanceTopic ? (
         <StanceModal
           open={stanceOpen}
           onOpenChange={setStanceOpen}
-          prompt={stancePrompt}
-          initialMode="custom"
+          initialTopic={stanceTopic}
         />
       ) : null}
     </section>

@@ -40,6 +40,7 @@ export type PublishStanceInput = {
   choiceLabel?: string;
   choiceScore?: number;
   axisId?: SixAxisId;
+  electionId?: string | null;
 };
 
 export type PublishStanceResult = {
@@ -82,6 +83,48 @@ async function ensurePublicUser(admin: AdminClient, userId: string) {
     username,
   });
   if (insertError) throw new Error(insertError.message);
+}
+
+async function loadTopMatchedElectionId(
+  admin: AdminClient,
+  userId: string,
+  elections: ElectionCatalogRow[],
+  preferredDistrictId: string | null,
+) {
+  const { data, error } = await admin
+    .from("electability_scores")
+    .select("district_id, ideological_match_pct, electability_multiplier")
+    .eq("user_id", userId);
+
+  const rows = (data ?? []) as Array<{
+    district_id: string;
+    ideological_match_pct: number | string | null;
+    electability_multiplier: number | string | null;
+  }>;
+
+  if (error) {
+    if (!isMissingRelation(error)) {
+      console.warn("Could not load matched elections.", error.message);
+    }
+  } else if (rows.length) {
+    const ranked = [...rows].sort((left, right) => {
+      const electability =
+        Number(right.electability_multiplier) - Number(left.electability_multiplier);
+      if (electability !== 0) return electability;
+      return Number(right.ideological_match_pct) - Number(left.ideological_match_pct);
+    });
+
+    for (const row of ranked) {
+      const match = elections.find((election) => election.district_id === row.district_id);
+      if (match) return match.id;
+    }
+  }
+
+  if (preferredDistrictId) {
+    return elections.find((row) => row.district_id === preferredDistrictId)?.id ?? null;
+  }
+
+  return null;
 }
 
 async function loadElectionCatalog(admin: AdminClient) {
@@ -165,13 +208,29 @@ export async function publishStance(
     if (argument.length < 48) {
       throw new Error("Write a fuller policy argument before publishing.");
     }
-    const assignment = await assignStanceToElection(argument, elections, {
+    topic = input.claim?.trim() || firstClaim(argument, "District policy stance");
+    const assignment = await assignStanceToElection(`${topic}\n${argument}`, elections, {
       userState: profile?.residency_state ?? null,
       preferredDistrictId: profile?.target_district_id ?? null,
     });
-    topic = input.claim?.trim() || assignment.topic || firstClaim(argument, "District policy stance");
+    if (!input.claim?.trim() && assignment.topic) topic = assignment.topic;
     keywords = assignment.keywords;
-    electionId = assignment.electionId;
+    const requestedId = input.electionId?.trim() || null;
+    const explicit =
+      requestedId && elections.some((row) => row.id === requestedId) ? requestedId : null;
+    if (explicit) {
+      electionId = explicit;
+    } else if (assignment.ambiguous) {
+      electionId =
+        (await loadTopMatchedElectionId(
+          admin,
+          userId,
+          elections,
+          profile?.target_district_id ?? null,
+        )) ?? assignment.electionId;
+    } else {
+      electionId = assignment.electionId;
+    }
     civicStance = "Affirmative";
     stanceVector = assignment.vector;
   } else {

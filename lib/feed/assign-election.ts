@@ -136,6 +136,33 @@ export function scoreElection(
   return score;
 }
 
+export function matchIsAmbiguous(
+  elections: ElectionCatalogRow[],
+  input: {
+    jurisdiction: StanceAssignment["jurisdiction"];
+    geography: string[];
+    keywords: string[];
+    userState?: string | null;
+    preferredDistrictId?: string | null;
+  },
+) {
+  let bestScore = -1;
+  let secondScore = -1;
+
+  for (const row of elections) {
+    const score = scoreElection(row, input);
+    if (score > bestScore) {
+      secondScore = bestScore;
+      bestScore = score;
+    } else if (score > secondScore) {
+      secondScore = score;
+    }
+  }
+
+  if (bestScore < 4) return true;
+  return secondScore >= 0 && bestScore - secondScore <= 1;
+}
+
 export function pickElectionId(
   elections: ElectionCatalogRow[],
   input: {
@@ -200,6 +227,14 @@ function heuristicAssignment(
   if (/\baustin\b/i.test(text) || /\bcapmetro\b/i.test(text)) geography.push("Austin");
   if (context.userState) geography.push(context.userState);
 
+  const matchInput = {
+    jurisdiction,
+    geography,
+    keywords,
+    userState: context.userState,
+    preferredDistrictId: context.preferredDistrictId,
+  };
+
   return {
     topic: firstClaim(text, "District policy stance"),
     keywords,
@@ -211,13 +246,8 @@ function heuristicAssignment(
         : jurisdiction === "state"
           ? "State Legislature"
           : "City Council",
-    electionId: pickElectionId(elections, {
-      jurisdiction,
-      geography,
-      keywords,
-      userState: context.userState,
-      preferredDistrictId: context.preferredDistrictId,
-    }),
+    electionId: pickElectionId(elections, matchInput),
+    ambiguous: matchIsAmbiguous(elections, matchInput),
     vector: inferSixAxisFromText(text),
   };
 }
@@ -241,7 +271,7 @@ export async function assignStanceToElection(
       schemaDescription:
         "Map a civic stance to geographic keywords, jurisdiction, a 6-axis ideology vector, and an election_id from the catalog.",
       system:
-        "You assign WHERE 2 RUN stances to ballot races. Extract geographic and jurisdictional keywords. Map local land-use, transit, zoning, CapMetro, parking, and city ordinances to a City Council election. Map capital gains, IRS, federal tax, Congress, and Medicare to a federal congressional race. Map governor/legislature items to a state race. Return electionId from the catalog only. Score each 6-axis value in [0, 1] from the author's position (1 = progressive pole).",
+        "You assign WHERE 2 RUN stances to ballot races. Extract geographic and jurisdictional keywords from the topic and argument. Map local land-use, transit, zoning, CapMetro, parking, and city ordinances to a City Council election. Map capital gains, IRS, federal tax, Congress, and Medicare to a federal congressional race. Map governor/legislature items to a state race. Return electionId only when one catalog race is the clear jurisdictional match. If several races fit equally well, or the scope is unclear, return electionId as null. Score each 6-axis value in [0, 1] from the author's position (1 = progressive pole).",
       prompt: `STANCE
 ${text}
 
@@ -264,20 +294,25 @@ Return the debate topic, keywords, jurisdiction, geography, officeHint, the best
       clamp01(object.safety),
     ];
 
+    const modelId = object.electionId?.trim() || null;
+    const known = Boolean(modelId && elections.some((row) => row.id === modelId));
+
     return {
       topic: object.topic.trim() || fallback.topic,
       keywords: object.keywords.length ? object.keywords : fallback.keywords,
       jurisdiction: object.jurisdiction,
       geography: object.geography.length ? object.geography : fallback.geography,
       officeHint: object.officeHint.trim() || fallback.officeHint,
-      electionId: pickElectionId(elections, {
-        preferredId: object.electionId,
-        jurisdiction: object.jurisdiction,
-        geography: object.geography,
-        keywords: object.keywords,
-        userState: context.userState,
-        preferredDistrictId: context.preferredDistrictId,
-      }),
+      electionId: known
+        ? modelId
+        : pickElectionId(elections, {
+            jurisdiction: object.jurisdiction,
+            geography: object.geography,
+            keywords: object.keywords,
+            userState: context.userState,
+            preferredDistrictId: context.preferredDistrictId,
+          }),
+      ambiguous: !known,
       vector,
     };
   } catch (error) {

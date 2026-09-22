@@ -63,5 +63,7 @@ export type StanceAssignment = {
   geography: string[];
   officeHint: string;
   electionId: string | null;
+  /** True when the extractor could not pick one race with a clear lead. */
+  ambiguous: boolean;
   vector: SixAxisVector;
 };
