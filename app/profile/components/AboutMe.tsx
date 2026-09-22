@@ -40,6 +40,8 @@ export function AboutMe({
 
   return (
     <div className="mt-10 flex flex-col gap-14">
+      <CalibrationDeck onVectorUpdated={onVectorUpdated} />
+
       <section aria-labelledby="about-bio-heading">
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
           Biography
@@ -71,8 +73,6 @@ export function AboutMe({
         candidateId={profile.userId}
         vector={profile.ideologyVector}
       />
-
-      <CalibrationDeck onVectorUpdated={onVectorUpdated} />
     </div>
   );
 }
