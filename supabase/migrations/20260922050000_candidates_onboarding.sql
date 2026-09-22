@@ -16,6 +16,30 @@ create table if not exists public.candidates (
   updated_at timestamptz not null default now()
 );
 
+-- Vector-matching may have created a stub candidates table first.
+alter table public.candidates
+  add column if not exists display_name text,
+  add column if not exists office_sought text,
+  add column if not exists bio text,
+  add column if not exists residency_state text,
+  add column if not exists ideology_vector vector(10),
+  add column if not exists pac_agreement_accepted boolean not null default false,
+  add column if not exists pac_agreement_accepted_at timestamptz,
+  add column if not exists created_at timestamptz not null default now(),
+  add column if not exists updated_at timestamptz not null default now();
+
+update public.candidates
+set display_name = coalesce(nullif(btrim(display_name), ''), 'Candidate')
+where display_name is null or btrim(display_name) = '';
+
+do $$
+begin
+  alter table public.candidates alter column display_name set not null;
+exception
+  when others then
+    null;
+end $$;
+
 comment on table public.candidates is
   'Filed candidate tickets. ideology_vector is the 10-dimensional onboarding quiz coordinate.';
 

@@ -256,6 +256,19 @@ export type PrimaryOpponentRow = {
   similarity: number;
 };
 
+export type MatchedDistrictRow = {
+  id: string;
+  name: string;
+  level: DistrictLevel | string;
+  pvi_score: number | string | null;
+  historical_lean: string | null;
+  median_ideology_vector: IdeologyVector | string | null;
+  zip_code: string | null;
+  state: string | null;
+  cosine_distance: number | string;
+  similarity: number | string;
+};
+
 export type DebateCandidate = Pick<UserProfile, "id" | "username"> & {
   elo_rating?: number;
 };
@@ -634,6 +647,14 @@ export interface Database {
           match_count?: number;
         };
         Returns: PrimaryOpponentRow[];
+      };
+      match_districts: {
+        Args: {
+          query_embedding: string;
+          match_threshold: number;
+          match_count: number;
+        };
+        Returns: MatchedDistrictRow[];
       };
     };
     Enums: Record<string, never>;
