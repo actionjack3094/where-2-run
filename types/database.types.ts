@@ -102,6 +102,8 @@ export interface Election {
   incumbent_name: string | null;
   filing_requirements: FilingRequirements | Record<string, unknown>;
   district_id: string | null;
+  /** OCD-ID for the seat. Jury eligibility compares verified divisions to this id. */
+  ocd_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -133,6 +135,15 @@ export interface DebateEvaluation {
   elo_rating?: number | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface JuryAppeal {
+  id: string;
+  debate_id: string;
+  voter_id: string;
+  /** True validates the argument. False rejects it. */
+  vote_direction: boolean;
+  created_at: string;
 }
 
 export interface Vote {
@@ -466,6 +477,28 @@ export interface Database {
           {
             foreignKeyName: "debate_evaluations_candidate_id_fkey";
             columns: ["candidate_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      jury_appeals: {
+        Row: JuryAppeal;
+        Insert: Partial<JuryAppeal> &
+          Pick<JuryAppeal, "debate_id" | "voter_id" | "vote_direction">;
+        Update: Partial<JuryAppeal>;
+        Relationships: [
+          {
+            foreignKeyName: "jury_appeals_debate_id_fkey";
+            columns: ["debate_id"];
+            isOneToOne: false;
+            referencedRelation: "debates";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "jury_appeals_voter_id_fkey";
+            columns: ["voter_id"];
             isOneToOne: false;
             referencedRelation: "users";
             referencedColumns: ["id"];
