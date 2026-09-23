@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { TargetRaceButton } from "@/app/components/TargetRaceButton";
 import { electionProfileHref } from "@/lib/election-links";
 import {
   CONTEST_SORTS,
@@ -98,10 +99,13 @@ export function MyContests({
           ) : (
             <ol className="mt-5 max-h-[70vh] divide-y divide-gold/20 overflow-y-auto overflow-x-hidden rounded-xl border border-gold/40 bg-zinc-900">
               {rows.map((contest) => (
-                <li key={contest.electionId}>
+                <li
+                  key={contest.electionId}
+                  className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center"
+                >
                   <Link
                     href={electionProfileHref(contest.slug)}
-                    className="flex flex-col gap-4 px-5 py-4 transition-colors hover:bg-zinc-950 sm:flex-row sm:items-center"
+                    className="flex min-w-0 flex-1 flex-col gap-4 transition-colors hover:opacity-90 sm:flex-row sm:items-center"
                   >
                     <span className="min-w-0 flex-1">
                       <span className="block font-display text-base font-semibold tracking-tight text-parchment">
@@ -131,6 +135,10 @@ export function MyContests({
                       />
                     </span>
                   </Link>
+                  <TargetRaceButton
+                    className="shrink-0"
+                    election_id={contest.electionId}
+                  />
                 </li>
               ))}
             </ol>

@@ -1,11 +1,32 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Lock } from "lucide-react";
 import { CoalitionNetwork } from "@/app/profile/components/CoalitionNetwork";
 import { EscrowVaultButton } from "@/app/profile/components/EscrowVaultModal";
+import {
+  formatStatutoryDate,
+  relocationDeadlineIso,
+  RESIDENCY_DISCLAIMER,
+} from "@/lib/campaign/targets";
 import { treasurerFilingLink } from "@/lib/compliance/treasurer";
+import { supabase } from "@/lib/db/supabase";
 import { formatUsd } from "@/lib/pledges";
 import type { ProfileHubData } from "@/lib/profile/hub";
+import type { CampaignTargetStatus } from "@/types/database.types";
+
+type TargetedRace = {
+  id: string;
+  status: CampaignTargetStatus | string;
+  officeName: string;
+  deadline: string | null;
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  exploring: "Exploring",
+  relocating: "Relocating",
+  filed: "Filed",
+};
 
 export function CampaignHub({ profile }: { profile: ProfileHubData }) {
   const filing = profile.election
@@ -16,9 +37,107 @@ export function CampaignHub({ profile }: { profile: ProfileHubData }) {
       })
     : null;
   const total = profile.bounties.reduce((sum, bounty) => sum + bounty.amount, 0);
+  const [targets, setTargets] = useState<TargetedRace[]>([]);
+  const [targetsLoading, setTargetsLoading] = useState(true);
+  const [targetsError, setTargetsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      const { data: rows, error } = await supabase
+        .from("campaign_targets")
+        .select("id, election_id, status, created_at")
+        .eq("user_id", profile.userId)
+        .order("created_at", { ascending: false });
+
+      if (cancelled) return;
+      if (error) {
+        setTargetsError(error.message);
+        setTargetsLoading(false);
+        return;
+      }
+
+      const electionIds = [...new Set((rows ?? []).map((row) => row.election_id))];
+      const elections =
+        electionIds.length === 0
+          ? { data: [], error: null }
+          : await supabase
+              .from("elections")
+              .select("id, office_name, election_date, residency_requirement_days")
+              .in("id", electionIds);
+
+      if (cancelled) return;
+      if (elections.error) {
+        setTargetsError(elections.error.message);
+        setTargetsLoading(false);
+        return;
+      }
+
+      const byId = new Map((elections.data ?? []).map((election) => [election.id, election]));
+      setTargets(
+        (rows ?? []).map((row) => {
+          const election = byId.get(row.election_id);
+          const deadline = relocationDeadlineIso(
+            election?.election_date,
+            election?.residency_requirement_days,
+          );
+          return {
+            id: row.id,
+            status: row.status,
+            officeName: election?.office_name ?? "Targeted race",
+            deadline,
+          };
+        }),
+      );
+      setTargetsError(null);
+      setTargetsLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [profile.userId]);
 
   return (
     <div className="mt-10 flex flex-col gap-14">
+      <section aria-labelledby="eligibility-roadmap-heading">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+          Targeting
+        </p>
+        <h2
+          id="eligibility-roadmap-heading"
+          className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment"
+        >
+          Eligibility Roadmap
+        </h2>
+        <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+          Races on this campaign, with the date you would need to establish
+          residency before election day.
+        </p>
+
+        {targetsLoading ? (
+          <p className="mt-6 text-sm leading-6 text-zinc-400">Loading targeted races…</p>
+        ) : targetsError ? (
+          <p className="mt-6 text-sm leading-6 text-rose-300" role="alert">
+            Could not load targeted races. {targetsError}
+          </p>
+        ) : targets.length === 0 ? (
+          <p className="mt-6 text-sm leading-6 text-zinc-400">
+            No targeted races yet. Target a race from your draft card or the contests
+            board to open a residency roadmap.
+          </p>
+        ) : (
+          <ul className="mt-6 flex flex-col gap-4">
+            {targets.map((race) => (
+              <li key={race.id}>
+                <EligibilityRoadmapCard race={race} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       <section aria-labelledby="escrow-unlock-heading">
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
           Escrow
@@ -166,5 +285,29 @@ export function CampaignHub({ profile }: { profile: ProfileHubData }) {
 
       <CoalitionNetwork candidateId={profile.userId} />
     </div>
+  );
+}
+
+function EligibilityRoadmapCard({ race }: { race: TargetedRace }) {
+  const status = STATUS_LABEL[race.status] ?? race.status;
+
+  return (
+    <article className="rounded-xl border border-gold/50 bg-zinc-900 px-5 py-5 shadow-[inset_3px_0_0_0_var(--gold-strong)]">
+      <p className="text-[11px] font-medium uppercase tracking-widest text-gold">{status}</p>
+      <h3 className="mt-2 font-display text-xl font-semibold tracking-tight text-parchment">
+        {race.officeName}
+      </h3>
+      <dl className="mt-4">
+        <dt className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+          Relocation Deadline
+        </dt>
+        <dd className="mt-1 font-display text-2xl font-semibold tracking-tight text-parchment">
+          {race.deadline ? formatStatutoryDate(race.deadline) : "Unpublished"}
+        </dd>
+      </dl>
+      <p className="mt-4 rounded-lg border border-gold bg-zinc-950 px-4 py-3 text-sm font-medium leading-6 text-gold">
+        {RESIDENCY_DISCLAIMER}
+      </p>
+    </article>
   );
 }

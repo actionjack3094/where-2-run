@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { TargetRaceButton } from "@/app/components/TargetRaceButton";
 import { completeOnboarding, loadDraftReveal } from "@/app/actions/onboarding/wizard";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/db/supabase";
@@ -131,6 +132,7 @@ export function DraftReveal({ onBack }: { onBack: () => void }) {
                   <dd className="font-medium text-parchment">{race.generalPath}</dd>
                 </div>
               </dl>
+              <TargetRaceButton className="mt-5" election_id={race.electionId} />
             </li>
           ))}
         </ol>

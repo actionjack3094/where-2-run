@@ -112,8 +112,22 @@ export interface Election {
   district_id: string | null;
   /** OCD-ID for the seat. Jury eligibility compares verified divisions to this id. */
   ocd_id?: string | null;
+  /** Days of district residency required before election day. */
+  residency_requirement_days?: number | null;
+  /** Election day. Relocation deadline subtracts residency_requirement_days from this date. */
+  election_date?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export type CampaignTargetStatus = "exploring" | "relocating" | "filed";
+
+export interface CampaignTarget {
+  id: string;
+  user_id: string;
+  election_id: string;
+  status: CampaignTargetStatus | string;
+  created_at: string;
 }
 
 export interface Argument {
@@ -422,6 +436,28 @@ export interface Database {
             columns: ["district_id"];
             isOneToOne: false;
             referencedRelation: "districts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      campaign_targets: {
+        Row: CampaignTarget;
+        Insert: Partial<CampaignTarget> &
+          Pick<CampaignTarget, "user_id" | "election_id">;
+        Update: Partial<CampaignTarget>;
+        Relationships: [
+          {
+            foreignKeyName: "campaign_targets_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "campaign_targets_election_id_fkey";
+            columns: ["election_id"];
+            isOneToOne: false;
+            referencedRelation: "elections";
             referencedColumns: ["id"];
           },
         ];

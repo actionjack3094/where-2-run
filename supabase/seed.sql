@@ -444,6 +444,27 @@ set
   pvi_score = excluded.pvi_score,
   updated_at = now();
 
+-- Statutory residency windows for the eligibility roadmap.
+-- Federal House: inhabitant of the state when elected (0 days before election day).
+-- Texas Senate: one year in the district before election day.
+-- Austin council: six-month district residency estimate.
+update public.elections
+set
+  election_date = date '2026-11-03',
+  residency_requirement_days = case slug
+    when 'tx-state-senate-14-2026' then 365
+    when 'tx-austin-city-council-d9-2026' then 180
+    else 0
+  end,
+  updated_at = now()
+where slug in (
+  'tx-us-house-37-2026',
+  'tx-state-senate-14-2026',
+  'tx-austin-city-council-d9-2026',
+  'tx-us-house-10-2026',
+  'mi-us-house-07-2026'
+);
+
 insert into auth.users (
   instance_id,
   id,
