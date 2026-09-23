@@ -112,13 +112,25 @@ export function DraftReveal({ onBack }: { onBack: () => void }) {
                     <p className="mt-2 text-sm text-zinc-400">Incumbent {race.incumbentName}</p>
                   ) : null}
                 </div>
-                <p className="font-display text-4xl font-semibold tabular-nums tracking-tight text-gold">
-                  {formatViabilityScore(race.viability)}
-                </p>
+                <div className="text-right">
+                  <p className="font-display text-4xl font-semibold tabular-nums tracking-tight text-gold">
+                    {formatViabilityScore(race.viability)}
+                  </p>
+                  <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                    Overall Viability Score
+                  </p>
+                </div>
               </div>
-              <p className="mt-4 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
-                Draft viability · Primary {race.primaryMatch}% · General {race.generalViability}%
-              </p>
+              <dl className="mt-5 grid gap-2 border-t border-zinc-800 pt-4 text-sm">
+                <div className="flex items-baseline justify-between gap-4">
+                  <dt className="text-zinc-400">Primary Win Odds</dt>
+                  <dd className="font-medium tabular-nums text-parchment">{race.primaryMatch}%</dd>
+                </div>
+                <div className="flex items-baseline justify-between gap-4">
+                  <dt className="text-zinc-400">General Path</dt>
+                  <dd className="font-medium text-parchment">{race.generalPath}</dd>
+                </div>
+              </dl>
             </li>
           ))}
         </ol>

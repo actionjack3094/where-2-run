@@ -99,6 +99,14 @@ export interface Election {
   slug: string;
   office_name: string;
   median_voter_vector: IdeologyVector | string | null;
+  /** Republican primary electorate, six civic axes in [0, 1]. */
+  primary_rep_vector?: IdeologyVector | string | null;
+  /** Democratic primary electorate, six civic axes in [0, 1]. */
+  primary_dem_vector?: IdeologyVector | string | null;
+  /** General-election electorate, six civic axes in [0, 1]. */
+  general_vector?: IdeologyVector | string | null;
+  /** Partisan lean from −1 (deep D) to +1 (deep R). */
+  pvi_score?: number | null;
   incumbent_name: string | null;
   filing_requirements: FilingRequirements | Record<string, unknown>;
   district_id: string | null;

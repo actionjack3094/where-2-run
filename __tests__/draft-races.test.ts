@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ocdFenceSpecificity } from "@/lib/civic-fencing";
 import { rankViableRaces } from "@/lib/onboarding/draft-races";
-import { calculateDraftViabilityScore } from "@/lib/math/viability";
+import { calculateDraftViability } from "@/lib/math/viability";
 
 const AUSTIN = [
   "ocd-division/country:us",
@@ -43,13 +43,12 @@ describe("ocdFenceSpecificity", () => {
 });
 
 describe("rankViableRaces", () => {
-  it("orders fenced races by calculateDraftViabilityScore and drops seats outside the fence", () => {
+  it("orders fenced races by the primary-general funnel and drops seats outside the fence", () => {
     const aligned = [1, 1, 1, 1, 1, 1];
     const opposed = [0, 0, 0, 0, 0, 0];
     const races = rankViableRaces({
       ocdIds: AUSTIN,
       ideologyVector: aligned,
-      eloRating: 1200,
       races: [
         {
           id: "opposed-council",
@@ -89,12 +88,65 @@ describe("rankViableRaces", () => {
 
     expect(races.map((race) => race.electionId)).toEqual(["aligned-council", "opposed-council"]);
     expect(races[0]?.viability).toBeGreaterThan(races[1]?.viability ?? 0);
+    expect(races[0]?.lane).toBe("D");
+    expect(races[0]?.generalPath).toBe("Toss-up");
     expect(races[0]?.viability).toBe(
-      calculateDraftViabilityScore({
-        primaryMatch: races[0]?.primaryMatch ?? 0,
-        generalViability: races[0]?.generalViability ?? 0,
-        eloRating: 1200,
-      }),
+      calculateDraftViability({
+        ideologyVector: aligned,
+        primaryRepVector: undefined,
+        primaryDemVector: undefined,
+        generalVector: aligned,
+        pviScore: 0,
+      }).viability,
     );
+  });
+
+  it("ranks a winnable Republican seat above an unwinnable Democratic general", () => {
+    const conservative = [0.12, 0.1, 0.08, 0.11, 0.14, 0.16];
+    const races = rankViableRaces({
+      ocdIds: [
+        ...AUSTIN,
+        "ocd-division/country:us/state:tx/cd:10",
+      ],
+      ideologyVector: conservative,
+      races: [
+        {
+          id: "tx-37",
+          slug: "tx-us-house-37-2026",
+          officeName: "U.S. House Texas District 37",
+          incumbentName: "Lloyd Doggett",
+          ocdId: "ocd-division/country:us/state:tx/cd:37",
+          districtName: "U.S. House Texas District 37",
+          districtState: "TX",
+          pviScore: -0.48,
+          medianVoterVector: [0.72, 0.68, 0.64, 0.7, 0.75, 0.55],
+          primaryRepVector: [0.22, 0.2, 0.16, 0.18, 0.24, 0.26],
+          primaryDemVector: [0.9, 0.88, 0.82, 0.86, 0.92, 0.74],
+          generalVector: [0.72, 0.68, 0.64, 0.7, 0.75, 0.55],
+        },
+        {
+          id: "tx-10",
+          slug: "tx-us-house-10-2026",
+          officeName: "U.S. House Texas District 10",
+          incumbentName: "Michael McCaul",
+          ocdId: "ocd-division/country:us/state:tx/cd:10",
+          districtName: "U.S. House Texas District 10",
+          districtState: "TX",
+          pviScore: 0.26,
+          medianVoterVector: [0.32, 0.28, 0.26, 0.3, 0.34, 0.36],
+          primaryRepVector: [0.1, 0.12, 0.08, 0.1, 0.14, 0.16],
+          primaryDemVector: [0.8, 0.78, 0.74, 0.76, 0.82, 0.68],
+          generalVector: [0.32, 0.28, 0.26, 0.3, 0.34, 0.36],
+        },
+      ],
+    });
+
+    expect(races.map((race) => race.electionId)).toEqual(["tx-10", "tx-37"]);
+    expect(races[0]?.lane).toBe("R");
+    expect(races[0]?.generalPath).toBe("Safe R");
+    expect(races[1]?.generalPath).toBe("Safe D");
+    expect(races[0]?.generalViability ?? 0).toBeGreaterThan(70);
+    expect(races[1]?.generalViability ?? 100).toBeLessThan(15);
+    expect(races[0]?.viability ?? 0).toBeGreaterThan(races[1]?.viability ?? 0);
   });
 });

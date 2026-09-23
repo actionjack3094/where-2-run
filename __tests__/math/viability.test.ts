@@ -11,9 +11,12 @@ import {
   PASS_AI_SCORE_MIN,
 } from "@/lib/math/elo";
 import {
+  calculateDraftViability,
   calculateDraftViabilityScore,
   ELO_NORMALIZE_CEILING,
   ELO_NORMALIZE_FLOOR,
+  generalPathFromPvi,
+  generalViabilityFromPvi,
   GENERAL_VIABILITY_WEIGHT,
   NORMALIZED_ELO_WEIGHT,
   normalizeElo,
@@ -140,6 +143,83 @@ describe("calculateDraftViabilityScore", () => {
         eloRating: 9000,
       }),
     ).toBe(70);
+  });
+});
+
+describe("calculateDraftViability", () => {
+  const conservative = [0.12, 0.1, 0.08, 0.11, 0.14, 0.16];
+  const republicanPrimary = [0.1, 0.12, 0.08, 0.1, 0.14, 0.16];
+  const democraticPrimary = [0.86, 0.84, 0.8, 0.82, 0.88, 0.74];
+
+  it("assigns the closer primary lane by Euclidean distance", () => {
+    const republican = calculateDraftViability({
+      ideologyVector: conservative,
+      primaryRepVector: republicanPrimary,
+      primaryDemVector: democraticPrimary,
+      pviScore: 0,
+    });
+    const democrat = calculateDraftViability({
+      ideologyVector: [0.9, 0.88, 0.84, 0.86, 0.92, 0.8],
+      primaryRepVector: republicanPrimary,
+      primaryDemVector: democraticPrimary,
+      pviScore: 0,
+    });
+
+    expect(republican.lane).toBe("R");
+    expect(democrat.lane).toBe("D");
+    expect(republican.primaryFit).toBeGreaterThan(90);
+    expect(democrat.primaryFit).toBeGreaterThan(90);
+  });
+
+  it("gives a Republican a high general baseline in an R+10 seat and a near-zero baseline in a D+20 seat", () => {
+    expect(generalViabilityFromPvi("R", 0.2)).toBeGreaterThan(70);
+    expect(generalViabilityFromPvi("R", 10 / 50)).toBeGreaterThan(70);
+    expect(generalViabilityFromPvi("R", -0.4)).toBeLessThan(15);
+    expect(generalViabilityFromPvi("R", -20)).toBeLessThan(15);
+    expect(generalViabilityFromPvi("D", -0.48)).toBeGreaterThan(80);
+    expect(generalViabilityFromPvi("R", 0)).toBe(50);
+  });
+
+  it("labels the general path from the seat lean", () => {
+    expect(generalPathFromPvi(0)).toBe("Toss-up");
+    expect(generalPathFromPvi(0.04)).toBe("Toss-up");
+    expect(generalPathFromPvi(0.12)).toBe("Lean R");
+    expect(generalPathFromPvi(0.26)).toBe("Safe R");
+    expect(generalPathFromPvi(-0.48)).toBe("Safe D");
+    expect(generalPathFromPvi(-0.12)).toBe("Lean D");
+  });
+
+  it("gates the composite so both stages must be viable", () => {
+    const winnable = calculateDraftViability({
+      ideologyVector: conservative,
+      primaryRepVector: republicanPrimary,
+      primaryDemVector: democraticPrimary,
+      pviScore: 0.26,
+    });
+    const unwinnable = calculateDraftViability({
+      ideologyVector: conservative,
+      primaryRepVector: republicanPrimary,
+      primaryDemVector: democraticPrimary,
+      pviScore: -0.48,
+    });
+
+    expect(winnable.viability).toBe(
+      Math.round((winnable.primaryFit * winnable.generalViability) / 10) / 10,
+    );
+    expect(winnable.generalPath).toBe("Safe R");
+    expect(unwinnable.generalPath).toBe("Safe D");
+    expect(unwinnable.generalViability).toBeLessThan(15);
+    expect(unwinnable.viability).toBeLessThan(15);
+    expect(winnable.viability).toBeGreaterThan(unwinnable.viability);
+
+    expect(
+      calculateDraftViability({
+        ideologyVector: conservative,
+        primaryRepVector: conservative,
+        primaryDemVector: democraticPrimary,
+        pviScore: -1,
+      }).viability,
+    ).toBeLessThan(5);
   });
 });
 

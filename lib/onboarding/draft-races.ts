@@ -1,8 +1,5 @@
-import { parseElo } from "@/lib/arena/elo";
 import { ocdFenceSpecificity } from "@/lib/civic-fencing";
-import { projectContestOutlook } from "@/lib/electability";
-import { sixAxisMatchPercent, toSixAxisVector } from "@/lib/ideology/six-axis";
-import { calculateDraftViabilityScore } from "@/lib/math/viability";
+import { calculateDraftViability, type GeneralPath, type PartyLane } from "@/lib/math/viability";
 
 export type DraftRaceSource = {
   id: string;
@@ -14,6 +11,9 @@ export type DraftRaceSource = {
   districtState: string | null;
   pviScore: number | null;
   medianVoterVector: unknown;
+  primaryRepVector?: unknown;
+  primaryDemVector?: unknown;
+  generalVector?: unknown;
 };
 
 export type ViableRace = {
@@ -23,8 +23,11 @@ export type ViableRace = {
   incumbentName: string | null;
   districtName: string | null;
   viability: number;
+  /** Primary-lane fit, shown as Primary Win Odds. */
   primaryMatch: number;
   generalViability: number;
+  generalPath: GeneralPath;
+  lane: PartyLane;
 };
 
 type ScoredRace = ViableRace & { specificity: number };
@@ -45,13 +48,10 @@ function tightestFence<T extends { specificity: number }>(rows: T[], limit: numb
 export function rankViableRaces(input: {
   ocdIds: readonly string[];
   ideologyVector: unknown;
-  eloRating: number;
   races: DraftRaceSource[];
   limit?: number;
 }): ViableRace[] {
   const limit = input.limit ?? 3;
-  const eloRating = parseElo(input.eloRating);
-  const userVector = toSixAxisVector(input.ideologyVector);
 
   const scored: ScoredRace[] = [];
   for (const race of input.races) {
@@ -64,19 +64,12 @@ export function rankViableRaces(input: {
     });
     if (specificity <= 0) continue;
 
-    const primaryMatch = sixAxisMatchPercent(
-      userVector,
-      toSixAxisVector(race.medianVoterVector),
-    );
-    const outlook = projectContestOutlook({
-      pviScore: race.pviScore,
-      matchPercent: primaryMatch,
+    const funnel = calculateDraftViability({
       ideologyVector: input.ideologyVector,
-    });
-    const viability = calculateDraftViabilityScore({
-      primaryMatch,
-      generalViability: outlook.generalPct,
-      eloRating,
+      primaryRepVector: race.primaryRepVector,
+      primaryDemVector: race.primaryDemVector,
+      generalVector: race.generalVector ?? race.medianVoterVector,
+      pviScore: race.pviScore,
     });
 
     scored.push({
@@ -85,9 +78,11 @@ export function rankViableRaces(input: {
       officeName: race.officeName,
       incumbentName: race.incumbentName,
       districtName: race.districtName,
-      viability,
-      primaryMatch,
-      generalViability: outlook.generalPct,
+      viability: funnel.viability,
+      primaryMatch: funnel.primaryFit,
+      generalViability: funnel.generalViability,
+      generalPath: funnel.generalPath,
+      lane: funnel.lane,
       specificity,
     });
   }
@@ -108,5 +103,7 @@ export function rankViableRaces(input: {
       viability: race.viability,
       primaryMatch: race.primaryMatch,
       generalViability: race.generalViability,
+      generalPath: race.generalPath,
+      lane: race.lane,
     }));
 }

@@ -13,7 +13,11 @@
 -- vector(10). Each row stores the onboarding expansion of that 6-axis quiz
 -- (buildUserVector): climate, social, 1-immigration, 1-safety, healthcare,
 -- social, 1-economy, 1-safety, (climate+economy)/2, economy.
--- public.elections.median_voter_vector stays vector(6).
+-- public.elections.median_voter_vector and general_vector are vector(6).
+-- primary_rep_vector and primary_dem_vector are the polarized primary
+-- electorates on those same axes. elections.pvi_score is -1 (deep D) to
+-- +1 (deep R): Cook points divided by 50, so D+24 is -0.48 and R+13 is +0.26.
+-- districts.pvi_score stays in Cook points (D+24 is -24).
 --
 -- Dev sign-in for any seeded account: password `seed-local-dev`.
 
@@ -29,9 +33,33 @@ delete from public.districts
 where name = 'Texas 37th Congressional District'
   and id <> 'd1570001-0037-4000-8000-000000000037';
 
+delete from public.elections e
+using public.districts d
+where e.district_id = d.id
+  and d.name in (
+    'U.S. House Texas District 10',
+    'U.S. House Michigan District 7'
+  )
+  and d.id not in (
+    'd1570001-0010-4000-8000-000000000010',
+    'd1570001-0707-4000-8000-000000000707'
+  );
+
+delete from public.districts
+where name in (
+  'U.S. House Texas District 10',
+  'U.S. House Michigan District 7'
+)
+  and id not in (
+    'd1570001-0010-4000-8000-000000000010',
+    'd1570001-0707-4000-8000-000000000707'
+  );
+
 delete from public.elections
 where slug in (
   'tx-us-house-37-2026',
+  'tx-us-house-10-2026',
+  'mi-us-house-07-2026',
   'tx-state-senate-14-2026',
   'tx-austin-city-council-d9-2026'
 );
@@ -52,7 +80,7 @@ values
     'd1570001-0037-4000-8000-000000000037',
     'U.S. House Texas District 37',
     'federal',
-    -18,
+    -24,
     'Solid Blue',
     '[0.72,0.75,0.36,0.45,0.68,0.75,0.30,0.45,0.71,0.70]'::vector(10),
     '78701',
@@ -79,6 +107,28 @@ values
     '[0.80,0.82,0.42,0.34,0.69,0.82,0.26,0.34,0.77,0.74]'::vector(10),
     '78704',
     'TX',
+    now()
+  ),
+  (
+    'd1570001-0010-4000-8000-000000000010',
+    'U.S. House Texas District 10',
+    'federal',
+    13,
+    'Solid Red',
+    '[0.32,0.34,0.74,0.64,0.28,0.34,0.70,0.64,0.31,0.30]'::vector(10),
+    '78602',
+    'TX',
+    now()
+  ),
+  (
+    'd1570001-0707-4000-8000-000000000707',
+    'U.S. House Michigan District 7',
+    'federal',
+    2,
+    'Toss-up',
+    '[0.48,0.47,0.56,0.58,0.46,0.47,0.50,0.58,0.49,0.50]'::vector(10),
+    '48933',
+    'MI',
     now()
   )
 on conflict (id) do update
@@ -236,6 +286,162 @@ set
   filing_requirements = excluded.filing_requirements,
   district_id = excluded.district_id,
   ocd_id = excluded.ocd_id,
+  updated_at = now();
+
+-- Primary lanes sit further toward each pole than the general electorate.
+-- pvi_score is Cook points / 50: TX-37 D+24, TX-10 R+13, MI-07 R+2.
+update public.elections as e
+set
+  primary_rep_vector = v.primary_rep_vector,
+  primary_dem_vector = v.primary_dem_vector,
+  general_vector = v.general_vector,
+  pvi_score = v.pvi_score,
+  updated_at = now()
+from (
+  values
+    (
+      'e1ec0001-0037-4000-8000-000000000037'::uuid,
+      '[0.22,0.20,0.16,0.18,0.24,0.26]'::vector(6),
+      '[0.90,0.88,0.82,0.86,0.92,0.74]'::vector(6),
+      '[0.72,0.68,0.64,0.70,0.75,0.55]'::vector(6),
+      -0.48::double precision
+    ),
+    (
+      'e1ec0001-0014-4000-8000-000000000014'::uuid,
+      '[0.24,0.22,0.18,0.20,0.26,0.28]'::vector(6),
+      '[0.88,0.86,0.80,0.84,0.90,0.70]'::vector(6),
+      '[0.70,0.66,0.60,0.68,0.73,0.52]'::vector(6),
+      -0.44::double precision
+    ),
+    (
+      'e1ec0001-0009-4000-8000-000000000009'::uuid,
+      '[0.26,0.22,0.18,0.20,0.28,0.30]'::vector(6),
+      '[0.92,0.86,0.78,0.88,0.94,0.76]'::vector(6),
+      '[0.80,0.69,0.58,0.74,0.82,0.66]'::vector(6),
+      -0.40::double precision
+    )
+) as v(id, primary_rep_vector, primary_dem_vector, general_vector, pvi_score)
+where e.id = v.id;
+
+insert into public.elections (
+  id,
+  slug,
+  office_name,
+  median_voter_vector,
+  incumbent_name,
+  filing_requirements,
+  district_id,
+  ocd_id,
+  primary_rep_vector,
+  primary_dem_vector,
+  general_vector,
+  pvi_score,
+  updated_at
+)
+values
+  (
+    'e1ec0001-0010-4000-8000-000000000010',
+    'tx-us-house-10-2026',
+    'U.S. House Texas District 10',
+    '[0.32,0.28,0.26,0.30,0.34,0.36]'::vector(6),
+    'Michael McCaul',
+    jsonb_build_object(
+      'jurisdiction', 'Texas 10th Congressional District',
+      'office', 'U.S. House Texas District 10',
+      'level', 'federal',
+      'state', 'TX',
+      'ocd_id', 'ocd-division/country:us/state:tx/cd:10',
+      'filing_deadline', '2026-12-14',
+      'residency_deadline', '2026-11-03',
+      'residency', 'Must be an inhabitant of Texas when elected. U.S. citizen, at least 25 years old, and seven years a citizen.',
+      'petition_signatures', 500,
+      'filing_fee', '$3,125 statutory filing fee, or a nominating petition in lieu',
+      'ballot_access', jsonb_build_array(
+        'Confirm age, citizenship, and state inhabitancy for the U.S. House.',
+        'File a Statement of Organization (FEC Form 1) before accepting contributions.',
+        'File the application for a place on the ballot with the Texas Secretary of State by the federal deadline.',
+        'Pay the filing fee or submit a valid petition in lieu.',
+        'File FEC reports on the congressional calendar once the committee is organized.'
+      ),
+      'treasurer', jsonb_build_object(
+        'form', 'FEC Form 1',
+        'office', 'Federal Election Commission',
+        'notes', 'A principal campaign committee must file Form 1 before it accepts contributions or makes expenditures.',
+        'steps', jsonb_build_array(
+          'Designate a campaign treasurer and a committee depository.',
+          'Complete FEC Form 1 with the candidate, treasurer, and bank.',
+          'File the original with the Federal Election Commission.',
+          'File an amended Form 1 before changing treasurer or bank.',
+          'Do not accept contributions until the statement is on file.'
+        )
+      )
+    ),
+    'd1570001-0010-4000-8000-000000000010',
+    'ocd-division/country:us/state:tx/cd:10',
+    '[0.10,0.12,0.08,0.10,0.14,0.16]'::vector(6),
+    '[0.80,0.78,0.74,0.76,0.82,0.68]'::vector(6),
+    '[0.32,0.28,0.26,0.30,0.34,0.36]'::vector(6),
+    0.26,
+    now()
+  ),
+  (
+    'e1ec0001-0707-4000-8000-000000000707',
+    'mi-us-house-07-2026',
+    'U.S. House Michigan District 7',
+    '[0.48,0.46,0.44,0.50,0.47,0.42]'::vector(6),
+    null,
+    jsonb_build_object(
+      'jurisdiction', 'Michigan 7th Congressional District',
+      'office', 'U.S. House Michigan District 7',
+      'level', 'federal',
+      'state', 'MI',
+      'ocd_id', 'ocd-division/country:us/state:mi/cd:7',
+      'filing_deadline', '2026-04-21',
+      'residency_deadline', '2026-11-03',
+      'residency', 'Must be an inhabitant of Michigan when elected. U.S. citizen, at least 25 years old, and seven years a citizen. Open seat.',
+      'petition_signatures', 1000,
+      'filing_fee', 'Partisan nominating petition filed with the Michigan Bureau of Elections',
+      'ballot_access', jsonb_build_array(
+        'Confirm age, citizenship, and state inhabitancy for the U.S. House.',
+        'File a Statement of Organization (FEC Form 1) before accepting contributions.',
+        'File an Affidavit of Identity with the Michigan Bureau of Elections.',
+        'Submit a partisan nominating petition of registered voters in the district.',
+        'File FEC reports on the congressional calendar once the committee is organized.'
+      ),
+      'treasurer', jsonb_build_object(
+        'form', 'FEC Form 1',
+        'office', 'Federal Election Commission',
+        'notes', 'A principal campaign committee must file Form 1 before it accepts contributions or makes expenditures.',
+        'steps', jsonb_build_array(
+          'Designate a campaign treasurer and a committee depository.',
+          'Complete FEC Form 1 with the candidate, treasurer, and bank.',
+          'File the original with the Federal Election Commission.',
+          'File an amended Form 1 before changing treasurer or bank.',
+          'Do not accept contributions until the statement is on file.'
+        )
+      )
+    ),
+    'd1570001-0707-4000-8000-000000000707',
+    'ocd-division/country:us/state:mi/cd:7',
+    '[0.14,0.16,0.12,0.18,0.20,0.22]'::vector(6),
+    '[0.76,0.80,0.70,0.84,0.78,0.72]'::vector(6),
+    '[0.48,0.46,0.44,0.50,0.47,0.42]'::vector(6),
+    0.04,
+    now()
+  )
+on conflict (id) do update
+set
+  slug = excluded.slug,
+  office_name = excluded.office_name,
+  median_voter_vector = excluded.median_voter_vector,
+  incumbent_name = excluded.incumbent_name,
+  filing_requirements = excluded.filing_requirements,
+  district_id = excluded.district_id,
+  ocd_id = excluded.ocd_id,
+  primary_rep_vector = excluded.primary_rep_vector,
+  primary_dem_vector = excluded.primary_dem_vector,
+  general_vector = excluded.general_vector,
+  pvi_score = excluded.pvi_score,
   updated_at = now();
 
 insert into auth.users (

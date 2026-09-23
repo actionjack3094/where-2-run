@@ -28,6 +28,10 @@ type ElectionRow = {
   district_id: string | null;
   median_voter_vector: unknown;
   ocd_id?: string | null;
+  primary_rep_vector?: unknown;
+  primary_dem_vector?: unknown;
+  general_vector?: unknown;
+  pvi_score?: number | null;
 };
 
 type DistrictRow = {
@@ -58,7 +62,25 @@ function isMissingOcdColumn(error: { message?: string; code?: string } | null) {
   return error.code === "42703" || error.code === "PGRST204" || /ocd_id/i.test(message);
 }
 
+function isMissingFunnelColumn(error: { message?: string; code?: string } | null) {
+  if (!error) return false;
+  const message = error.message ?? "";
+  return (
+    error.code === "42703" ||
+    error.code === "PGRST204" ||
+    /primary_rep_vector|primary_dem_vector|general_vector|pvi_score/i.test(message)
+  );
+}
+
+const ELECTION_FUNNEL_COLUMNS =
+  "id, slug, office_name, incumbent_name, district_id, median_voter_vector, ocd_id, primary_rep_vector, primary_dem_vector, general_vector, pvi_score";
+
 async function loadElections(admin: AdminClient) {
+  const funnel = await admin.from("elections").select(ELECTION_FUNNEL_COLUMNS);
+  if (!funnel.error) return (funnel.data ?? []) as ElectionRow[];
+  if (isMissingRelation(funnel.error)) return [];
+  if (!isMissingFunnelColumn(funnel.error)) throw new Error(funnel.error.message);
+
   const withOcd = await admin
     .from("elections")
     .select("id, slug, office_name, incumbent_name, district_id, median_voter_vector, ocd_id");
@@ -96,7 +118,7 @@ export async function loadDraftReveal(
   const [userQuery, candidateQuery, verificationQuery, elections, districts] = await Promise.all([
     admin
       .from("users")
-      .select("ideology_vector, elo_rating, ocd_identifiers")
+      .select("ideology_vector, ocd_identifiers")
       .eq("id", userId)
       .maybeSingle(),
     admin.from("candidates").select("ideology_vector").eq("id", userId).maybeSingle(),
@@ -115,7 +137,6 @@ export async function loadDraftReveal(
 
   const user = userQuery.data as {
     ideology_vector?: unknown;
-    elo_rating?: number | null;
     ocd_identifiers?: unknown;
   } | null;
   const candidate = candidateQuery.data as { ideology_vector?: unknown } | null;
@@ -136,8 +157,11 @@ export async function loadDraftReveal(
       ocdId: election.ocd_id ?? null,
       districtName: district?.name ?? null,
       districtState: district?.state ?? null,
-      pviScore: district?.pvi_score ?? null,
+      pviScore: election.pvi_score ?? district?.pvi_score ?? null,
       medianVoterVector: election.median_voter_vector,
+      primaryRepVector: election.primary_rep_vector,
+      primaryDemVector: election.primary_dem_vector,
+      generalVector: election.general_vector ?? election.median_voter_vector,
     };
   });
 
@@ -147,7 +171,6 @@ export async function loadDraftReveal(
     races: rankViableRaces({
       ocdIds,
       ideologyVector,
-      eloRating: user?.elo_rating ?? 1200,
       races,
       limit: 3,
     }),

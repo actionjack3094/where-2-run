@@ -68,25 +68,41 @@ export function Tier2Verification({
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        await refresh();
-        if (!cancelled) setError(null);
-      } catch (caught) {
-        if (!cancelled) {
-          setError(
-            caught instanceof Error
-              ? caught.message
-              : "Could not load civic verification.",
-          );
+    let active = true;
+    let stalled = 0;
+    // Leave the current turn before touching auth. Awaiting getSession or
+    // signUp inside supabase.auth.onAuthStateChange deadlocks the client,
+    // and this loading flag would never reach finally.
+    const timer = window.setTimeout(() => {
+      stalled = window.setTimeout(() => {
+        if (!active) return;
+        setError("Checking civic standing timed out.");
+        setLoading(false);
+      }, 8000);
+
+      void (async () => {
+        try {
+          await refresh();
+          if (active) setError(null);
+        } catch (caught) {
+          if (active) {
+            setError(
+              caught instanceof Error
+                ? caught.message
+                : "Could not load civic verification.",
+            );
+          }
+        } finally {
+          window.clearTimeout(stalled);
+          if (active) setLoading(false);
         }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
+      })();
+    }, 0);
+
     return () => {
-      cancelled = true;
+      active = false;
+      window.clearTimeout(timer);
+      window.clearTimeout(stalled);
     };
   }, [refresh]);
 
