@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { loadProfileHub } from "@/app/actions/profile/load-hub";
 import { AboutMe } from "@/app/profile/components/AboutMe";
 import { CampaignHub } from "@/app/profile/components/CampaignHub";
+import { Tier2Verification } from "@/app/profile/components/Tier2Verification";
 import type { ProfileHubData } from "@/lib/profile/hub";
 import { cn } from "@/lib/utils";
 
@@ -62,6 +63,12 @@ export default function MyProfilePage() {
             </Link>
           ) : null}
         </header>
+
+        {hub ? (
+          <div className="mt-8">
+            <Tier2Verification />
+          </div>
+        ) : null}
 
         <div
           role="tablist"

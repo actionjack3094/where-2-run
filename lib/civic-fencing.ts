@@ -222,3 +222,50 @@ export function formatVerifiedDistrict(ids: readonly string[] | null | undefined
   const primary = pickPrimaryOcdId(ids);
   return formatOcdDivision(primary);
 }
+
+const JURISDICTION_LABEL_LIMIT = 3;
+
+function stateNameFrom(partsList: Record<string, string>[]) {
+  const code = partsList.find((parts) => parts.state)?.state;
+  if (!code) return null;
+  return STATE_NAMES[code] ?? code.toUpperCase();
+}
+
+/**
+ * Short office labels for a verified address, most specific chambers first.
+ * Capped so the badge reads like "US House, Texas State Senate, Austin City Council".
+ */
+export function jurisdictionLabels(
+  ids: readonly string[] | null | undefined,
+  limit = JURISDICTION_LABEL_LIMIT,
+) {
+  if (!Array.isArray(ids) || ids.length === 0 || limit <= 0) return [];
+
+  const partsList = ids
+    .map((id) => id.trim())
+    .filter(Boolean)
+    .map((id) => parseOcdParts(id));
+
+  const stateName = stateNameFrom(partsList);
+  const council = partsList.find((parts) => parts.council_district);
+  const placeSlug = council?.place ?? partsList.find((parts) => parts.place)?.place;
+  const placeName = placeSlug ? titleCaseSlug(placeSlug) : null;
+  const countySlug = partsList.find((parts) => parts.county)?.county;
+
+  const labels: string[] = [];
+  if (partsList.some((parts) => parts.cd)) labels.push("US House");
+  if (partsList.some((parts) => parts.sldu)) {
+    labels.push(stateName ? `${stateName} State Senate` : "State Senate");
+  }
+  if (council) {
+    labels.push(placeName ? `${placeName} City Council` : "City Council");
+  }
+  if (partsList.some((parts) => parts.sldl)) {
+    labels.push(stateName ? `${stateName} State House` : "State House");
+  }
+  if (countySlug) labels.push(`${titleCaseSlug(countySlug)} County`);
+  if (placeName && !council) labels.push(placeName);
+  if (labels.length === 0 && stateName) labels.push(stateName);
+
+  return labels.slice(0, limit);
+}
