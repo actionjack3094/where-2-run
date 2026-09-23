@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireActionUserId } from "@/lib/arena/auth";
+import { ensureArenaProfile } from "@/lib/arena/ensure-profile";
 import { encryptResidentialAddress } from "@/lib/civic/address-cipher";
 import {
   extractOcdIdentifiers,
@@ -80,23 +81,6 @@ function toState(row: {
     jurisdictions: jurisdictionLabels(ocdIds),
     verifiedAt: row?.verified_at ?? null,
   };
-}
-
-async function ensurePublicUser(admin: AdminClient, userId: string) {
-  const { data: existing, error } = await admin
-    .from("users")
-    .select("id")
-    .eq("id", userId)
-    .maybeSingle();
-
-  if (error) throw new Error(error.message);
-  if (existing) return;
-
-  const { error: insertError } = await admin.from("users").insert({
-    id: userId,
-    username: `runner-${userId.slice(0, 6)}`,
-  });
-  if (insertError) throw new Error(insertError.message);
 }
 
 async function syncProfileDivisions(admin: AdminClient, userId: string, ocdIds: string[]) {
@@ -191,7 +175,7 @@ export async function verifyAddress(
   }
 
   const admin = createAdminClient();
-  await ensurePublicUser(admin, userId);
+  await ensureArenaProfile(accessToken);
 
   const verifiedAt = new Date().toISOString();
   const { data, error } = await admin
