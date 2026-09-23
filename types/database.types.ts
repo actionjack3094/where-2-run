@@ -299,6 +299,8 @@ export interface ElectionRequirement {
   created_at: string;
 }
 
+export type JurisdictionalLevel = "federal" | "state" | "local";
+
 export type CivicPostStatus = "open" | "challenged" | "debating";
 
 export type CivicStance = "Affirmative" | "Negative";
@@ -312,6 +314,29 @@ export interface CivicPost {
   argument: string;
   ideology_vector: IdeologyVector | string | null;
   status: CivicPostStatus | string;
+  created_at: string;
+}
+
+export interface ElectionQuestion {
+  id: string;
+  election_id: string;
+  author_id: string | null;
+  prompt: string;
+  jurisdictional_level: JurisdictionalLevel | string;
+  primary_axis: string;
+  applicable_ocd_ids: string[];
+  information_gain_score: number | string;
+  created_at: string;
+}
+
+export interface UserStance {
+  id: string;
+  user_id: string;
+  question_id: string;
+  election_id: string;
+  position_score: number | string;
+  position_label: string;
+  primary_axis: string;
   created_at: string;
 }
 
@@ -708,6 +733,68 @@ export interface Database {
             columns: ["user_id"];
             isOneToOne: true;
             referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      election_questions: {
+        Row: ElectionQuestion;
+        Insert: Partial<ElectionQuestion> &
+          Pick<
+            ElectionQuestion,
+            "election_id" | "prompt" | "jurisdictional_level" | "primary_axis"
+          >;
+        Update: Partial<ElectionQuestion>;
+        Relationships: [
+          {
+            foreignKeyName: "election_questions_election_id_fkey";
+            columns: ["election_id"];
+            isOneToOne: false;
+            referencedRelation: "elections";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "election_questions_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      user_stances: {
+        Row: UserStance;
+        Insert: Partial<UserStance> &
+          Pick<
+            UserStance,
+            | "user_id"
+            | "question_id"
+            | "election_id"
+            | "position_score"
+            | "position_label"
+            | "primary_axis"
+          >;
+        Update: Partial<UserStance>;
+        Relationships: [
+          {
+            foreignKeyName: "user_stances_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_stances_question_id_fkey";
+            columns: ["question_id"];
+            isOneToOne: false;
+            referencedRelation: "election_questions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_stances_election_id_fkey";
+            columns: ["election_id"];
+            isOneToOne: false;
+            referencedRelation: "elections";
             referencedColumns: ["id"];
           },
         ];
