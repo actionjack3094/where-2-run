@@ -208,3 +208,131 @@ export async function updateVector(
 
   return { ideologyVector: stored.length > 0 ? stored : ten };
 }
+
+function isUniqueViolation(error: { code?: string; message?: string } | null) {
+  if (!error) return false;
+  return error.code === "23505" || /duplicate key/i.test(error.message ?? "");
+}
+
+async function mirrorCandidateIdeology(
+  admin: AdminClient,
+  userId: string,
+  username: string,
+  ideologyVector: string,
+) {
+  const now = new Date().toISOString();
+  const updated = await admin
+    .from("candidates")
+    .update({
+      ideology_vector: ideologyVector,
+      updated_at: now,
+    })
+    .eq("id", userId)
+    .select("id")
+    .maybeSingle();
+
+  if (updated.error) {
+    if (isMissingRelation(updated.error)) {
+      throw new Error(
+        "candidates is not on the database yet. Apply the candidate onboarding migration.",
+      );
+    }
+    throw new Error(updated.error.message);
+  }
+  if (updated.data) return;
+
+  const inserted = await admin
+    .from("candidates")
+    .insert({
+      id: userId,
+      display_name: username,
+      ideology_vector: ideologyVector,
+      updated_at: now,
+    })
+    .select("id")
+    .maybeSingle();
+
+  if (inserted.error && !isUniqueViolation(inserted.error)) {
+    if (isMissingRelation(inserted.error)) {
+      throw new Error(
+        "candidates is not on the database yet. Apply the candidate onboarding migration.",
+      );
+    }
+    throw new Error(inserted.error.message);
+  }
+}
+
+/** Write the six-axis quiz as the baseline ideology vector (EMA alpha = 1). */
+export async function establishBaselineIdeologyVector(
+  answers: Partial<Record<SixAxisId, number>>,
+  accessToken?: string | null,
+) {
+  const stance = emptySixAxis();
+  for (let index = 0; index < SIX_AXIS_IDS.length; index += 1) {
+    const axisId = SIX_AXIS_IDS[index];
+    const score = answers[axisId];
+    if (score == null || !Number.isFinite(score)) {
+      throw new Error("Answer every policy axis before calibrating your vector.");
+    }
+    stance[index] = clamp01(score);
+  }
+
+  const { admin, userId } = await requireCandidate(accessToken);
+  const { data: profile, error: profileError } = await admin
+    .from("users")
+    .select("username, ideology_vector")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (profileError) throw new Error(profileError.message);
+
+  const { error } = await admin.rpc("update_ideology_vector_ema", {
+    p_user_id: userId,
+    p_stance_vector: formatSixAxisVector(stance),
+    p_alpha: 1,
+  });
+
+  let stored = parseVector(profile?.ideology_vector);
+
+  if (error) {
+    if (!isMissingVectorRpc(error) && !isMissingStanceColumn(error)) {
+      console.warn("Baseline ideology RPC failed; writing the stance directly.", error.message);
+    }
+    const next = applyIdeologyEma(null, stance, 1);
+    stored = next.ten;
+    const { error: updateError } = await admin
+      .from("users")
+      .update({
+        ideology_vector: formatPgIdeologyVector(next.ten),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", userId);
+    if (updateError) throw new Error(updateError.message);
+  } else {
+    const { data: refreshed, error: refreshError } = await admin
+      .from("users")
+      .select("ideology_vector")
+      .eq("id", userId)
+      .maybeSingle();
+    if (refreshError) throw new Error(refreshError.message);
+    stored = parseVector(refreshed?.ideology_vector);
+    if (stored.length === 0) stored = buildUserVector([...stance]);
+  }
+
+  const ten =
+    stored.length >= 10
+      ? stored.slice(0, 10)
+      : buildUserVector([...toSixAxisVector(stored.length > 0 ? stored : stance)]);
+  const username =
+    (profile as { username?: string | null } | null)?.username?.trim() ||
+    `runner-${userId.slice(0, 6)}`;
+
+  await mirrorCandidateIdeology(admin, userId, username, formatPgIdeologyVector(ten));
+
+  revalidatePath("/onboarding");
+  revalidatePath("/profile");
+  revalidatePath(`/profile/${userId}`);
+  revalidatePath("/my-campaign");
+
+  return { ideologyVector: ten };
+}

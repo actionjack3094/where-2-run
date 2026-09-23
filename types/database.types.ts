@@ -228,6 +228,7 @@ export interface Candidate {
   ideology_vector: IdeologyVector | string;
   pac_agreement_accepted: boolean;
   pac_agreement_accepted_at: string | null;
+  onboarding_completed: boolean;
   created_at: string;
   updated_at: string;
 }

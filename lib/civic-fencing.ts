@@ -223,6 +223,109 @@ export function formatVerifiedDistrict(ids: readonly string[] | null | undefined
   return formatOcdDivision(primary);
 }
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function statesAlign(districtState: string | null | undefined, ocdState: string | undefined) {
+  const left = (districtState ?? "").trim().toLowerCase();
+  const right = (ocdState ?? "").trim().toLowerCase();
+  if (!left || !right) return false;
+  if (left === right) return true;
+  const name = STATE_NAMES[right];
+  return Boolean(name && left === name.toLowerCase());
+}
+
+function textIncludesState(haystack: string, ocdState: string | undefined) {
+  const code = (ocdState ?? "").trim().toLowerCase();
+  if (!code) return false;
+  if (new RegExp(`\\b${escapeRegExp(code)}\\b`, "i").test(haystack)) return true;
+  const name = (STATE_NAMES[code] ?? "").toLowerCase();
+  return Boolean(name && haystack.includes(name));
+}
+
+function haystackHasToken(haystack: string, raw: string | undefined) {
+  const token = (raw ?? "").replace(/[_-]+/g, " ").trim().toLowerCase();
+  if (token.length < 3) return false;
+  return haystack.includes(token);
+}
+
+function haystackHasDistrictNumber(haystack: string, raw: string | undefined) {
+  const value = (raw ?? "").trim().toLowerCase();
+  if (!value) return false;
+  const numeric = Number(value);
+  const tokens = [value];
+  if (Number.isFinite(numeric)) tokens.push(ordinal(numeric).toLowerCase());
+  return tokens.some((token) =>
+    new RegExp(`\\b${escapeRegExp(token)}\\b`, "i").test(haystack),
+  );
+}
+
+export type OcdFenceSeat = {
+  ocdIds: readonly string[] | null | undefined;
+  electionOcdId?: string | null;
+  officeName: string;
+  districtName?: string | null;
+  districtState?: string | null;
+};
+
+/**
+ * How tightly a seat sits inside a verified OCD fence.
+ * 100 is an exact division id. 0 means the seat is outside the fence.
+ */
+export function ocdFenceSpecificity(input: OcdFenceSeat) {
+  const ids = input.ocdIds ?? [];
+  if (checkLocalEligibility(ids, input.electionOcdId)) return 100;
+
+  const haystack = `${input.officeName} ${input.districtName ?? ""}`.toLowerCase();
+  let best = 0;
+
+  for (const id of ids) {
+    if (!id?.trim()) continue;
+    const parts = parseOcdParts(id);
+    const inState =
+      statesAlign(input.districtState, parts.state) || textIncludesState(haystack, parts.state);
+    if (!inState) continue;
+
+    if (
+      parts.council_district &&
+      haystackHasDistrictNumber(haystack, parts.council_district) &&
+      (!parts.place || haystackHasToken(haystack, parts.place))
+    ) {
+      best = Math.max(best, 85);
+    }
+    if (parts.ward && haystackHasDistrictNumber(haystack, parts.ward)) {
+      best = Math.max(best, 85);
+    }
+    if (parts.cd && haystackHasDistrictNumber(haystack, parts.cd)) {
+      best = Math.max(best, 90);
+    }
+    if (
+      parts.sldu &&
+      haystackHasDistrictNumber(haystack, parts.sldu) &&
+      /senate/.test(haystack)
+    ) {
+      best = Math.max(best, 90);
+    }
+    if (
+      parts.sldl &&
+      haystackHasDistrictNumber(haystack, parts.sldl) &&
+      /house|assembly/.test(haystack)
+    ) {
+      best = Math.max(best, 88);
+    }
+    if (parts.place && haystackHasToken(haystack, parts.place)) {
+      best = Math.max(best, 60);
+    }
+    if (parts.county && haystackHasToken(haystack, parts.county)) {
+      best = Math.max(best, 40);
+    }
+    best = Math.max(best, 20);
+  }
+
+  return best;
+}
+
 const JURISDICTION_LABEL_LIMIT = 3;
 
 function stateNameFrom(partsList: Record<string, string>[]) {

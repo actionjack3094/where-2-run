@@ -1,10 +1,11 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import {
   loadTier2Verification,
   verifyAddress,
+  type Tier2VerificationState,
 } from "@/app/actions/verification/verify-address";
 import { Button } from "@/components/ui/button";
 import { ensureArenaUser } from "@/lib/arena/identity";
@@ -33,7 +34,23 @@ function composeAddress(fields: Fields) {
   return [street, city, region].filter(Boolean).join(", ");
 }
 
-export function Tier2Verification() {
+export function Tier2Verification({
+  onVerified,
+  onStatus,
+}: {
+  /** Fires after a successful Civic lookup saves OCD identifiers. */
+  onVerified?: (state: Tier2VerificationState) => void;
+  /** Fires whenever the saved verification state is known. */
+  onStatus?: (state: Tier2VerificationState) => void;
+} = {}) {
+  const onVerifiedRef = useRef(onVerified);
+  const onStatusRef = useRef(onStatus);
+
+  useEffect(() => {
+    onVerifiedRef.current = onVerified;
+    onStatusRef.current = onStatus;
+  });
+
   const [fields, setFields] = useState<Fields>(EMPTY_FIELDS);
   const [verified, setVerified] = useState(false);
   const [jurisdictions, setJurisdictions] = useState<string[]>([]);
@@ -47,6 +64,7 @@ export function Tier2Verification() {
     const result = await loadTier2Verification(token);
     setVerified(result.verified);
     setJurisdictions(result.jurisdictions);
+    onStatusRef.current?.(result);
   }, []);
 
   useEffect(() => {
@@ -88,6 +106,10 @@ export function Tier2Verification() {
       setVerified(result.verified);
       setJurisdictions(result.jurisdictions);
       setFields(EMPTY_FIELDS);
+      onStatusRef.current?.(result);
+      if (result.verified && result.ocdIds.length > 0) {
+        onVerifiedRef.current?.(result);
+      }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not verify that address.");
     } finally {
