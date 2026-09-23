@@ -195,6 +195,22 @@ export interface CampaignPledge {
   updated_at: string;
 }
 
+export type EscrowPledgeStatus = "vaulted" | "captured" | "failed" | "canceled";
+
+export interface EscrowPledge {
+  id: string;
+  voter_id: string;
+  election_id: string;
+  pledged_amount: number | string;
+  stripe_setup_intent_id: string;
+  stripe_customer_id: string;
+  stripe_payment_method_id: string | null;
+  status: EscrowPledgeStatus | string;
+  mandate_accepted_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Candidate {
   id: string;
   display_name: string;
@@ -603,6 +619,35 @@ export interface Database {
             columns: ["debate_id"];
             isOneToOne: false;
             referencedRelation: "debates";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      escrow_pledges: {
+        Row: EscrowPledge;
+        Insert: Partial<EscrowPledge> &
+          Pick<
+            EscrowPledge,
+            | "voter_id"
+            | "election_id"
+            | "pledged_amount"
+            | "stripe_setup_intent_id"
+            | "stripe_customer_id"
+          >;
+        Update: Partial<EscrowPledge>;
+        Relationships: [
+          {
+            foreignKeyName: "escrow_pledges_voter_id_fkey";
+            columns: ["voter_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "escrow_pledges_election_id_fkey";
+            columns: ["election_id"];
+            isOneToOne: false;
+            referencedRelation: "elections";
             referencedColumns: ["id"];
           },
         ];

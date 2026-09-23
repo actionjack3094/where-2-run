@@ -130,10 +130,40 @@ export async function reuseOrCreateCustomer(
     ?.stripe_customer_id;
   if (reused) return reused;
 
+  const { data: vaulted, error: vaultError } = await admin
+    .from("escrow_pledges")
+    .select("stripe_customer_id")
+    .eq("voter_id", donorId)
+    .not("stripe_customer_id", "is", null)
+    .limit(1)
+    .maybeSingle();
+
+  if (vaultError) {
+    if (!isMissingRelation(vaultError)) throw new Error(vaultError.message);
+  } else {
+    const vaultCustomer = (vaulted as { stripe_customer_id: string } | null)
+      ?.stripe_customer_id;
+    if (vaultCustomer) return vaultCustomer;
+  }
+
   const customer = await stripe.customers.create({
     metadata: { donor_id: donorId },
   });
   return customer.id;
+}
+
+export async function requireElection(admin: AdminClient, electionId: string) {
+  const trimmed = electionId.trim();
+  if (!isUuid(trimmed)) throw new Error("A valid election is required.");
+
+  const { data, error } = await admin
+    .from("elections")
+    .select("id, office_name, slug")
+    .eq("id", trimmed)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("That election is not on the ballot.");
+  return data as { id: string; office_name: string; slug: string };
 }
 
 export async function requireCandidate(admin: AdminClient, candidateId: string) {

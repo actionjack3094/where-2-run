@@ -8,6 +8,7 @@ import {
   parsePledgeAmount,
   parseUnlockCondition,
   requireCandidate,
+  requireElection,
   resolveElectionId,
   reuseOrCreateCustomer,
   stripeMessage,
@@ -63,6 +64,54 @@ export async function createSetupIntent(
         amount: amount.toFixed(2),
         unlock_condition: unlockCondition,
         ...(debateId ? { debate_id: debateId } : {}),
+      },
+    });
+
+    if (!setupIntent.client_secret) {
+      throw new Error("Stripe did not return a SetupIntent client secret.");
+    }
+
+    return {
+      ok: true,
+      clientSecret: setupIntent.client_secret,
+      setupIntentId: setupIntent.id,
+      customerId,
+    };
+  } catch (error) {
+    throw new Error(stripeMessage(error, "Could not open this escrow SetupIntent."));
+  }
+}
+
+export type CreateEscrowVaultSetupIntentInput = {
+  electionId: string;
+  pledgedAmount: number;
+  accessToken?: string | null;
+};
+
+export async function createEscrowVaultSetupIntent(
+  input: CreateEscrowVaultSetupIntentInput,
+): Promise<CreateSetupIntentResult> {
+  const electionId = input.electionId?.trim() ?? "";
+  const { amount } = parsePledgeAmount(Number(input.pledgedAmount));
+
+  const voterId = await requireActionUserId(input.accessToken);
+  if (!voterId) throw new Error("Sign in to vault a conditional bounty.");
+
+  const admin = createAdminClient();
+  const election = await requireElection(admin, electionId);
+
+  try {
+    const stripe = getStripe();
+    const customerId = await reuseOrCreateCustomer(admin, stripe, voterId);
+    const setupIntent = await stripe.setupIntents.create({
+      customer: customerId,
+      usage: "off_session",
+      payment_method_types: ["card"],
+      metadata: {
+        voter_id: voterId,
+        election_id: election.id,
+        pledged_amount: amount.toFixed(2),
+        purpose: "conditional_bounty",
       },
     });
 

@@ -2,6 +2,7 @@
 
 import { Lock } from "lucide-react";
 import { CoalitionNetwork } from "@/app/profile/components/CoalitionNetwork";
+import { EscrowVaultButton } from "@/app/profile/components/EscrowVaultModal";
 import { treasurerFilingLink } from "@/lib/compliance/treasurer";
 import { formatUsd } from "@/lib/pledges";
 import type { ProfileHubData } from "@/lib/profile/hub";
@@ -75,6 +76,24 @@ export function CampaignHub({ profile }: { profile: ProfileHubData }) {
             ))}
           </ul>
         ) : null}
+
+        <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-5">
+          <h3 className="font-display text-lg font-semibold tracking-tight text-parchment">
+            Conditional bounty
+          </h3>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+            {profile.election
+              ? `Save a card for ${profile.election.officeName}. The platform charges it off-session when a candidate files for that seat.`
+              : "Match a seat before vaulting a card. The charge runs when a candidate files."}
+          </p>
+          {profile.election ? (
+            <EscrowVaultButton
+              className="mt-5"
+              electionId={profile.election.id}
+              officeName={profile.election.officeName}
+            />
+          ) : null}
+        </div>
       </section>
 
       <section aria-labelledby="compliance-ballot-heading">
