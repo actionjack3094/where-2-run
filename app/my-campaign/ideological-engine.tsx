@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ingestAuthoredPrompt } from "@/app/actions/debates/classify-prompt";
 import { cn } from "@/lib/utils";
 
 type Stance = "endorse" | "oppose" | "skip";
@@ -56,6 +57,8 @@ function exitClass(stance: Stance | null) {
 export function IdeologicalEngine() {
   const [index, setIndex] = useState(0);
   const [exit, setExit] = useState<Stance | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
   const busy = useRef(false);
   const timer = useRef<number>(0);
 
@@ -67,19 +70,42 @@ export function IdeologicalEngine() {
 
   const advance = useCallback((stance: Stance) => {
     if (busy.current) return;
-    busy.current = true;
-    setExit(stance);
+    const prompt = POLICY_QUESTIONS[index]?.prompt;
+    if (!prompt) return;
 
-    timer.current = window.setTimeout(() => {
-      setIndex((current) => (current + 1) % POLICY_QUESTIONS.length);
-      setExit(null);
-      busy.current = false;
-    }, EXIT_MS);
-  }, []);
+    busy.current = true;
+    setPending(true);
+    setError(null);
+
+    void (async () => {
+      if (stance !== "skip") {
+        try {
+          await ingestAuthoredPrompt({
+            prompt,
+            positionLabel: stance === "endorse" ? "Endorse" : "Oppose",
+            positionScore: stance === "endorse" ? 1 : 0,
+          });
+        } catch (caught) {
+          busy.current = false;
+          setPending(false);
+          setError(caught instanceof Error ? caught.message : "Could not record this stance.");
+          return;
+        }
+      }
+
+      setExit(stance);
+      timer.current = window.setTimeout(() => {
+        setIndex((current) => (current + 1) % POLICY_QUESTIONS.length);
+        setExit(null);
+        busy.current = false;
+        setPending(false);
+      }, EXIT_MS);
+    })();
+  }, [index]);
 
   const current = POLICY_QUESTIONS[index];
   const upcoming = POLICY_QUESTIONS[(index + 1) % POLICY_QUESTIONS.length];
-  const animating = exit !== null;
+  const animating = exit !== null || pending;
 
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col px-6 py-10">
@@ -188,6 +214,12 @@ export function IdeologicalEngine() {
       >
         Skip / Next Question
       </button>
+
+      {error ? (
+        <p className="mt-4 text-sm leading-6 text-zinc-400" role="alert">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

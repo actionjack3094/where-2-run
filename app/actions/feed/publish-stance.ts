@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { ingestAuthoredPrompt } from "@/app/actions/debates/classify-prompt";
 import { requireActionUserId } from "@/lib/arena/auth";
 import { isMissingRelation } from "@/lib/coalitions";
 import { createAdminClient } from "@/lib/db/supabase-admin";
@@ -54,6 +55,11 @@ export type PublishStanceResult = {
 
 function isSixAxisId(value: string | undefined): value is SixAxisId {
   return Boolean(value && (SIX_AXIS_IDS as readonly string[]).includes(value));
+}
+
+function isQuestionBankMissing(error: unknown) {
+  const message = error instanceof Error ? error.message : "";
+  return /election_questions|user_stances|question bank/i.test(message);
 }
 
 function isMissingRpc(error: { message?: string; code?: string } | null) {
@@ -260,6 +266,23 @@ export async function publishStance(
   const districtLabel = election?.office_name ?? districtId ?? "Austin City Council - District 9";
 
   let postId: string | null = null;
+  let vectorUpdated = false;
+
+  if (mode === "custom") {
+    try {
+      await ingestAuthoredPrompt(
+        {
+          prompt: `${topic}\n${argument}`,
+          positionLabel: argument.slice(0, 500),
+        },
+        accessToken,
+      );
+      vectorUpdated = true;
+    } catch (error) {
+      if (!isQuestionBankMissing(error)) throw error;
+      console.warn("Question bank is unavailable; publishing the debate without it.", error);
+    }
+  }
 
   if (mode === "calibration") {
     const civicIdeology = formatCivicVector(
@@ -316,7 +339,7 @@ export async function publishStance(
     }
   }
 
-  await applyVectorEma(admin, userId, stanceVector);
+  if (!vectorUpdated) await applyVectorEma(admin, userId, stanceVector);
 
   revalidatePath("/feed");
   if (election?.slug) revalidatePath(`/elections/${election.slug}`);

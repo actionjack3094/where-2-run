@@ -1,44 +1,76 @@
 import { unwrapCandidate } from "@/lib/arena/display";
-import { governingEvaluation, parseScore } from "@/lib/arena/evaluations";
-import { readElectionOcdId } from "@/lib/civic-fencing";
+import { normalizeOcdId } from "@/lib/civic-fencing";
 import { isMissingRelation } from "@/lib/coalitions";
 import { createServerSupabase, getServerUser } from "@/lib/db/supabase-server";
 import {
-  ELECTION_LINK_COLUMNS,
-  resolveElectionLink,
-  type ElectionLinkRow,
-} from "@/lib/election-links";
-import { buildCalibrationPrompt } from "@/lib/feed/calibration";
+  isJurisdictionalLevel,
+  isPrimaryAxis,
+} from "@/lib/debates/prompt-classification";
+import { calculateDraftViability } from "@/lib/math/viability";
 import {
-  SOCIAL_FEED_PAGE_SIZE,
-  type SocialFeedItem,
-  type SocialFeedResult,
+  passesViabilityGate,
+  type BlueFeedDebate,
+  type RedFeedQuestion,
 } from "@/lib/feed/types";
 import { parseVerificationTier } from "@/lib/verification";
-import type {
-  CivicPost,
-  DebateCandidate,
-  DebateEvaluation,
-  DebateWithCandidates,
-  VerificationTier,
-} from "@/types/database.types";
+import type { DebateWithCandidates, VerificationTier } from "@/types/database.types";
 
-const ACTIVE_DEBATE_STATUSES = ["matching", "active", "voting"] as const;
-const DEFAULT_DISTRICT_NAME = "Austin City Council - District 9";
+const JURY_DEBATE_STATUSES = ["active", "voting"] as const;
+const ELECTION_COLUMNS =
+  "id, slug, office_name, ocd_id, pvi_score, primary_rep_vector, primary_dem_vector, general_vector, median_voter_vector";
+const ELECTION_COLUMNS_BASIC = "id, slug, office_name, ocd_id";
 
-type CivicPostRow = Pick<
-  CivicPost,
-  "id" | "claim" | "argument" | "status" | "district_id" | "created_at" | "author_id"
->;
+export type FeedViewer = {
+  userId: string | null;
+  tier: VerificationTier;
+  ocdIdentifiers: string[];
+  ideologyVector: unknown;
+  tier2OcdIds: string[];
+};
+
+type ElectionRow = {
+  id: string;
+  slug: string;
+  office_name: string;
+  ocd_id?: string | null;
+  pvi_score?: number | null;
+  primary_rep_vector?: unknown;
+  primary_dem_vector?: unknown;
+  general_vector?: unknown;
+  median_voter_vector?: unknown;
+};
+
+type QuestionRow = {
+  id: string;
+  prompt: string;
+  election_id: string;
+  jurisdictional_level: string;
+  primary_axis: string;
+  information_gain_score: number | string | null;
+  created_at: string;
+};
+
+export type LoopQueryResult<T> = {
+  items: T[];
+  hasMore: boolean;
+  error: string | null;
+};
 
 function asOcdArray(value: unknown): string[] {
+  if (typeof value === "string") {
+    try {
+      return asOcdArray(JSON.parse(value) as unknown);
+    } catch {
+      return [];
+    }
+  }
   if (!Array.isArray(value)) return [];
   return value.filter((entry): entry is string => typeof entry === "string" && entry.trim() !== "");
 }
 
-function createdAtValue(value: string) {
-  const time = Date.parse(value);
-  return Number.isFinite(time) ? time : 0;
+function asScore(value: number | string | null | undefined) {
+  const numeric = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numeric) ? numeric : 0;
 }
 
 function parsePage(value: string | string[] | undefined) {
@@ -54,195 +86,211 @@ export function socialFeedPageFromSearch(
   return parsePage(searchParams.page);
 }
 
-export async function loadSocialFeed(page: number): Promise<SocialFeedResult> {
-  const safePage = parsePage(String(page));
-  const limit = safePage * SOCIAL_FEED_PAGE_SIZE;
-  const calibration = buildCalibrationPrompt();
-  const empty: SocialFeedResult = {
-    items: [],
-    page: safePage,
-    pageSize: SOCIAL_FEED_PAGE_SIZE,
-    hasMore: false,
-    error: null,
-    viewerTier: "unverified",
-    viewerOcdIdentifiers: [],
-    calibration,
+export async function loadFeedViewer(): Promise<FeedViewer> {
+  const empty: FeedViewer = {
+    userId: null,
+    tier: "unverified",
+    ocdIdentifiers: [],
+    ideologyVector: null,
+    tier2OcdIds: [],
   };
 
   const supabase = await createServerSupabase();
   const user = await getServerUser();
+  if (!user?.id) return empty;
 
-  let viewerTier: VerificationTier = "unverified";
-  let viewerOcdIdentifiers: string[] = [];
-  if (user?.id) {
-    const { data: profile } = await supabase
+  const [{ data: profile }, { data: tier2, error: tier2Error }] = await Promise.all([
+    supabase
       .from("users")
-      .select("verification_tier, ocd_identifiers")
+      .select("verification_tier, ocd_identifiers, ideology_vector")
       .eq("id", user.id)
-      .maybeSingle();
-    const row = profile as {
-      verification_tier?: string;
-      ocd_identifiers?: unknown;
-    } | null;
-    viewerTier = parseVerificationTier(row?.verification_tier);
-    viewerOcdIdentifiers = asOcdArray(row?.ocd_identifiers);
-  }
-
-  const [
-    { data: debateRows, error: debateError },
-    { data: civicRows, error: civicError },
-    { data: electionRows, error: electionError },
-  ] = await Promise.all([
-    supabase
-      .from("debates")
-      .select(
-        `
-        *,
-        candidate_a:users!debates_candidate_a_id_fkey ( id, username ),
-        candidate_b:users!debates_candidate_b_id_fkey ( id, username )
-      `,
-      )
-      .in("status", [...ACTIVE_DEBATE_STATUSES])
-      .order("created_at", { ascending: false })
-      .range(0, limit - 1),
-    supabase
-      .from("civic_posts")
-      .select("id, claim, argument, status, district_id, created_at, author_id")
-      .eq("status", "open")
-      .order("created_at", { ascending: false })
-      .range(0, limit - 1),
-    supabase.from("elections").select(ELECTION_LINK_COLUMNS),
+      .maybeSingle(),
+    supabase.from("tier2_verifications").select("ocd_ids").eq("user_id", user.id).maybeSingle(),
   ]);
 
-  if (debateError && civicError) {
-    const message = debateError.message || civicError.message;
-    if (isMissingRelation(debateError) && isMissingRelation(civicError)) {
-      return {
-        ...empty,
-        viewerTier,
-        viewerOcdIdentifiers,
-        error: "The civic feed tables are not available yet.",
-      };
-    }
-    return { ...empty, viewerTier, viewerOcdIdentifiers, error: message };
+  const row = profile as {
+    verification_tier?: string;
+    ocd_identifiers?: unknown;
+    ideology_vector?: unknown;
+  } | null;
+
+  return {
+    userId: user.id,
+    tier: parseVerificationTier(row?.verification_tier),
+    ocdIdentifiers: asOcdArray(row?.ocd_identifiers),
+    ideologyVector: row?.ideology_vector ?? null,
+    tier2OcdIds: tier2Error ? [] : asOcdArray(tier2?.ocd_ids),
+  };
+}
+
+async function loadElections() {
+  const supabase = await createServerSupabase();
+  const full = await supabase.from("elections").select(ELECTION_COLUMNS);
+  if (!full.error) return (full.data ?? []) as ElectionRow[];
+
+  if (!isMissingRelation(full.error)) {
+    const basic = await supabase.from("elections").select(ELECTION_COLUMNS_BASIC);
+    if (!basic.error) return (basic.data ?? []) as ElectionRow[];
+  }
+  return [] as ElectionRow[];
+}
+
+function viableElectionIds(viewer: FeedViewer, elections: ElectionRow[]) {
+  const ids: string[] = [];
+  for (const election of elections) {
+    const funnel = calculateDraftViability({
+      ideologyVector: viewer.ideologyVector,
+      primaryRepVector: election.primary_rep_vector,
+      primaryDemVector: election.primary_dem_vector,
+      generalVector: election.general_vector ?? election.median_voter_vector,
+      pviScore: election.pvi_score,
+    });
+    if (passesViabilityGate(funnel.viability)) ids.push(election.id);
+  }
+  return ids;
+}
+
+/**
+ * Red loop, candidate mode.
+ * Unanswered questions whose parent election clears the two-stage viability gate,
+ * highest information gain first.
+ */
+export async function loadCandidateQuestions(
+  viewer: FeedViewer,
+  limit: number,
+): Promise<LoopQueryResult<RedFeedQuestion>> {
+  const empty: LoopQueryResult<RedFeedQuestion> = { items: [], hasMore: false, error: null };
+  if (!viewer.userId) return empty;
+
+  const supabase = await createServerSupabase();
+  const elections = await loadElections();
+  const viableIds = viableElectionIds(viewer, elections);
+  if (viableIds.length === 0) return empty;
+
+  const { data: stanceRows, error: stanceError } = await supabase
+    .from("user_stances")
+    .select("question_id")
+    .eq("user_id", viewer.userId);
+
+  if (stanceError) {
+    if (isMissingRelation(stanceError)) return empty;
+    return { ...empty, error: stanceError.message };
   }
 
-  const elections =
-    electionError && isMissingRelation(electionError)
-      ? []
-      : ((electionRows ?? []) as ElectionLinkRow[]);
+  const answered = ((stanceRows ?? []) as { question_id: string }[])
+    .map((row) => row.question_id)
+    .filter(Boolean);
 
-  const debates = (debateError ? [] : (debateRows ?? [])) as DebateWithCandidates[];
-  const civicPosts = (civicError ? [] : (civicRows ?? [])) as CivicPostRow[];
+  let query = supabase
+    .from("election_questions")
+    .select(
+      "id, prompt, election_id, jurisdictional_level, primary_axis, information_gain_score, created_at",
+    )
+    .in("election_id", viableIds)
+    .order("information_gain_score", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
 
-  const debateIds = debates.map((debate) => debate.id);
-  const scoreByDebate = new Map<string, number | null>();
-  if (debateIds.length) {
-    const { data: evaluationRows, error: evaluationError } = await supabase
-      .from("debate_evaluations")
-      .select("debate_id, candidate_id, confidence_score, status, ensemble_result")
-      .in("debate_id", debateIds);
-    if (!evaluationError) {
-      const grouped = new Map<string, DebateEvaluation[]>();
-      for (const row of (evaluationRows ?? []) as DebateEvaluation[]) {
-        const current = grouped.get(row.debate_id) ?? [];
-        current.push(row);
-        grouped.set(row.debate_id, current);
-      }
-      for (const [debateId, rows] of grouped) {
-        const governing = governingEvaluation(rows);
-        scoreByDebate.set(debateId, governing ? parseScore(governing.confidence_score) : null);
-      }
-    }
+  if (answered.length > 0) {
+    query = query.not("id", "in", `(${answered.join(",")})`);
   }
 
-  const electionIds = [
-    ...new Set(debates.map((debate) => debate.election_id).filter((id): id is string => Boolean(id))),
-  ];
-  const ocdByElection = new Map<string, string>();
-  if (electionIds.length) {
-    const { data: ocdRows, error: ocdError } = await supabase
-      .from("elections")
-      .select("id, ocd_id")
-      .in("id", electionIds);
-    if (!ocdError) {
-      for (const row of (ocdRows ?? []) as { id: string; ocd_id?: string | null }[]) {
-        const ocdId = row.ocd_id?.trim();
-        if (ocdId) ocdByElection.set(row.id, ocdId);
-      }
-    }
+  const { data, error } = await query;
+  if (error) {
+    if (isMissingRelation(error)) return empty;
+    return { ...empty, error: error.message };
   }
 
-  const authorIds = [...new Set(civicPosts.map((post) => post.author_id).filter(Boolean))];
-  const { data: authorRows } = authorIds.length
-    ? await supabase.from("users").select("id, username").in("id", authorIds)
-    : { data: [] as DebateCandidate[] };
-  const authorById = new Map(
-    ((authorRows ?? []) as DebateCandidate[]).map((row) => [row.id, row]),
-  );
+  const byId = new Map(elections.map((row) => [row.id, row]));
+  const items: RedFeedQuestion[] = [];
+  for (const row of (data ?? []) as QuestionRow[]) {
+    if (!isJurisdictionalLevel(row.jurisdictional_level)) continue;
+    if (!isPrimaryAxis(row.primary_axis)) continue;
+    const election = byId.get(row.election_id);
+    items.push({
+      loop: "red",
+      id: row.id,
+      createdAt: row.created_at,
+      prompt: row.prompt,
+      electionId: row.election_id,
+      electionSlug: election?.slug ?? null,
+      districtName: election?.office_name ?? "Open race",
+      jurisdictionalLevel: row.jurisdictional_level,
+      primaryAxis: row.primary_axis,
+      informationGainScore: asScore(row.information_gain_score),
+    });
+  }
 
-  const debateItems: SocialFeedItem[] = debates.map((debate) => {
+  return { items, hasMore: items.length === limit, error: null };
+}
+
+/**
+ * Blue loop, jury mode.
+ * Active debates between other users whose election OCD-ID is in the
+ * viewer's tier-2 verification set.
+ */
+export async function loadJuryDebates(
+  viewer: FeedViewer,
+  limit: number,
+): Promise<LoopQueryResult<BlueFeedDebate>> {
+  const empty: LoopQueryResult<BlueFeedDebate> = { items: [], hasMore: false, error: null };
+  if (!viewer.userId || viewer.tier2OcdIds.length === 0) return empty;
+
+  const supabase = await createServerSupabase();
+  const elections = await loadElections();
+  const wanted = new Set(viewer.tier2OcdIds.map((id) => normalizeOcdId(id)));
+  const matched = elections.filter((row) => wanted.has(normalizeOcdId(row.ocd_id)));
+  if (matched.length === 0) return empty;
+
+  const { data, error } = await supabase
+    .from("debates")
+    .select(
+      `
+      *,
+      candidate_a:users!debates_candidate_a_id_fkey ( id, username ),
+      candidate_b:users!debates_candidate_b_id_fkey ( id, username )
+    `,
+    )
+    .in(
+      "election_id",
+      matched.map((row) => row.id),
+    )
+    .in("status", [...JURY_DEBATE_STATUSES])
+    .not("candidate_a_id", "is", null)
+    .not("candidate_b_id", "is", null)
+    .neq("candidate_a_id", viewer.userId)
+    .neq("candidate_b_id", viewer.userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    if (isMissingRelation(error)) return empty;
+    return { ...empty, error: error.message };
+  }
+
+  const byId = new Map(matched.map((row) => [row.id, row]));
+  const items: BlueFeedDebate[] = [];
+  for (const debate of (data ?? []) as DebateWithCandidates[]) {
+    if (!debate.candidate_a_id || !debate.candidate_b_id) continue;
+    if (debate.candidate_a_id === viewer.userId || debate.candidate_b_id === viewer.userId) {
+      continue;
+    }
     const candidateA = unwrapCandidate(debate.candidate_a);
     const candidateB = unwrapCandidate(debate.candidate_b);
-    const election = resolveElectionLink(elections, {
-      electionId: debate.election_id,
-      districtId: debate.district_id,
-    });
-    return {
-      kind: "debate",
+    const election = debate.election_id ? byId.get(debate.election_id) : undefined;
+    items.push({
+      loop: "blue",
       id: debate.id,
       createdAt: debate.created_at,
       title: debate.topic,
       status: debate.status,
-      districtName: election?.officeName ?? DEFAULT_DISTRICT_NAME,
+      districtName: election?.office_name ?? "Open race",
       electionSlug: election?.slug ?? null,
       candidateA,
       candidateB,
-      votingOpen:
-        (debate.status === "active" || debate.status === "voting") &&
-        Boolean(candidateA && candidateB),
-      aiScore: scoreByDebate.get(debate.id) ?? null,
-      electionId: readElectionOcdId(
-        debate.election_id,
-        debate.election_id ? ocdByElection.get(debate.election_id) : null,
-      ),
-    };
-  });
+      votingOpen: Boolean(candidateA && candidateB),
+    });
+  }
 
-  const stanceItems: SocialFeedItem[] = civicPosts.map((post) => {
-    const election = resolveElectionLink(elections, { districtId: post.district_id });
-    return {
-      kind: "stance",
-      id: post.id,
-      createdAt: post.created_at,
-      title: post.claim,
-      body: post.argument,
-      status: post.status,
-      districtName: election?.officeName ?? post.district_id ?? DEFAULT_DISTRICT_NAME,
-      electionSlug: election?.slug ?? null,
-      author: authorById.get(post.author_id) ?? null,
-    };
-  });
-
-  const merged = [...debateItems, ...stanceItems].sort(
-    (left, right) => createdAtValue(right.createdAt) - createdAtValue(left.createdAt),
-  );
-  const items = merged.slice(0, limit);
-  const hasMore =
-    merged.length > limit ||
-    debates.length === limit ||
-    civicPosts.length === limit;
-
-  const trendingTopic = debateItems[0]?.title ?? stanceItems[0]?.title ?? null;
-
-  return {
-    items,
-    page: safePage,
-    pageSize: SOCIAL_FEED_PAGE_SIZE,
-    hasMore,
-    error: null,
-    viewerTier,
-    viewerOcdIdentifiers,
-    calibration: buildCalibrationPrompt(trendingTopic),
-  };
+  return { items, hasMore: items.length === limit, error: null };
 }

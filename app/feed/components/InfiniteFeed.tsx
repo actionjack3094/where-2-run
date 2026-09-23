@@ -4,20 +4,17 @@ import { useEffect, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { FeedTimeline } from "@/app/feed/components/FeedTimeline";
 import type { SocialFeedItem } from "@/lib/feed/types";
-import type { VerificationTier } from "@/types/database.types";
 
 export function InfiniteFeed({
   page,
   hasMore,
   items,
-  viewerTier,
-  viewerOcdIdentifiers,
+  signedIn,
 }: {
   page: number;
   hasMore: boolean;
   items: SocialFeedItem[];
-  viewerTier: VerificationTier;
-  viewerOcdIdentifiers: readonly string[];
+  signedIn: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -44,11 +41,7 @@ export function InfiniteFeed({
 
   return (
     <div className="mt-8 pb-16">
-      <FeedTimeline
-        items={items}
-        viewerTier={viewerTier}
-        viewerOcdIdentifiers={viewerOcdIdentifiers}
-      />
+      <FeedTimeline items={items} signedIn={signedIn} />
       <div ref={sentinelRef} aria-hidden className="h-8 w-full" />
       {isPending ? (
         <p className="mt-2 text-center text-xs uppercase tracking-widest text-zinc-500">

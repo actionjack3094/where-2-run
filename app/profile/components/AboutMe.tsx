@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
+import { ingestAuthoredPrompt } from "@/app/actions/debates/classify-prompt";
 import { updateVector } from "@/app/actions/vector";
 import { IdeologyRadar } from "@/app/profile/components/IdeologyRadar";
 import { StanceModal } from "@/components/debate/StanceModal";
@@ -14,6 +15,26 @@ const EXIT_MS = 280;
 
 function isSixAxisId(value: string): value is SixAxisId {
   return (SIX_AXIS_IDS as readonly string[]).includes(value);
+}
+
+function isQuestionBankMissing(error: unknown) {
+  const message = error instanceof Error ? error.message : "";
+  return /election_questions|user_stances|question bank/i.test(message);
+}
+
+async function recordDeckStance(prompt: string, axisId: SixAxisId, option: PolicyOption) {
+  try {
+    const result = await ingestAuthoredPrompt({
+      prompt,
+      positionLabel: option.label,
+      positionScore: option.score,
+    });
+    return result.ideologyVector;
+  } catch (error) {
+    if (!isQuestionBankMissing(error)) throw error;
+    const result = await updateVector({ axisId, score: option.score });
+    return result.ideologyVector;
+  }
 }
 
 export function AboutMe({
@@ -116,8 +137,8 @@ function CalibrationDeck({
       setDragX(option.score >= 0.5 ? 420 : -420);
       setLeaving(true);
       try {
-        const result = await updateVector({ axisId, score: option.score });
-        onVectorUpdated(result.ideologyVector);
+        const result = await recordDeckStance(question.prompt, axisId, option);
+        onVectorUpdated(result);
         advance();
       } catch (caught) {
         setLeaving(false);
@@ -126,7 +147,7 @@ function CalibrationDeck({
         setError(caught instanceof Error ? caught.message : "Could not update this vector.");
       }
     },
-    [advance, axisId, leaving, onVectorUpdated, pending],
+    [advance, axisId, leaving, onVectorUpdated, pending, question.prompt],
   );
 
   function onPointerDown(event: PointerEvent<HTMLElement>) {

@@ -1,11 +1,27 @@
 import type { DebateCandidate, VerificationTier } from "@/types/database.types";
+import type { JurisdictionalLevel } from "@/lib/debates/prompt-classification";
 import type { SixAxisId, SixAxisVector } from "@/lib/ideology/six-axis";
 
 export const SOCIAL_FEED_PAGE_SIZE = 10;
 export const IDEOLOGY_EMA_ALPHA = 0.25;
+/** Two-stage composite must clear this percent before a question enters candidate mode. */
+export const CANDIDATE_VIABILITY_GATE = 50;
 
-export type SocialFeedDebateItem = {
-  kind: "debate";
+export type RedFeedQuestion = {
+  loop: "red";
+  id: string;
+  createdAt: string;
+  prompt: string;
+  electionId: string;
+  electionSlug: string | null;
+  districtName: string;
+  jurisdictionalLevel: JurisdictionalLevel;
+  primaryAxis: SixAxisId;
+  informationGainScore: number;
+};
+
+export type BlueFeedDebate = {
+  loop: "blue";
   id: string;
   createdAt: string;
   title: string;
@@ -15,25 +31,29 @@ export type SocialFeedDebateItem = {
   candidateA: DebateCandidate | null;
   candidateB: DebateCandidate | null;
   votingOpen: boolean;
-  /** Governing AI confidence, 0–1. Jury UI renders only inside 0.60–0.89. */
-  aiScore: number | null;
-  /** OCD-format election division used for civic fencing. */
-  electionId: string | null;
 };
 
-export type SocialFeedStanceItem = {
-  kind: "stance";
-  id: string;
-  createdAt: string;
-  title: string;
-  body: string;
-  status: string;
-  districtName: string;
-  electionSlug: string | null;
-  author: DebateCandidate | null;
-};
+export type SocialFeedItem = RedFeedQuestion | BlueFeedDebate;
 
-export type SocialFeedItem = SocialFeedDebateItem | SocialFeedStanceItem;
+export function passesViabilityGate(viability: number) {
+  return Number.isFinite(viability) && viability > CANDIDATE_VIABILITY_GATE;
+}
+
+/** Zip candidate questions (information gain) with jury debates (recency). */
+export function mergeFeedTimeline(
+  red: readonly RedFeedQuestion[],
+  blue: readonly BlueFeedDebate[],
+) {
+  const items: SocialFeedItem[] = [];
+  const length = Math.max(red.length, blue.length);
+  for (let index = 0; index < length; index += 1) {
+    const question = red[index];
+    const debate = blue[index];
+    if (question) items.push(question);
+    if (debate) items.push(debate);
+  }
+  return items;
+}
 
 export type CalibrationOption = {
   id: string;
