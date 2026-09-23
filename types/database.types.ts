@@ -211,6 +211,14 @@ export interface EscrowPledge {
   updated_at: string;
 }
 
+export interface Tier2Verification {
+  user_id: string;
+  /** AES-256-GCM ciphertext. Never returned to the client. */
+  verified_address: string;
+  ocd_ids: string[];
+  verified_at: string;
+}
+
 export interface Candidate {
   id: string;
   display_name: string;
@@ -648,6 +656,21 @@ export interface Database {
             columns: ["election_id"];
             isOneToOne: false;
             referencedRelation: "elections";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      tier2_verifications: {
+        Row: Tier2Verification;
+        Insert: Partial<Tier2Verification> &
+          Pick<Tier2Verification, "user_id" | "verified_address" | "ocd_ids">;
+        Update: Partial<Tier2Verification>;
+        Relationships: [
+          {
+            foreignKeyName: "tier2_verifications_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "users";
             referencedColumns: ["id"];
           },
         ];
