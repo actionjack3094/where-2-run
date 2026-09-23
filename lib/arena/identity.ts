@@ -1,3 +1,4 @@
+import { ensureArenaProfile } from "@/lib/arena/ensure-profile";
 import { supabase } from "@/lib/db/supabase";
 import { STORAGE_KEYS } from "@/lib/session";
 
@@ -13,10 +14,16 @@ function fallbackUsername(userId: string) {
 const DISTRICT_UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+function isAuthUserForeignKey(error: { message?: string; code?: string } | null) {
+  if (!error) return false;
+  const message = error.message ?? "";
+  return /users_id_fkey/i.test(message);
+}
+
 function isDistrictForeignKey(error: { message?: string; code?: string } | null) {
   if (!error) return false;
   const message = error.message ?? "";
-  return error.code === "23503" || /users_target_district_id_fkey/i.test(message);
+  return /users_target_district_id_fkey/i.test(message);
 }
 
 function isDuplicateProfile(error: { message?: string; code?: string } | null) {
@@ -24,6 +31,8 @@ function isDuplicateProfile(error: { message?: string; code?: string } | null) {
   const message = error.message ?? "";
   return error.code === "23505" || /users_pkey|duplicate key value/i.test(message);
 }
+
+let pendingArenaUser: Promise<ArenaUser> | null = null;
 
 /** Session storage can hold a district id from before a database reset. */
 async function filedDistrictId(raw: string | null) {
@@ -43,8 +52,22 @@ async function filedDistrictId(raw: string | null) {
   return data.id;
 }
 
-export async function ensureArenaUser(
+export function ensureArenaUser(
   preferredUsername?: string,
+  attempt = 0,
+): Promise<ArenaUser> {
+  if (attempt > 0) return openArenaUser(preferredUsername, attempt);
+  if (!pendingArenaUser) {
+    pendingArenaUser = openArenaUser(preferredUsername, 0).finally(() => {
+      pendingArenaUser = null;
+    });
+  }
+  return pendingArenaUser;
+}
+
+async function openArenaUser(
+  preferredUsername?: string,
+  attempt = 0,
 ): Promise<ArenaUser> {
   const { data: sessionData } = await supabase.auth.getSession();
   let user = sessionData.session?.user ?? null;
@@ -90,6 +113,18 @@ export async function ensureArenaUser(
       ideology_vector: string | null;
     } = insertPayload;
     let { error } = await supabase.from("users").insert(payload);
+    if (error && isAuthUserForeignKey(error)) {
+      if (attempt >= 1) throw new Error(error.message);
+      const token = sessionData.session?.access_token ?? null;
+      try {
+        const repaired = await ensureArenaProfile(token);
+        username = repaired.username;
+        error = null;
+      } catch {
+        await supabase.auth.signOut();
+        return openArenaUser(preferredUsername, attempt + 1);
+      }
+    }
     if (error && isDistrictForeignKey(error)) {
       window.sessionStorage.removeItem(STORAGE_KEYS.districtId);
       payload = { id: user.id, username, ideology_vector: vector };
