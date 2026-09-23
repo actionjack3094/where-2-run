@@ -388,15 +388,7 @@ export interface Database {
         Row: UserProfileRow;
         Insert: Partial<UserProfileRow> & Pick<UserProfileRow, "id" | "username">;
         Update: Partial<UserProfileRow>;
-        Relationships: [
-          {
-            foreignKeyName: "users_target_district_id_fkey";
-            columns: ["target_district_id"];
-            isOneToOne: false;
-            referencedRelation: "districts";
-            referencedColumns: ["id"];
-          },
-        ];
+        Relationships: [];
       };
       candidates: {
         Row: CandidateRow;
@@ -798,15 +790,7 @@ export interface Database {
         Row: CandidateStatsRow;
         Insert: Partial<CandidateStatsRow>;
         Update: Partial<CandidateStatsRow>;
-        Relationships: [
-          {
-            foreignKeyName: "users_target_district_id_fkey";
-            columns: ["target_district_id"];
-            isOneToOne: false;
-            referencedRelation: "districts";
-            referencedColumns: ["id"];
-          },
-        ];
+        Relationships: [];
       };
     };
     Functions: {
