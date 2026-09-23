@@ -4,7 +4,31 @@
 
 project_id = "where-2-run"
 
+# Offset from the default 5432x ports so this stack can run beside other local projects.
+[api]
+port = 54421
+
+[db]
+port = 54422
+shadow_port = 54420
+
+[db.pooler]
+port = 54429
+
+[studio]
+port = 54423
+
+[local_smtp]
+port = 54424
+
+[analytics]
+port = 54427
+
 [functions.grade-debate]
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/grade-debate/index.ts"
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]

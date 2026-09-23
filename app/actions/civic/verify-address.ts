@@ -16,7 +16,7 @@ type CivicApiError = {
   message?: string;
 };
 
-type CivicRepresentativesResponse = {
+type CivicDivisionsByAddressResponse = {
   divisions?: Record<string, unknown>;
   error?: CivicApiError;
 };
@@ -28,7 +28,7 @@ export type CivicVerificationState = {
   ocdIdentifiers: string[];
 };
 
-const CIVIC_ENDPOINT = "https://www.googleapis.com/civicinfo/v2/representatives";
+const CIVIC_ENDPOINT = "https://www.googleapis.com/civicinfo/v2/divisionsByAddress";
 const ADDRESS_MIN = 5;
 const ADDRESS_MAX = 200;
 
@@ -145,7 +145,7 @@ export async function verifyAddress(
     throw new Error("Could not reach the Google Civic Information API.");
   }
 
-  const payload = (await response.json().catch(() => null)) as CivicRepresentativesResponse | null;
+  const payload = (await response.json().catch(() => null)) as CivicDivisionsByAddressResponse | null;
   if (!response.ok) {
     throw new Error(
       payload?.error?.message ?? "Could not map that address to a civic division.",
