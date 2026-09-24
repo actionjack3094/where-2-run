@@ -121,28 +121,36 @@ export async function claimQuestionFloor(
     return { debateId: challenged.id, role: "candidate_b" as const };
   }
 
-  const { data: created, error: insertError } = await admin
-    .from("debates")
-    .insert({
-      topic: prompt,
-      district_id: districtId,
-      election_id: electionId,
-      election_question_id: input.questionId,
-      candidate_a_id: userId,
-      status: "waiting",
-      current_round: 1,
-    })
-    .select("id")
-    .single();
+  try {
+    const { data: created, error: insertError } = await admin
+      .from("debates")
+      .insert({
+        topic: prompt,
+        district_id: districtId,
+        election_id: electionId,
+        election_question_id: input.questionId,
+        candidate_a_id: userId,
+        status: "waiting",
+        current_round: 1,
+      })
+      .select("id")
+      .single();
 
-  if (insertError || !created) {
-    if (isMissingQuestionLink(insertError) || isWaitingStatusRejected(insertError)) {
-      throw new Error("Waiting floors are not on the database yet. Apply the debate question migration.");
+    if (insertError || !created) {
+      if (isMissingQuestionLink(insertError) || isWaitingStatusRejected(insertError)) {
+        return {
+          error: "Waiting floors are not on the database yet. Apply the debate question migration.",
+        };
+      }
+      return { error: insertError?.message ?? "Could not open a floor for this question." };
     }
-    throw new Error(insertError?.message ?? "Could not open a floor for this question.");
-  }
 
-  revalidatePath("/feed");
-  revalidatePath(`/debates/${created.id}`);
-  return { debateId: created.id, role: "candidate_a" as const };
+    revalidatePath("/feed");
+    revalidatePath(`/debates/${created.id}`);
+    return { debateId: created.id, role: "candidate_a" as const };
+  } catch (caught) {
+    const message =
+      caught instanceof Error ? caught.message : "Could not open a floor for this question.";
+    return { error: message };
+  }
 }

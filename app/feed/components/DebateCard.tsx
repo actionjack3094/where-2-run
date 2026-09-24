@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { claimQuestionFloor } from "@/app/actions/feed/claim-floor";
 import { ensureArenaUser } from "@/lib/arena/identity";
@@ -29,7 +29,14 @@ function CandidateQuestionCard({ item }: { item: RedFeedQuestion }) {
   const challenge = mode === "challenge";
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const opponent = item.waitingOpponentName ?? "An opponent";
+
+  useEffect(() => {
+    if (!toast) return;
+    const timeout = window.setTimeout(() => setToast(null), 3400);
+    return () => window.clearTimeout(timeout);
+  }, [toast]);
 
   async function claimFloor() {
     if (pending || mode === "holding") return;
@@ -37,22 +44,30 @@ function CandidateQuestionCard({ item }: { item: RedFeedQuestion }) {
     setError(null);
     try {
       const { data } = await supabase.auth.getSession();
-      await claimQuestionFloor(
+      const result = await claimQuestionFloor(
         {
           questionId: item.id,
           debateId: challenge ? item.waitingDebateId : null,
         },
         data.session?.access_token ?? null,
       );
+      if ("error" in result) {
+        setError(result.error);
+        setToast(result.error);
+        return;
+      }
       router.refresh();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not open this floor.");
+      const message = caught instanceof Error ? caught.message : "Could not open this floor.";
+      setError(message);
+      setToast(message);
     } finally {
       setPending(false);
     }
   }
 
   return (
+    <>
     <article className="rounded-xl border border-red-500/40 bg-zinc-900 p-5 shadow-[inset_3px_0_0_0_#ef4444]">
       <div className="flex flex-wrap items-center gap-2">
         <span className="rounded-full border border-red-500/40 bg-red-500/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-red-300">
@@ -120,6 +135,17 @@ function CandidateQuestionCard({ item }: { item: RedFeedQuestion }) {
         ) : null}
       </div>
     </article>
+    {toast ? (
+      <div
+        role="alert"
+        className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-6"
+      >
+        <p className="rounded-full border border-red-500/50 bg-zinc-950 px-4 py-2 text-sm text-red-200 shadow-lg">
+          {toast}
+        </p>
+      </div>
+    ) : null}
+    </>
   );
 }
 

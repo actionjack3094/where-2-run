@@ -19,4 +19,13 @@ create index if not exists debates_waiting_question_district_idx
 comment on column public.debates.election_question_id is
   'Election question this floor was opened on. Null for debates that did not start from the red card.';
 
+drop policy if exists debates_insert_authenticated on public.debates;
+create policy debates_insert_authenticated
+  on public.debates
+  for insert
+  to authenticated
+  with check (auth.uid() = candidate_a_id);
+
+grant insert on public.debates to authenticated;
+
 notify pgrst, 'reload schema';
