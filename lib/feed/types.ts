@@ -18,7 +18,19 @@ export type RedFeedQuestion = {
   jurisdictionalLevel: JurisdictionalLevel;
   primaryAxis: SixAxisId;
   informationGainScore: number;
+  /** Waiting debate in the viewer's district that still needs a candidate_b. */
+  waitingDebateId: string | null;
+  waitingOpponentName: string | null;
+  /** The viewer already opened this question and is waiting for a challenger. */
+  viewerHoldsFloor: boolean;
 };
+
+/** Open floor starts a thread. A waiting opponent is an existing challenge. */
+export function questionFloorMode(question: Pick<RedFeedQuestion, "waitingDebateId" | "viewerHoldsFloor">) {
+  if (question.waitingDebateId) return "challenge" as const;
+  if (question.viewerHoldsFloor) return "holding" as const;
+  return "open" as const;
+}
 
 export type BlueFeedDebate = {
   loop: "blue";

@@ -4,7 +4,7 @@ import {
   matchCatalogOcdIds,
   ocdJurisdictionalLevel,
 } from "@/lib/debates/prompt-classification";
-import { mergeFeedTimeline, passesViabilityGate } from "@/lib/feed/types";
+import { mergeFeedTimeline, passesViabilityGate, questionFloorMode } from "@/lib/feed/types";
 import type { BlueFeedDebate, RedFeedQuestion } from "@/lib/feed/types";
 
 const CATALOG = [
@@ -70,6 +70,9 @@ describe("dual-loop feed merge", () => {
       jurisdictionalLevel: "local",
       primaryAxis: "economy",
       informationGainScore: 1,
+      waitingDebateId: null,
+      waitingOpponentName: null,
+      viewerHoldsFloor: false,
     };
     const blue: BlueFeedDebate = {
       loop: "blue",
@@ -88,5 +91,13 @@ describe("dual-loop feed merge", () => {
       "red",
       "blue",
     ]);
+  });
+
+  it("treats a waiting opponent as a challenge and an empty floor as a new thread", () => {
+    expect(questionFloorMode({ waitingDebateId: null, viewerHoldsFloor: false })).toBe("open");
+    expect(questionFloorMode({ waitingDebateId: "debate-1", viewerHoldsFloor: false })).toBe(
+      "challenge",
+    );
+    expect(questionFloorMode({ waitingDebateId: null, viewerHoldsFloor: true })).toBe("holding");
   });
 });

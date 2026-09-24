@@ -234,10 +234,91 @@ export async function loadCandidateQuestions(
       jurisdictionalLevel: row.jurisdictional_level,
       primaryAxis: row.primary_axis,
       informationGainScore: asScore(row.information_gain_score),
+      waitingDebateId: null,
+      waitingOpponentName: null,
+      viewerHoldsFloor: false,
     });
   }
 
+  await attachWaitingFloors(supabase, viewer, items);
+
   return { items, hasMore: items.length === limit, error: null };
+}
+
+type WaitingFloorRow = {
+  id: string;
+  election_question_id: string | null;
+  candidate_a_id: string | null;
+  candidate_a: { id?: string; username?: string } | { id?: string; username?: string }[] | null;
+};
+
+function isMissingQuestionLink(error: { message?: string; code?: string } | null) {
+  if (!error) return false;
+  const message = error.message ?? "";
+  return error.code === "42703" || error.code === "PGRST204" || /election_question_id/i.test(message);
+}
+
+function opponentName(row: WaitingFloorRow) {
+  const candidate = Array.isArray(row.candidate_a) ? row.candidate_a[0] : row.candidate_a;
+  const name = candidate?.username?.trim();
+  return name ? name : null;
+}
+
+/**
+ * Waiting debates for these questions in the viewer's filed district.
+ * A row the viewer opened is "holding". Someone else's open row is a challenge.
+ */
+async function attachWaitingFloors(
+  supabase: Awaited<ReturnType<typeof createServerSupabase>>,
+  viewer: FeedViewer,
+  items: RedFeedQuestion[],
+) {
+  if (!viewer.userId || !viewer.targetDistrictId || items.length === 0) return;
+
+  const { data, error } = await supabase
+    .from("debates")
+    .select(
+      `
+      id,
+      election_question_id,
+      candidate_a_id,
+      candidate_a:users!debates_candidate_a_id_fkey ( id, username )
+    `,
+    )
+    .in(
+      "election_question_id",
+      items.map((item) => item.id),
+    )
+    .eq("district_id", viewer.targetDistrictId)
+    .eq("status", "waiting")
+    .is("candidate_b_id", null)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    if (isMissingRelation(error) || isMissingQuestionLink(error)) return;
+    return;
+  }
+
+  const byQuestion = new Map<string, WaitingFloorRow[]>();
+  for (const row of (data ?? []) as WaitingFloorRow[]) {
+    if (!row.election_question_id) continue;
+    const list = byQuestion.get(row.election_question_id) ?? [];
+    list.push(row);
+    byQuestion.set(row.election_question_id, list);
+  }
+
+  for (const item of items) {
+    const floors = byQuestion.get(item.id) ?? [];
+    const held = floors.find((row) => row.candidate_a_id === viewer.userId);
+    const challenge = floors.find((row) => row.candidate_a_id && row.candidate_a_id !== viewer.userId);
+    if (challenge) {
+      item.waitingDebateId = challenge.id;
+      item.waitingOpponentName = opponentName(challenge);
+      item.viewerHoldsFloor = false;
+    } else if (held) {
+      item.viewerHoldsFloor = true;
+    }
+  }
 }
 
 /**

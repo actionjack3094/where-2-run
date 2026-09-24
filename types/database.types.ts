@@ -18,6 +18,7 @@ export type VerificationTier =
 export type DistrictLevel = "local" | "state" | "federal" | string;
 
 export type DebateStatus =
+  | "waiting"
   | "matching"
   | "active"
   | "voting"
@@ -62,6 +63,7 @@ export interface Debate {
   id: string;
   district_id: string | null;
   election_id: string | null;
+  election_question_id: string | null;
   topic: string;
   candidate_a_id: string | null;
   candidate_b_id: string | null;

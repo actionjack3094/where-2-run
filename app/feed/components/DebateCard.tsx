@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { recordQuestionStance } from "@/app/actions/debates/classify-prompt";
+import { claimQuestionFloor } from "@/app/actions/feed/claim-floor";
 import { ensureArenaUser } from "@/lib/arena/identity";
 import { supabase } from "@/lib/db/supabase";
-import { SIX_AXIS_LABELS, SIX_AXIS_POLES } from "@/lib/ideology/six-axis";
+import { questionFloorMode } from "@/lib/feed/types";
+import { SIX_AXIS_LABELS } from "@/lib/ideology/six-axis";
 import { cn } from "@/lib/utils";
 import type { BlueFeedDebate, RedFeedQuestion, SocialFeedItem } from "@/lib/feed/types";
 
@@ -24,25 +25,28 @@ export function DebateCard({ item }: { item: SocialFeedItem }) {
 
 function CandidateQuestionCard({ item }: { item: RedFeedQuestion }) {
   const router = useRouter();
-  const poles = SIX_AXIS_POLES[item.primaryAxis];
-  const [choosing, setChoosing] = useState(false);
+  const mode = questionFloorMode(item);
+  const challenge = mode === "challenge";
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const opponent = item.waitingOpponentName ?? "An opponent";
 
-  async function choose(score: number, label: string) {
-    if (pending) return;
+  async function claimFloor() {
+    if (pending || mode === "holding") return;
     setPending(true);
     setError(null);
     try {
-      await recordQuestionStance({
-        questionId: item.id,
-        positionScore: score,
-        positionLabel: label,
-      });
-      setChoosing(false);
+      const { data } = await supabase.auth.getSession();
+      await claimQuestionFloor(
+        {
+          questionId: item.id,
+          debateId: challenge ? item.waitingDebateId : null,
+        },
+        data.session?.access_token ?? null,
+      );
       router.refresh();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not record this stance.");
+      setError(caught instanceof Error ? caught.message : "Could not open this floor.");
     } finally {
       setPending(false);
     }
@@ -52,7 +56,7 @@ function CandidateQuestionCard({ item }: { item: RedFeedQuestion }) {
     <article className="rounded-xl border border-red-500/40 bg-zinc-900 p-5 shadow-[inset_3px_0_0_0_#ef4444]">
       <div className="flex flex-wrap items-center gap-2">
         <span className="rounded-full border border-red-500/40 bg-red-500/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-red-300">
-          Candidate
+          {challenge ? "Opponent waiting" : "Open floor"}
         </span>
         <span className="rounded-full border border-red-500/30 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-zinc-400">
           {item.jurisdictionalLevel}
@@ -61,6 +65,14 @@ function CandidateQuestionCard({ item }: { item: RedFeedQuestion }) {
           {SIX_AXIS_LABELS[item.primaryAxis]}
         </span>
       </div>
+
+      <p className="mt-3 text-sm leading-6 text-zinc-300">
+        {challenge
+          ? `${opponent} is waiting on this question. Challenge them instead of starting a new thread.`
+          : mode === "holding"
+            ? "You have the floor. Waiting for an opponent to answer this thread."
+            : "No one is waiting in your district. Take the floor to start a new thread."}
+      </p>
 
       <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <h2 className="text-lg font-semibold leading-snug tracking-tight text-parchment">
@@ -87,32 +99,20 @@ function CandidateQuestionCard({ item }: { item: RedFeedQuestion }) {
       <div className="mt-5 flex flex-col gap-3">
         <button
           type="button"
-          disabled={pending}
-          onClick={() => setChoosing((open) => !open)}
+          disabled={pending || mode === "holding"}
+          onClick={() => void claimFloor()}
           className="inline-flex h-10 w-fit items-center justify-center rounded-md bg-red-600 px-4 text-xs font-medium uppercase tracking-widest text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Take a Stance
+          {pending
+            ? challenge
+              ? "Challenging…"
+              : "Taking the floor…"
+            : mode === "holding"
+              ? "You have the floor"
+              : challenge
+                ? "CHALLENGE OPPONENT"
+                : "TAKE THE FLOOR"}
         </button>
-        {choosing ? (
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() => void choose(0, poles.low)}
-              className="rounded-lg border border-red-500/40 bg-zinc-950 px-4 py-3 text-left text-sm leading-6 text-zinc-200 transition-colors hover:border-red-400 disabled:opacity-50"
-            >
-              {poles.low}
-            </button>
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() => void choose(1, poles.high)}
-              className="rounded-lg border border-red-500/40 bg-zinc-950 px-4 py-3 text-left text-sm leading-6 text-zinc-200 transition-colors hover:border-red-400 disabled:opacity-50"
-            >
-              {poles.high}
-            </button>
-          </div>
-        ) : null}
         {error ? (
           <p className="text-sm leading-6 text-red-300" role="alert">
             {error}
