@@ -173,9 +173,38 @@ function questionElectionIds(viewer: FeedViewer, elections: ElectionRow[]) {
 }
 
 /**
+ * Question ids the viewer already debates, as candidate A or B.
+ * Status is ignored so waiting, active, and completed threads all drop out.
+ */
+async function loadParticipatedQuestionIds(
+  supabase: Awaited<ReturnType<typeof createServerSupabase>>,
+  userId: string,
+): Promise<{ ids: string[]; error: string | null }> {
+  const { data, error } = await supabase
+    .from("debates")
+    .select("election_question_id")
+    .or(`candidate_a_id.eq.${userId},candidate_b_id.eq.${userId}`);
+
+  if (error) {
+    if (isMissingRelation(error)) return { ids: [], error: null };
+    return { ids: [], error: error.message };
+  }
+
+  const ids = [
+    ...new Set(
+      ((data ?? []) as { election_question_id: string | null }[])
+        .map((row) => row.election_question_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  return { ids, error: null };
+}
+
+/**
  * Red loop, candidate mode.
  * Unanswered questions whose parent election clears the two-stage viability gate,
- * or is the district filed on the profile. Highest information gain first.
+ * or is the district filed on the profile. Questions the viewer already sits in
+ * — waiting, active, or completed — stay out of the feed. Highest information gain first.
  */
 export async function loadCandidateQuestions(
   viewer: FeedViewer,
@@ -189,22 +218,25 @@ export async function loadCandidateQuestions(
   const viableIds = await electionIdsForQuestions(supabase, viewer, elections);
   if (viableIds.length === 0) return empty;
 
-  const { data: stanceRows, error: stanceError } = await supabase
-    .from("user_stances")
-    .select("question_id")
-    .eq("user_id", viewer.userId);
+  const [{ data: stanceRows, error: stanceError }, participated] = await Promise.all([
+    supabase.from("user_stances").select("question_id").eq("user_id", viewer.userId),
+    loadParticipatedQuestionIds(supabase, viewer.userId),
+  ]);
 
   // A missing stance log means nothing has been answered yet. It must not
   // hide questions that have never been debated.
   if (stanceError && !isMissingRelation(stanceError)) {
     return { ...empty, error: stanceError.message };
   }
+  if (participated.error) return { ...empty, error: participated.error };
 
   const answered = stanceError
     ? []
     : ((stanceRows ?? []) as { question_id: string }[])
         .map((row) => row.question_id)
         .filter(Boolean);
+
+  const excluded = [...new Set([...answered, ...participated.ids])];
 
   let query = supabase
     .from("election_questions")
@@ -216,8 +248,8 @@ export async function loadCandidateQuestions(
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (answered.length > 0) {
-    query = query.not("id", "in", `(${answered.join(",")})`);
+  if (excluded.length > 0) {
+    query = query.not("id", "in", `(${excluded.join(",")})`);
   }
 
   const { data, error } = await query;
