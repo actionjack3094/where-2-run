@@ -85,14 +85,26 @@ export async function ensureArenaProfile(accessToken?: string | null) {
   if (readError) throw new Error(readError.message);
   if (existing?.username) return { id: userId, username: existing.username };
 
-  let username = `runner-${userId.slice(0, 6)}`;
-  let { error } = await admin.from("users").insert({ id: userId, username });
-  if (error && isDuplicate(error)) {
+  const compact = userId.replace(/-/g, "");
+  const candidates = [
+    `runner-${compact.slice(0, 6)}`,
+    `runner-${compact.slice(0, 8)}`,
+    `runner-${compact.slice(0, 12)}`,
+  ];
+
+  for (const candidate of candidates) {
+    const inserted = await admin.from("users").insert({ id: userId, username: candidate });
+    if (!inserted.error) return { id: userId, username: candidate };
+
+    if (!isDuplicate(inserted.error)) throw new Error(inserted.error.message);
+
     const raced = await admin.from("users").select("username").eq("id", userId).maybeSingle();
     if (raced.data?.username) return { id: userId, username: raced.data.username };
-    username = `runner-${userId.slice(0, 8)}`;
-    ({ error } = await admin.from("users").insert({ id: userId, username }));
+
+    const message = inserted.error.message ?? "";
+    const usernameTaken = /users_username_key/i.test(message);
+    if (!usernameTaken) throw new Error(message);
   }
-  if (error) throw new Error(error.message);
-  return { id: userId, username };
+
+  throw new Error("Could not open a campaign profile.");
 }

@@ -32,6 +32,53 @@ function isDuplicateProfile(error: { message?: string; code?: string } | null) {
   return error.code === "23505" || /users_pkey|duplicate key value/i.test(message);
 }
 
+function isUsernameCollision(error: { message?: string; code?: string } | null) {
+  if (!error) return false;
+  return /users_username_key/i.test(error.message ?? "");
+}
+
+/** Names to try after `users_username_key` rejects the first choice. */
+function alternateUsernames(base: string, userId: string) {
+  const compact = userId.replace(/-/g, "");
+  const stem = base.trim() || fallbackUsername(userId);
+  return [`${stem}-${compact.slice(0, 4)}`, `runner-${compact.slice(0, 12)}`];
+}
+
+type ProfileInsert = {
+  id: string;
+  username: string;
+  target_district_id?: string | null;
+  ideology_vector: string | null;
+};
+
+/**
+ * A unique violation is either this auth user racing itself (`users_pkey`) or
+ * another profile already holding the chosen name (`users_username_key`).
+ */
+async function claimOpenUsername(
+  payload: ProfileInsert,
+  username: string,
+  userId: string,
+  error: { message?: string; code?: string },
+) {
+  const raced = await supabase.from("users").select("username").eq("id", userId).maybeSingle();
+  if (raced.data?.username) return raced.data.username;
+  if (!isUsernameCollision(error)) {
+    throw new Error(error.message ?? "Could not open a campaign profile.");
+  }
+
+  let lastMessage = error.message ?? "Could not open a campaign profile.";
+  for (const candidate of alternateUsernames(username, userId)) {
+    const retry = await supabase.from("users").insert({ ...payload, username: candidate });
+    if (!retry.error) return candidate;
+    lastMessage = retry.error.message ?? lastMessage;
+    const again = await supabase.from("users").select("username").eq("id", userId).maybeSingle();
+    if (again.data?.username) return again.data.username;
+    if (!isUsernameCollision(retry.error)) throw new Error(retry.error.message);
+  }
+  throw new Error(lastMessage);
+}
+
 let pendingArenaUser: Promise<ArenaUser> | null = null;
 
 /** Session storage can hold a district id from before a database reset. */
@@ -131,24 +178,12 @@ async function openArenaUser(
       ({ error } = await supabase.from("users").insert(payload));
     }
     if (error && isDuplicateProfile(error)) {
-      const raced = await supabase
-        .from("users")
-        .select("username")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (!raced.data?.username) throw new Error(error.message);
-      username = raced.data.username;
+      username = await claimOpenUsername(payload, username, user.id, error);
     } else if (error) {
       username = `${username}-${user.id.slice(0, 4)}`;
       const retry = await supabase.from("users").insert({ ...payload, username });
       if (retry.error && isDuplicateProfile(retry.error)) {
-        const raced = await supabase
-          .from("users")
-          .select("username")
-          .eq("id", user.id)
-          .maybeSingle();
-        if (!raced.data?.username) throw new Error(retry.error.message);
-        username = raced.data.username;
+        username = await claimOpenUsername(payload, username, user.id, retry.error);
       } else if (retry.error) {
         throw new Error(retry.error.message);
       }
