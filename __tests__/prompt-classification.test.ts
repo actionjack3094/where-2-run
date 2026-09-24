@@ -4,7 +4,12 @@ import {
   matchCatalogOcdIds,
   ocdJurisdictionalLevel,
 } from "@/lib/debates/prompt-classification";
-import { mergeFeedTimeline, passesViabilityGate, questionFloorMode } from "@/lib/feed/types";
+import {
+  applyWaitingFloors,
+  mergeFeedTimeline,
+  passesViabilityGate,
+  questionFloorMode,
+} from "@/lib/feed/types";
 import type { BlueFeedDebate, RedFeedQuestion } from "@/lib/feed/types";
 
 const CATALOG = [
@@ -99,5 +104,23 @@ describe("dual-loop feed merge", () => {
       "challenge",
     );
     expect(questionFloorMode({ waitingDebateId: null, viewerHoldsFloor: true })).toBe("holding");
+  });
+
+  it("keeps a question that has zero debates so the card can open the floor", () => {
+    const kept = applyWaitingFloors(
+      [
+        {
+          id: "tx-10-question",
+          waitingDebateId: null,
+          waitingOpponentName: null,
+          viewerHoldsFloor: false,
+        },
+      ],
+      [],
+      "viewer",
+    );
+
+    expect(kept).toHaveLength(1);
+    expect(questionFloorMode(kept[0])).toBe("open");
   });
 });

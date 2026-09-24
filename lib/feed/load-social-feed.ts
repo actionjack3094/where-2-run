@@ -8,6 +8,7 @@ import {
 } from "@/lib/debates/prompt-classification";
 import { calculateDraftViability } from "@/lib/math/viability";
 import {
+  applyWaitingFloors,
   passesViabilityGate,
   type BlueFeedDebate,
   type RedFeedQuestion,
@@ -133,6 +134,11 @@ async function loadElections() {
   const full = await supabase.from("elections").select(ELECTION_COLUMNS);
   if (!full.error) return (full.data ?? []) as ElectionRow[];
 
+  const withDistrict = await supabase
+    .from("elections")
+    .select("id, slug, office_name, district_id, ocd_id");
+  if (!withDistrict.error) return (withDistrict.data ?? []) as ElectionRow[];
+
   if (!isMissingRelation(full.error)) {
     const basic = await supabase.from("elections").select(ELECTION_COLUMNS_BASIC);
     if (!basic.error) return (basic.data ?? []) as ElectionRow[];
@@ -180,7 +186,7 @@ export async function loadCandidateQuestions(
 
   const supabase = await createServerSupabase();
   const elections = await loadElections();
-  const viableIds = questionElectionIds(viewer, elections);
+  const viableIds = await electionIdsForQuestions(supabase, viewer, elections);
   if (viableIds.length === 0) return empty;
 
   const { data: stanceRows, error: stanceError } = await supabase
@@ -188,14 +194,17 @@ export async function loadCandidateQuestions(
     .select("question_id")
     .eq("user_id", viewer.userId);
 
-  if (stanceError) {
-    if (isMissingRelation(stanceError)) return empty;
+  // A missing stance log means nothing has been answered yet. It must not
+  // hide questions that have never been debated.
+  if (stanceError && !isMissingRelation(stanceError)) {
     return { ...empty, error: stanceError.message };
   }
 
-  const answered = ((stanceRows ?? []) as { question_id: string }[])
-    .map((row) => row.question_id)
-    .filter(Boolean);
+  const answered = stanceError
+    ? []
+    : ((stanceRows ?? []) as { question_id: string }[])
+        .map((row) => row.question_id)
+        .filter(Boolean);
 
   let query = supabase
     .from("election_questions")
@@ -240,9 +249,32 @@ export async function loadCandidateQuestions(
     });
   }
 
-  await attachWaitingFloors(supabase, viewer, items);
+  const annotated = await attachWaitingFloors(supabase, viewer, items);
 
-  return { items, hasMore: items.length === limit, error: null };
+  return { items: annotated, hasMore: annotated.length === limit, error: null };
+}
+
+/** Viable races, plus every election filed on the viewer's district. */
+async function electionIdsForQuestions(
+  supabase: Awaited<ReturnType<typeof createServerSupabase>>,
+  viewer: FeedViewer,
+  elections: ElectionRow[],
+) {
+  const ids = new Set(questionElectionIds(viewer, elections));
+  if (!viewer.targetDistrictId) return [...ids];
+
+  const { data, error } = await supabase
+    .from("elections")
+    .select("id, slug, office_name, district_id")
+    .eq("district_id", viewer.targetDistrictId);
+
+  if (error || !data) return [...ids];
+
+  for (const row of data as ElectionRow[]) {
+    ids.add(row.id);
+    if (!elections.some((election) => election.id === row.id)) elections.push(row);
+  }
+  return [...ids];
 }
 
 type WaitingFloorRow = {
@@ -252,12 +284,6 @@ type WaitingFloorRow = {
   candidate_a: { id?: string; username?: string } | { id?: string; username?: string }[] | null;
 };
 
-function isMissingQuestionLink(error: { message?: string; code?: string } | null) {
-  if (!error) return false;
-  const message = error.message ?? "";
-  return error.code === "42703" || error.code === "PGRST204" || /election_question_id/i.test(message);
-}
-
 function opponentName(row: WaitingFloorRow) {
   const candidate = Array.isArray(row.candidate_a) ? row.candidate_a[0] : row.candidate_a;
   const name = candidate?.username?.trim();
@@ -265,15 +291,17 @@ function opponentName(row: WaitingFloorRow) {
 }
 
 /**
- * Waiting debates for these questions in the viewer's filed district.
- * A row the viewer opened is "holding". Someone else's open row is a challenge.
+ * Left-side lookup of waiting debates. An empty result is an open floor:
+ * the question stays in the feed. This select is not embedded on
+ * election_questions, so it cannot inner-join those rows away.
  */
 async function attachWaitingFloors(
   supabase: Awaited<ReturnType<typeof createServerSupabase>>,
   viewer: FeedViewer,
   items: RedFeedQuestion[],
 ) {
-  if (!viewer.userId || !viewer.targetDistrictId || items.length === 0) return;
+  if (!viewer.userId || items.length === 0) return [...items];
+  if (!viewer.targetDistrictId) return applyWaitingFloors(items, [], viewer.userId);
 
   const { data, error } = await supabase
     .from("debates")
@@ -294,31 +322,16 @@ async function attachWaitingFloors(
     .is("candidate_b_id", null)
     .order("created_at", { ascending: true });
 
-  if (error) {
-    if (isMissingRelation(error) || isMissingQuestionLink(error)) return;
-    return;
-  }
+  if (error) return applyWaitingFloors(items, [], viewer.userId);
 
-  const byQuestion = new Map<string, WaitingFloorRow[]>();
-  for (const row of (data ?? []) as WaitingFloorRow[]) {
-    if (!row.election_question_id) continue;
-    const list = byQuestion.get(row.election_question_id) ?? [];
-    list.push(row);
-    byQuestion.set(row.election_question_id, list);
-  }
+  const floors = ((data ?? []) as WaitingFloorRow[]).map((row) => ({
+    id: row.id,
+    electionQuestionId: row.election_question_id,
+    candidateAId: row.candidate_a_id,
+    opponentName: opponentName(row),
+  }));
 
-  for (const item of items) {
-    const floors = byQuestion.get(item.id) ?? [];
-    const held = floors.find((row) => row.candidate_a_id === viewer.userId);
-    const challenge = floors.find((row) => row.candidate_a_id && row.candidate_a_id !== viewer.userId);
-    if (challenge) {
-      item.waitingDebateId = challenge.id;
-      item.waitingOpponentName = opponentName(challenge);
-      item.viewerHoldsFloor = false;
-    } else if (held) {
-      item.viewerHoldsFloor = true;
-    }
-  }
+  return applyWaitingFloors(items, floors, viewer.userId);
 }
 
 /**

@@ -25,6 +25,47 @@ export type RedFeedQuestion = {
   viewerHoldsFloor: boolean;
 };
 
+/**
+ * Annotate questions with any waiting debate. Questions that have no debate
+ * rows stay in the list as an open floor.
+ */
+export function applyWaitingFloors<T extends Pick<RedFeedQuestion, "id" | "waitingDebateId" | "waitingOpponentName" | "viewerHoldsFloor">>(
+  items: readonly T[],
+  floors: readonly {
+    id: string;
+    electionQuestionId: string | null;
+    candidateAId: string | null;
+    opponentName: string | null;
+  }[],
+  viewerId: string,
+): T[] {
+  const byQuestion = new Map<string, (typeof floors)[number][]>();
+  for (const floor of floors) {
+    if (!floor.electionQuestionId) continue;
+    const list = byQuestion.get(floor.electionQuestionId) ?? [];
+    list.push(floor);
+    byQuestion.set(floor.electionQuestionId, list);
+  }
+
+  return items.map((item) => {
+    const rows = byQuestion.get(item.id) ?? [];
+    const challenge = rows.find((row) => row.candidateAId && row.candidateAId !== viewerId);
+    const held = rows.find((row) => row.candidateAId === viewerId);
+    if (challenge) {
+      return {
+        ...item,
+        waitingDebateId: challenge.id,
+        waitingOpponentName: challenge.opponentName,
+        viewerHoldsFloor: false,
+      };
+    }
+    if (held) {
+      return { ...item, waitingDebateId: null, waitingOpponentName: null, viewerHoldsFloor: true };
+    }
+    return { ...item, waitingDebateId: null, waitingOpponentName: null, viewerHoldsFloor: false };
+  });
+}
+
 /** Open floor starts a thread. A waiting opponent is an existing challenge. */
 export function questionFloorMode(question: Pick<RedFeedQuestion, "waitingDebateId" | "viewerHoldsFloor">) {
   if (question.waitingDebateId) return "challenge" as const;
