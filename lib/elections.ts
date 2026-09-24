@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { unwrapCandidate } from "@/lib/arena/display";
+import { readElectionOcdId } from "@/lib/civic-fencing";
 import { parseElo } from "@/lib/arena/elo";
 import { isMissingRelation } from "@/lib/coalitions";
 import { createAdminClient } from "@/lib/db/supabase-admin";
@@ -151,6 +152,7 @@ function mapDebateRow(row: DebateQueryRow, election: Pick<Election, "slug" | "of
     districtId: district?.id ?? row.district_id,
     districtName: election.office_name,
     electionSlug: election.slug,
+    electionId: readElectionOcdId(row.election_id),
     matchPercent: null,
     candidateA: toFeedCandidate(row.candidate_a),
     candidateB: toFeedCandidate(row.candidate_b),

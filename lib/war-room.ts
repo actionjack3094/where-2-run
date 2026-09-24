@@ -159,7 +159,10 @@ async function loadUncapturedPledges(userId: string): Promise<EscrowRow[]> {
       .eq("status", "pending")
       .not("stripe_setup_intent_id", "is", null)
       .order("created_at", { ascending: false });
-    data = fallback.data;
+    data = (fallback.data ?? []).map((row) => ({
+      ...row,
+      unlock_condition: null,
+    }));
     error = fallback.error;
   }
 

@@ -422,6 +422,38 @@ type CandidateRow = Omit<Candidate, "ideology_vector"> & {
   ideology_vector: string | IdeologyVector;
 };
 
+type DbFields<T> = { [K in keyof T]: T[K] };
+
+type AsDbTable<
+  T extends {
+    Row: object;
+    Insert: object;
+    Update: object;
+    Relationships: readonly unknown[];
+  },
+> = {
+  Row: DbFields<T["Row"]>;
+  Insert: DbFields<T["Insert"]>;
+  Update: DbFields<T["Update"]>;
+  Relationships: T["Relationships"];
+};
+
+/**
+ * Supabase client generics require each table row to be a mapped type.
+ * Interface-based rows collapse inserts to `never` and fail `next build`.
+ */
+export type AppDatabase = {
+  public: {
+    Tables: {
+      [K in keyof Database["public"]["Tables"]]: AsDbTable<Database["public"]["Tables"][K]>;
+    };
+    Views: Database["public"]["Views"];
+    Functions: Database["public"]["Functions"];
+    Enums: Database["public"]["Enums"];
+    CompositeTypes: Database["public"]["CompositeTypes"];
+  };
+};
+
 export interface Database {
   public: {
     Tables: {

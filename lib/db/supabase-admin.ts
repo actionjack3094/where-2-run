@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/types/database.types";
+import type { AppDatabase } from "@/types/database.types";
 
 export function createAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -9,5 +9,5 @@ export function createAdminClient() {
     throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
   }
 
-  return createClient<Database>(supabaseUrl, serviceRoleKey);
+  return createClient<AppDatabase>(supabaseUrl, serviceRoleKey);
 }

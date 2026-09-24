@@ -47,10 +47,10 @@ export function CommentSection({
   comments: CommentWithAuthor[];
 }) {
   const [error, setError] = useState<string | null>(null);
-  const [optimisticComments, addOptimisticComment] = useOptimistic(
-    comments,
-    (current: OptimisticComment[], next: OptimisticComment) => [...current, next],
-  );
+  const [optimisticComments, addOptimisticComment] = useOptimistic<
+    OptimisticComment[],
+    OptimisticComment
+  >(comments, (current, next) => [...current, next]);
 
   async function submitComment(formData: FormData) {
     const body = String(formData.get("body") ?? "").trim();

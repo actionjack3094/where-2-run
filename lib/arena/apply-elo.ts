@@ -3,9 +3,9 @@ import { parseElo, ratingsAfterResult } from "@/lib/arena/elo";
 import { isMarginalConfidence } from "@/lib/arena/evaluations";
 import { pickDebateWinnerId } from "@/lib/arena/winner";
 import { isMissingRelation } from "@/lib/coalitions";
-import type { Database, Debate, DebateEvaluation, Vote } from "@/types/database.types";
+import type { AppDatabase, Debate, DebateEvaluation, Vote } from "@/types/database.types";
 
-type AdminClient = SupabaseClient<Database>;
+type AdminClient = SupabaseClient<AppDatabase>;
 
 type DebateRow = Pick<
   Debate,

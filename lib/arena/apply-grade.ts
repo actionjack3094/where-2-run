@@ -1,9 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { settleExpiredDebateElo } from "@/lib/arena/apply-elo";
 import { formatVector, gradeDebateText } from "@/lib/ideology/grade";
-import type { Database } from "@/types/database.types";
+import type { AppDatabase } from "@/types/database.types";
 
-type AdminClient = SupabaseClient<Database>;
+type AdminClient = SupabaseClient<AppDatabase>;
 
 type ArgumentRecord = {
   id: string;
