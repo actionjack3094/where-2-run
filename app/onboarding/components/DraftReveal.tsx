@@ -8,6 +8,7 @@ import { supabase } from "@/lib/db/supabase";
 import { jurisdictionLabels } from "@/lib/civic-fencing";
 import { formatViabilityScore } from "@/lib/math/viability";
 import type { ViableRace } from "@/lib/onboarding/draft-races";
+import { cn } from "@/lib/utils";
 
 async function accessToken() {
   const { data } = await supabase.auth.getSession();
@@ -24,6 +25,7 @@ function isNextRedirectError(error: unknown) {
 
 export function DraftReveal({ onBack }: { onBack: () => void }) {
   const [races, setRaces] = useState<ViableRace[]>([]);
+  const [selectedElectionId, setSelectedElectionId] = useState<string | null>(null);
   const [jurisdictions, setJurisdictions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -37,6 +39,10 @@ export function DraftReveal({ onBack }: { onBack: () => void }) {
         const reveal = await loadDraftReveal(token);
         if (cancelled) return;
         setRaces(reveal.races);
+        setSelectedElectionId((current) => {
+          if (current && reveal.races.some((race) => race.electionId === current)) return current;
+          return reveal.races[0]?.electionId ?? null;
+        });
         setJurisdictions(jurisdictionLabels(reveal.ocdIds, 3));
         setError(null);
       } catch (caught) {
@@ -57,6 +63,39 @@ export function DraftReveal({ onBack }: { onBack: () => void }) {
     setBusy(true);
     setError(null);
     try {
+      const selected =
+        races.find((race) => race.electionId === selectedElectionId) ?? races[0] ?? null;
+
+      if (selected) {
+        if (!selected.districtId) {
+          console.error("Enter the Arena: selected race has no target_district_id", {
+            electionId: selected.electionId,
+          });
+          throw new Error("This race is not tied to a district yet.");
+        }
+
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData.session?.user.id;
+        if (!userId) throw new Error("Sign in to enter the arena.");
+
+        const { data: saved, error: updateError } = await supabase
+          .from("users")
+          .update({
+            target_district_id: selected.districtId,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", userId)
+          .select("id, target_district_id")
+          .maybeSingle();
+
+        if (updateError || saved?.target_district_id !== selected.districtId) {
+          console.error("Failed to save target_district_id", updateError ?? saved);
+          throw new Error(
+            updateError?.message ?? "Could not save your district before entering the arena.",
+          );
+        }
+      }
+
       const token = await accessToken();
       await completeOnboarding(token);
     } catch (caught) {
@@ -93,48 +132,61 @@ export function DraftReveal({ onBack }: { onBack: () => void }) {
         </p>
       ) : (
         <ol className="mt-8 flex flex-col gap-4">
-          {races.map((race, index) => (
-            <li
-              key={race.electionId}
-              className="rounded-xl border border-gold/50 bg-zinc-900 p-6 shadow-[inset_3px_0_0_0_var(--gold-strong)]"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
-                    {index === 0 ? "Most viable" : `Rank ${index + 1}`}
-                  </p>
-                  <h3 className="mt-2 font-display text-xl font-semibold tracking-tight text-parchment">
-                    {race.officeName}
-                  </h3>
-                  {race.districtName && race.districtName !== race.officeName ? (
-                    <p className="mt-1 text-sm text-zinc-400">{race.districtName}</p>
-                  ) : null}
-                  {race.incumbentName ? (
-                    <p className="mt-2 text-sm text-zinc-400">Incumbent {race.incumbentName}</p>
-                  ) : null}
-                </div>
-                <div className="text-right">
-                  <p className="font-display text-4xl font-semibold tabular-nums tracking-tight text-gold">
-                    {formatViabilityScore(race.viability)}
-                  </p>
-                  <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
-                    Overall Viability Score
-                  </p>
-                </div>
-              </div>
-              <dl className="mt-5 grid gap-2 border-t border-zinc-800 pt-4 text-sm">
-                <div className="flex items-baseline justify-between gap-4">
-                  <dt className="text-zinc-400">Primary Win Odds</dt>
-                  <dd className="font-medium tabular-nums text-parchment">{race.primaryMatch}%</dd>
-                </div>
-                <div className="flex items-baseline justify-between gap-4">
-                  <dt className="text-zinc-400">General Path</dt>
-                  <dd className="font-medium text-parchment">{race.generalPath}</dd>
-                </div>
-              </dl>
-              <TargetRaceButton className="mt-5" election_id={race.electionId} />
-            </li>
-          ))}
+          {races.map((race, index) => {
+            const selected = race.electionId === selectedElectionId;
+            return (
+              <li
+                key={race.electionId}
+                className={cn(
+                  "rounded-xl border bg-zinc-900 p-6 shadow-[inset_3px_0_0_0_var(--gold-strong)]",
+                  selected ? "border-gold" : "border-gold/50",
+                )}
+              >
+                <button
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => setSelectedElectionId(race.electionId)}
+                  className="w-full text-left"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+                        {selected ? "Selected" : index === 0 ? "Most viable" : `Rank ${index + 1}`}
+                      </p>
+                      <h3 className="mt-2 font-display text-xl font-semibold tracking-tight text-parchment">
+                        {race.officeName}
+                      </h3>
+                      {race.districtName && race.districtName !== race.officeName ? (
+                        <p className="mt-1 text-sm text-zinc-400">{race.districtName}</p>
+                      ) : null}
+                      {race.incumbentName ? (
+                        <p className="mt-2 text-sm text-zinc-400">Incumbent {race.incumbentName}</p>
+                      ) : null}
+                    </div>
+                    <div className="text-right">
+                      <p className="font-display text-4xl font-semibold tabular-nums tracking-tight text-gold">
+                        {formatViabilityScore(race.viability)}
+                      </p>
+                      <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                        Overall Viability Score
+                      </p>
+                    </div>
+                  </div>
+                  <dl className="mt-5 grid gap-2 border-t border-zinc-800 pt-4 text-sm">
+                    <div className="flex items-baseline justify-between gap-4">
+                      <dt className="text-zinc-400">Primary Win Odds</dt>
+                      <dd className="font-medium tabular-nums text-parchment">{race.primaryMatch}%</dd>
+                    </div>
+                    <div className="flex items-baseline justify-between gap-4">
+                      <dt className="text-zinc-400">General Path</dt>
+                      <dd className="font-medium text-parchment">{race.generalPath}</dd>
+                    </div>
+                  </dl>
+                </button>
+                <TargetRaceButton className="mt-5" election_id={race.electionId} />
+              </li>
+            );
+          })}
         </ol>
       )}
 

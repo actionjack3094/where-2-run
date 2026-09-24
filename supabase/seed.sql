@@ -1343,3 +1343,30 @@ set
   stripe_setup_intent_id = excluded.stripe_setup_intent_id,
   status = excluded.status,
   updated_at = now();
+
+-- Civic feed question for the TX-10 House seat. Local reset deletes and
+-- recreates that election, so this insert has to follow the election seed.
+insert into public.election_questions (
+  id,
+  election_id,
+  prompt,
+  jurisdictional_level,
+  primary_axis,
+  applicable_ocd_ids,
+  information_gain_score
+)
+values (
+  'a10e0001-0010-4000-8000-000000000010',
+  'e1ec0001-0010-4000-8000-000000000010',
+  'Should Congress raise the cap on the state and local tax deduction for households in Texas''s 10th Congressional District?',
+  'federal',
+  'economy',
+  jsonb_build_array('ocd-division/country:us/state:tx/cd:10'),
+  1
+)
+on conflict (election_id, prompt) do update
+set
+  jurisdictional_level = excluded.jurisdictional_level,
+  primary_axis = excluded.primary_axis,
+  applicable_ocd_ids = excluded.applicable_ocd_ids,
+  information_gain_score = excluded.information_gain_score;

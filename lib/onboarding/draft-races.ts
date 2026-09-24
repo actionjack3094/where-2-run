@@ -7,6 +7,7 @@ export type DraftRaceSource = {
   officeName: string;
   incumbentName: string | null;
   ocdId: string | null;
+  districtId?: string | null;
   districtName: string | null;
   districtState: string | null;
   pviScore: number | null;
@@ -21,6 +22,7 @@ export type ViableRace = {
   slug: string;
   officeName: string;
   incumbentName: string | null;
+  districtId: string | null;
   districtName: string | null;
   viability: number;
   /** Primary-lane fit, shown as Primary Win Odds. */
@@ -49,6 +51,7 @@ function toViableRace(race: ScoredRace): ViableRace {
     slug: race.slug,
     officeName: race.officeName,
     incumbentName: race.incumbentName,
+    districtId: race.districtId,
     districtName: race.districtName,
     viability: race.viability,
     primaryMatch: race.primaryMatch,
@@ -109,6 +112,7 @@ function scoreRace(
     slug: race.slug,
     officeName: race.officeName,
     incumbentName: race.incumbentName,
+    districtId: race.districtId ?? null,
     districtName: race.districtName,
     viability: funnel.viability,
     primaryMatch: funnel.primaryFit,

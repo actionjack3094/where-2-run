@@ -17,7 +17,7 @@ import type { DebateWithCandidates, VerificationTier } from "@/types/database.ty
 
 const JURY_DEBATE_STATUSES = ["active", "voting"] as const;
 const ELECTION_COLUMNS =
-  "id, slug, office_name, ocd_id, pvi_score, primary_rep_vector, primary_dem_vector, general_vector, median_voter_vector";
+  "id, slug, office_name, district_id, ocd_id, pvi_score, primary_rep_vector, primary_dem_vector, general_vector, median_voter_vector";
 const ELECTION_COLUMNS_BASIC = "id, slug, office_name, ocd_id";
 
 export type FeedViewer = {
@@ -26,12 +26,14 @@ export type FeedViewer = {
   ocdIdentifiers: string[];
   ideologyVector: unknown;
   tier2OcdIds: string[];
+  targetDistrictId: string | null;
 };
 
 type ElectionRow = {
   id: string;
   slug: string;
   office_name: string;
+  district_id?: string | null;
   ocd_id?: string | null;
   pvi_score?: number | null;
   primary_rep_vector?: unknown;
@@ -93,6 +95,7 @@ export async function loadFeedViewer(): Promise<FeedViewer> {
     ocdIdentifiers: [],
     ideologyVector: null,
     tier2OcdIds: [],
+    targetDistrictId: null,
   };
 
   const supabase = await createServerSupabase();
@@ -102,7 +105,7 @@ export async function loadFeedViewer(): Promise<FeedViewer> {
   const [{ data: profile }, { data: tier2, error: tier2Error }] = await Promise.all([
     supabase
       .from("users")
-      .select("verification_tier, ocd_identifiers, ideology_vector")
+      .select("verification_tier, ocd_identifiers, ideology_vector, target_district_id")
       .eq("id", user.id)
       .maybeSingle(),
     supabase.from("tier2_verifications").select("ocd_ids").eq("user_id", user.id).maybeSingle(),
@@ -112,6 +115,7 @@ export async function loadFeedViewer(): Promise<FeedViewer> {
     verification_tier?: string;
     ocd_identifiers?: unknown;
     ideology_vector?: unknown;
+    target_district_id?: string | null;
   } | null;
 
   return {
@@ -120,6 +124,7 @@ export async function loadFeedViewer(): Promise<FeedViewer> {
     ocdIdentifiers: asOcdArray(row?.ocd_identifiers),
     ideologyVector: row?.ideology_vector ?? null,
     tier2OcdIds: tier2Error ? [] : asOcdArray(tier2?.ocd_ids),
+    targetDistrictId: row?.target_district_id ?? null,
   };
 }
 
@@ -150,10 +155,21 @@ function viableElectionIds(viewer: FeedViewer, elections: ElectionRow[]) {
   return ids;
 }
 
+/** Viable races, plus the seat the runner just filed on their profile. */
+function questionElectionIds(viewer: FeedViewer, elections: ElectionRow[]) {
+  const ids = new Set(viableElectionIds(viewer, elections));
+  if (viewer.targetDistrictId) {
+    for (const election of elections) {
+      if (election.district_id === viewer.targetDistrictId) ids.add(election.id);
+    }
+  }
+  return [...ids];
+}
+
 /**
  * Red loop, candidate mode.
  * Unanswered questions whose parent election clears the two-stage viability gate,
- * highest information gain first.
+ * or is the district filed on the profile. Highest information gain first.
  */
 export async function loadCandidateQuestions(
   viewer: FeedViewer,
@@ -164,7 +180,7 @@ export async function loadCandidateQuestions(
 
   const supabase = await createServerSupabase();
   const elections = await loadElections();
-  const viableIds = viableElectionIds(viewer, elections);
+  const viableIds = questionElectionIds(viewer, elections);
   if (viableIds.length === 0) return empty;
 
   const { data: stanceRows, error: stanceError } = await supabase

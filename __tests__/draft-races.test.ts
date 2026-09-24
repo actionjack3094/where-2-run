@@ -128,6 +128,7 @@ describe("rankViableRaces", () => {
       officeName: "U.S. House Texas District 10",
       incumbentName: "Michael McCaul",
       ocdId: "ocd-division/country:us/state:tx/cd:10",
+      districtId: "d1570001-0010-4000-8000-000000000010",
       districtName: "U.S. House Texas District 10",
       districtState: "TX",
       pviScore: 0.26,
@@ -159,6 +160,7 @@ describe("rankViableRaces", () => {
 
     expect(tx10Score.viability).toBeGreaterThan(tx37Score.viability);
     expect(races.map((race) => race.electionId)).toEqual(["tx-10", "tx-37"]);
+    expect(races[0]?.districtId).toBe("d1570001-0010-4000-8000-000000000010");
     expect(races[0]?.lane).toBe("R");
     expect(races[0]?.generalPath).toBe("Safe R");
     expect(races[0]?.generalViability ?? 0).toBeGreaterThan(70);

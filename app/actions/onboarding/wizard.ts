@@ -155,6 +155,7 @@ export async function loadDraftReveal(
       officeName: election.office_name,
       incumbentName: election.incumbent_name,
       ocdId: election.ocd_id ?? null,
+      districtId: election.district_id,
       districtName: district?.name ?? null,
       districtState: district?.state ?? null,
       pviScore: election.pvi_score ?? district?.pvi_score ?? null,
