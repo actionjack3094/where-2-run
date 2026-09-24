@@ -30,19 +30,12 @@ export type ViableRace = {
   lane: PartyLane;
 };
 
-type ScoredRace = ViableRace & { specificity: number };
+type DraftSeatTier = "federal" | "state" | "local";
 
-function tightestFence<T extends { specificity: number }>(rows: T[], limit: number) {
-  const floors = [...new Set(rows.map((row) => row.specificity))].sort((left, right) => right - left);
-  let pool: T[] = [];
-  for (const floor of floors) {
-    const next = rows.filter((row) => row.specificity >= floor);
-    if (next.length === 0) continue;
-    pool = next;
-    if (pool.length >= limit) break;
-  }
-  return pool;
-}
+type ScoredRace = ViableRace & {
+  tier: DraftSeatTier;
+  inFence: boolean;
+};
 
 function byViability(left: ScoredRace, right: ScoredRace) {
   if (right.viability !== left.viability) return right.viability - left.viability;
@@ -65,6 +58,25 @@ function toViableRace(race: ScoredRace): ViableRace {
   };
 }
 
+function isStateDraftSeat(race: Pick<DraftRaceSource, "ocdId" | "officeName" | "districtName">) {
+  const ocd = (race.ocdId ?? "").toLowerCase();
+  if (/\/sld[ul]:/.test(ocd) || /\/state:[a-z]{2}$/.test(ocd)) return true;
+
+  const haystack = `${race.officeName} ${race.districtName ?? ""}`.toLowerCase();
+  if (/\bgovernor\b/.test(haystack)) return true;
+  return /\bstate\b/.test(haystack) && /\b(senate|house|assembly|legislature)\b/.test(haystack);
+}
+
+function seatTier(race: Pick<DraftRaceSource, "ocdId" | "officeName" | "districtName">): DraftSeatTier {
+  if (isFederalDraftSeat(race)) return "federal";
+  if (isStateDraftSeat(race)) return "state";
+  return "local";
+}
+
+function pickTop(rows: readonly ScoredRace[]) {
+  return [...rows].sort(byViability)[0] ?? null;
+}
+
 /**
  * US House (and US Senate) seats are a nationwide tier. State senate and
  * city council stay inside the verified fence.
@@ -78,7 +90,12 @@ export function isFederalDraftSeat(race: Pick<DraftRaceSource, "ocdId" | "office
   return /\bu\.?s\.?\s+house\b|\bu\.?s\.?\s+senate\b|\bcongressional\b/.test(haystack);
 }
 
-function scoreRace(race: DraftRaceSource, ideologyVector: unknown, specificity: number): ScoredRace {
+function scoreRace(
+  race: DraftRaceSource,
+  ideologyVector: unknown,
+  tier: DraftSeatTier,
+  inFence: boolean,
+): ScoredRace {
   const funnel = calculateDraftViability({
     ideologyVector,
     primaryRepVector: race.primaryRepVector,
@@ -98,15 +115,17 @@ function scoreRace(race: DraftRaceSource, ideologyVector: unknown, specificity: 
     generalViability: funnel.generalViability,
     generalPath: funnel.generalPath,
     lane: funnel.lane,
-    specificity,
+    tier,
+    inFence,
   };
 }
 
 /**
- * Two-stage draft card.
- * Federal seats skip the home-state fence and contribute the single highest
- * nationwide viability score. State and local seats must sit inside the
- * verified OCD fence. The card is those results merged, highest viability first.
+ * Three-slot draft card, chosen as a tiered ladder:
+ * federal (nationwide), state (OCD fence), then local (OCD fence).
+ * If state or local has no fenced match, open slots backfill from the
+ * next-highest viability races across every scored district.
+ * The card is returned highest viability first.
  */
 export function rankViableRaces(input: {
   ocdIds: readonly string[];
@@ -115,36 +134,43 @@ export function rankViableRaces(input: {
   limit?: number;
 }): ViableRace[] {
   const limit = input.limit ?? 3;
-  const federal: DraftRaceSource[] = [];
-  const regional: DraftRaceSource[] = [];
+  const scored: ScoredRace[] = [];
 
   for (const race of input.races) {
-    if (isFederalDraftSeat(race)) federal.push(race);
-    else regional.push(race);
+    const tier = seatTier(race);
+    const inFence =
+      tier === "federal" ||
+      ocdFenceSpecificity({
+        ocdIds: input.ocdIds,
+        electionOcdId: race.ocdId,
+        officeName: race.officeName,
+        districtName: race.districtName,
+        districtState: race.districtState,
+      }) > 0;
+    scored.push(scoreRace(race, input.ideologyVector, tier, inFence));
   }
 
-  const federalPick = federal
-    .map((race) => scoreRace(race, input.ideologyVector, 1))
-    .sort(byViability)
-    .slice(0, 1);
+  const fenced = (tier: DraftSeatTier) => scored.filter((race) => race.tier === tier && race.inFence);
+  const selected: ScoredRace[] = [];
+  const seen = new Set<string>();
 
-  const regionalScored: ScoredRace[] = [];
-  for (const race of regional) {
-    const specificity = ocdFenceSpecificity({
-      ocdIds: input.ocdIds,
-      electionOcdId: race.ocdId,
-      officeName: race.officeName,
-      districtName: race.districtName,
-      districtState: race.districtState,
-    });
-    if (specificity <= 0) continue;
-    regionalScored.push(scoreRace(race, input.ideologyVector, specificity));
+  for (const tier of ["federal", "state", "local"] as const) {
+    const winner = pickTop(fenced(tier));
+    if (!winner || seen.has(winner.electionId)) continue;
+    selected.push(winner);
+    seen.add(winner.electionId);
   }
 
-  const regionalLimit = Math.max(0, limit - federalPick.length);
-  const regionalPicks = tightestFence(regionalScored, regionalLimit)
-    .sort(byViability)
-    .slice(0, regionalLimit);
+  const stateMissing = fenced("state").length === 0;
+  const localMissing = fenced("local").length === 0;
+  if ((stateMissing || localMissing) && selected.length < limit) {
+    const backfill = scored.filter((race) => !seen.has(race.electionId)).sort(byViability);
+    for (const race of backfill) {
+      if (selected.length >= limit) break;
+      selected.push(race);
+      seen.add(race.electionId);
+    }
+  }
 
-  return [...federalPick, ...regionalPicks].sort(byViability).map(toViableRace);
+  return selected.sort(byViability).slice(0, limit).map(toViableRace);
 }

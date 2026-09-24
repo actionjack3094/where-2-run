@@ -43,7 +43,7 @@ describe("ocdFenceSpecificity", () => {
 });
 
 describe("rankViableRaces", () => {
-  it("orders fenced races by the primary-general funnel and drops seats outside the fence", () => {
+  it("orders the local slot by the primary-general funnel and backfills an empty state tier", () => {
     const aligned = [1, 1, 1, 1, 1, 1];
     const opposed = [0, 0, 0, 0, 0, 0];
     const races = rankViableRaces({
@@ -86,8 +86,13 @@ describe("rankViableRaces", () => {
       ],
     });
 
-    expect(races.map((race) => race.electionId)).toEqual(["aligned-council", "opposed-council"]);
-    expect(races[0]?.viability).toBeGreaterThan(races[1]?.viability ?? 0);
+    expect(races.map((race) => race.electionId)).toEqual([
+      "aligned-council",
+      "oakland",
+      "opposed-council",
+    ]);
+    expect(races[0]?.viability).toBe(races[1]?.viability);
+    expect(races[0]?.viability).toBeGreaterThan(races[2]?.viability ?? 0);
     expect(races[0]?.lane).toBe("D");
     expect(races[0]?.generalPath).toBe("Toss-up");
     expect(races[0]?.viability).toBe(
@@ -101,7 +106,7 @@ describe("rankViableRaces", () => {
     );
   });
 
-  it("keeps only the highest nationwide House seat, so a winnable seat beats an unwinnable one", () => {
+  it("ranks the winnable House seat first and backfills the next federal race when state and local are missing", () => {
     const conservative = [0.12, 0.1, 0.08, 0.11, 0.14, 0.16];
     const tx37 = {
       id: "tx-37",
@@ -153,7 +158,7 @@ describe("rankViableRaces", () => {
     });
 
     expect(tx10Score.viability).toBeGreaterThan(tx37Score.viability);
-    expect(races.map((race) => race.electionId)).toEqual(["tx-10"]);
+    expect(races.map((race) => race.electionId)).toEqual(["tx-10", "tx-37"]);
     expect(races[0]?.lane).toBe("R");
     expect(races[0]?.generalPath).toBe("Safe R");
     expect(races[0]?.generalViability ?? 0).toBeGreaterThan(70);
@@ -276,5 +281,84 @@ describe("rankViableRaces", () => {
     expect(ids).not.toContain("tx-37");
     expect(ids).not.toContain("oakland");
     expect(ids).toHaveLength(3);
+    const scores = races.map((race) => race.viability);
+    expect(scores).toEqual([...scores].sort((left, right) => right - left));
+  });
+
+  it("keeps the state and local slots when a second federal race outscores them", () => {
+    const aligned = [1, 1, 1, 1, 1, 1];
+    const opposed = [0, 0, 0, 0, 0, 0];
+    const strongerHouse = {
+      id: "mi-07",
+      slug: "mi-us-house-07-2026",
+      officeName: "U.S. House Michigan District 7",
+      incumbentName: null,
+      ocdId: "ocd-division/country:us/state:mi/cd:7",
+      districtName: "U.S. House Michigan District 7",
+      districtState: "MI",
+      pviScore: 0.4,
+      medianVoterVector: aligned,
+      primaryRepVector: aligned,
+      primaryDemVector: aligned,
+      generalVector: aligned,
+    };
+    const weakerHouse = {
+      id: "tx-10",
+      slug: "tx-us-house-10-2026",
+      officeName: "U.S. House Texas District 10",
+      incumbentName: null,
+      ocdId: "ocd-division/country:us/state:tx/cd:10",
+      districtName: "U.S. House Texas District 10",
+      districtState: "TX",
+      pviScore: 0,
+      medianVoterVector: aligned,
+      primaryRepVector: aligned,
+      primaryDemVector: aligned,
+      generalVector: aligned,
+    };
+    const races = rankViableRaces({
+      ocdIds: AUSTIN,
+      ideologyVector: aligned,
+      races: [
+        strongerHouse,
+        weakerHouse,
+        {
+          id: "tx-senate",
+          slug: "tx-state-senate-14-2026",
+          officeName: "Texas State Senate District 14",
+          incumbentName: null,
+          ocdId: "ocd-division/country:us/state:tx/sldu:14",
+          districtName: "Texas State Senate District 14",
+          districtState: "TX",
+          pviScore: 0,
+          medianVoterVector: opposed,
+          primaryRepVector: opposed,
+          primaryDemVector: opposed,
+          generalVector: opposed,
+        },
+        {
+          id: "austin-council",
+          slug: "tx-austin-city-council-d9-2026",
+          officeName: "Austin City Council District 9",
+          incumbentName: null,
+          ocdId: "ocd-division/country:us/state:tx/place:austin/council_district:9",
+          districtName: "Austin City Council District 9",
+          districtState: "TX",
+          pviScore: 0,
+          medianVoterVector: opposed,
+          primaryRepVector: opposed,
+          primaryDemVector: opposed,
+          generalVector: opposed,
+        },
+      ],
+    });
+
+    expect(races.map((race) => race.electionId)).toEqual([
+      "mi-07",
+      "austin-council",
+      "tx-senate",
+    ]);
+    expect(races[0]?.viability ?? 0).toBeGreaterThan(races[1]?.viability ?? 0);
+    expect(races[1]?.viability).toBe(races[2]?.viability);
   });
 });
