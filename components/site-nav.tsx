@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LogOutButton } from "@/components/LogOutButton";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -57,6 +58,7 @@ export function SiteNav() {
               </Link>
             );
           })}
+          <LogOutButton />
         </nav>
       </div>
     </header>
