@@ -121,11 +121,12 @@ function scoreRace(
 }
 
 /**
- * Three-slot draft card, chosen as a tiered ladder:
- * federal (nationwide), state (OCD fence), then local (OCD fence).
- * If state or local has no fenced match, open slots backfill from the
- * next-highest viability races across every scored district.
- * The card is returned highest viability first.
+ * Three-slot draft card.
+ * Federal is the best US House or Senate race nationwide. State and local
+ * are the best race inside the user's OCD district hierarchy. When that
+ * ladder is short of three, open slots backfill from the next-highest
+ * scored races in any district. A full ladder does not take those
+ * out-of-district races. Results are highest viability first.
  */
 export function rankViableRaces(input: {
   ocdIds: readonly string[];
@@ -151,19 +152,13 @@ export function rankViableRaces(input: {
   }
 
   const fenced = (tier: DraftSeatTier) => scored.filter((race) => race.tier === tier && race.inFence);
-  const selected: ScoredRace[] = [];
-  const seen = new Set<string>();
+  const ladder = [pickTop(fenced("federal")), pickTop(fenced("state")), pickTop(fenced("local"))].filter(
+    (race): race is ScoredRace => race !== null,
+  );
+  const seen = new Set(ladder.map((race) => race.electionId));
+  const selected = [...ladder];
 
-  for (const tier of ["federal", "state", "local"] as const) {
-    const winner = pickTop(fenced(tier));
-    if (!winner || seen.has(winner.electionId)) continue;
-    selected.push(winner);
-    seen.add(winner.electionId);
-  }
-
-  const stateMissing = fenced("state").length === 0;
-  const localMissing = fenced("local").length === 0;
-  if ((stateMissing || localMissing) && selected.length < limit) {
+  if (selected.length < limit) {
     const backfill = scored.filter((race) => !seen.has(race.electionId)).sort(byViability);
     for (const race of backfill) {
       if (selected.length >= limit) break;

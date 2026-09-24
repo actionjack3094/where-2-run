@@ -361,4 +361,65 @@ describe("rankViableRaces", () => {
     expect(races[0]?.viability ?? 0).toBeGreaterThan(races[1]?.viability ?? 0);
     expect(races[1]?.viability).toBe(races[2]?.viability);
   });
+
+  it("backfills a missing federal tier from the next scored race", () => {
+    const aligned = [1, 1, 1, 1, 1, 1];
+    const opposed = [0, 0, 0, 0, 0, 0];
+    const races = rankViableRaces({
+      ocdIds: AUSTIN,
+      ideologyVector: aligned,
+      races: [
+        {
+          id: "tx-senate",
+          slug: "tx-state-senate-14-2026",
+          officeName: "Texas State Senate District 14",
+          incumbentName: null,
+          ocdId: "ocd-division/country:us/state:tx/sldu:14",
+          districtName: "Texas State Senate District 14",
+          districtState: "TX",
+          pviScore: 0,
+          medianVoterVector: aligned,
+          primaryRepVector: aligned,
+          primaryDemVector: aligned,
+          generalVector: aligned,
+        },
+        {
+          id: "austin-council",
+          slug: "tx-austin-city-council-d9-2026",
+          officeName: "Austin City Council District 9",
+          incumbentName: null,
+          ocdId: "ocd-division/country:us/state:tx/place:austin/council_district:9",
+          districtName: "Austin City Council District 9",
+          districtState: "TX",
+          pviScore: 0,
+          medianVoterVector: aligned,
+          primaryRepVector: aligned,
+          primaryDemVector: aligned,
+          generalVector: aligned,
+        },
+        {
+          id: "opposed-council",
+          slug: "austin-d9-opposed",
+          officeName: "Austin City Council, District 9",
+          incumbentName: null,
+          ocdId: "ocd-division/country:us/state:tx/place:austin/council_district:9",
+          districtName: "Austin City Council District 9",
+          districtState: "TX",
+          pviScore: 0,
+          medianVoterVector: opposed,
+          primaryRepVector: opposed,
+          primaryDemVector: opposed,
+          generalVector: opposed,
+        },
+      ],
+    });
+
+    expect(races.map((race) => race.electionId)).toEqual([
+      "austin-council",
+      "tx-senate",
+      "opposed-council",
+    ]);
+    expect(races[0]?.viability).toBe(races[1]?.viability);
+    expect(races[0]?.viability).toBeGreaterThan(races[2]?.viability ?? 0);
+  });
 });
