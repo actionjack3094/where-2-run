@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ComplianceDossier } from "@/app/elections/components/ComplianceDossier";
 import { DebateQueue } from "@/app/elections/components/DebateQueue";
@@ -8,14 +9,14 @@ import { formatUsd } from "@/lib/pledges";
 import { loadElectionHub } from "@/lib/elections";
 
 type ElectionPageProps = {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ districtId: string }>;
 };
 
 export async function generateMetadata({
   params,
 }: ElectionPageProps): Promise<Metadata> {
-  const { slug } = await params;
-  const { hub } = await loadElectionHub(slug);
+  const { districtId } = await params;
+  const { hub } = await loadElectionHub(districtId);
   const office = hub?.election.office_name;
 
   return {
@@ -27,8 +28,8 @@ export async function generateMetadata({
 }
 
 export default async function ElectionPage({ params }: ElectionPageProps) {
-  const { slug } = await params;
-  const { hub, error } = await loadElectionHub(slug);
+  const { districtId } = await params;
+  const { hub, error } = await loadElectionHub(districtId);
 
   if (error) {
     return (
@@ -56,6 +57,12 @@ export default async function ElectionPage({ params }: ElectionPageProps) {
           <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment sm:text-4xl">
             {hub.election.office_name}
           </h1>
+          <Link
+            href={`/elections/${districtId}`}
+            className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-widest text-gold hover:text-parchment"
+          >
+            Debate questions
+          </Link>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
             {hub.election.incumbent_name
               ? `Incumbent ${hub.election.incumbent_name}. `

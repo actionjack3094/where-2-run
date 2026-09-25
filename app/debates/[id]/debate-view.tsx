@@ -479,7 +479,7 @@ export function DebateView({
     <main className="mx-auto flex min-h-full w-full max-w-3xl flex-1 flex-col px-6 py-10">
       <div className="flex flex-wrap items-center gap-4">
         <Link
-          href={electionSlug ? `/elections/${electionSlug}` : "/feed"}
+          href={electionSlug ? `/elections/${electionSlug}/profile` : "/feed"}
           className="text-xs font-medium uppercase tracking-widest text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-50"
         >
           {electionSlug ? "← Race profile" : "← Feed"}

@@ -95,7 +95,7 @@ function CandidateQuestionCard({ item }: { item: RedFeedQuestion }) {
         </h2>
         {item.electionSlug ? (
           <Link
-            href={`/elections/${item.electionSlug}`}
+            href={`/elections/${item.electionSlug}/profile`}
             className="shrink-0 text-[11px] font-medium uppercase tracking-widest text-red-300 hover:text-red-200"
           >
             {item.districtName}
@@ -169,7 +169,7 @@ function JuryDebateCard({ item }: { item: BlueFeedDebate }) {
         </Link>
         {item.electionSlug ? (
           <Link
-            href={`/elections/${item.electionSlug}`}
+            href={`/elections/${item.electionSlug}/profile`}
             className="shrink-0 text-[11px] font-medium uppercase tracking-widest text-blue-300 hover:text-blue-200"
           >
             {item.districtName}

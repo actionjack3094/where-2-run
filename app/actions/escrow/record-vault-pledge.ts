@@ -123,7 +123,7 @@ export async function recordEscrowVaultPledge(
     }
 
     revalidatePath("/profile");
-    revalidatePath(`/elections/${election.slug}`);
+    revalidatePath(`/elections/${election.slug}/profile`);
 
     return { ok: true, pledgeId: pledge.id };
   } catch (error) {

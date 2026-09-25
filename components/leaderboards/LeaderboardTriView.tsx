@@ -388,7 +388,7 @@ function RankingTable({
                       />
                       {showDistrict && entry.districtName && entry.electionSlug ? (
                         <Link
-                          href={`/elections/${entry.electionSlug}`}
+                          href={`/elections/${entry.electionSlug}/profile`}
                           className="block pl-11 text-[11px] uppercase tracking-widest text-zinc-500 transition-colors hover:text-gold"
                         >
                           {entry.districtName}

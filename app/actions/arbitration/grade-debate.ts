@@ -753,7 +753,7 @@ export async function gradeDebate(
 
   revalidatePath(`/debates/${debate.id}`);
   revalidatePath("/leaderboards");
-  revalidatePath("/elections/[slug]", "page");
+  revalidatePath("/elections/[districtId]/profile", "page");
   revalidatePath("/my-campaign");
   for (const candidateId of candidateIds) {
     revalidatePath(`/profile/${candidateId}`);

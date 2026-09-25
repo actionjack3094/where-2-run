@@ -65,7 +65,7 @@ export function DebateCard({ debate }: { debate: ArenaFeedDebate }) {
           </span>
           {debate.districtName && debate.electionSlug ? (
             <Link
-              href={`/elections/${debate.electionSlug}`}
+              href={`/elections/${debate.electionSlug}/profile`}
               className="rounded-full border border-border px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground transition-colors hover:border-primary hover:text-primary"
             >
               {debate.districtName}
