@@ -11,7 +11,9 @@ export function ProfileHeader({
   verificationTier,
   districtLabel,
   districtVerified,
+  demographics,
   eloRating,
+  record,
   eloLocked,
   lockedMatchCount,
   electionId,
@@ -21,7 +23,9 @@ export function ProfileHeader({
   verificationTier: string;
   districtLabel: string | null;
   districtVerified: boolean;
+  demographics: string | null;
   eloRating: number;
+  record: string;
   eloLocked: boolean;
   lockedMatchCount: number;
   electionId?: string | null;
@@ -63,25 +67,41 @@ export function ProfileHeader({
               )}
             </span>
           </p>
+          {demographics ? (
+            <p className="mt-2 text-sm leading-6 text-zinc-400">{demographics}</p>
+          ) : null}
         </div>
       </div>
 
       <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center">
-        <div
-          className="flex h-32 min-w-32 shrink-0 flex-col items-center justify-center rounded-full border-2 border-gold bg-gold/15 px-5 text-center shadow-[0_0_32px_rgba(212,175,55,0.18)]"
-          aria-label={`${eloLocked ? "Locked ELO" : "ELO"} ${eloRating}`}
-        >
-          <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-gold">
-            {eloLocked ? "Locked ELO" : "ELO"}
-          </p>
-          <p className="mt-1 font-display text-4xl font-semibold tabular-nums leading-none tracking-tight text-gold">
-            {eloRating}
-          </p>
-          {eloLocked ? (
-            <p className="mt-1.5 text-[10px] font-medium uppercase tracking-widest text-gold/80">
-              {lockedMatchCount} sealed
+        <div className="flex items-center gap-3">
+          <div
+            className="flex h-32 min-w-32 shrink-0 flex-col items-center justify-center rounded-full border-2 border-gold bg-gold/15 px-5 text-center shadow-[0_0_32px_rgba(212,175,55,0.18)]"
+            aria-label={`${eloLocked ? "Locked ELO" : "ELO"} ${eloRating}`}
+          >
+            <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-gold">
+              {eloLocked ? "Locked ELO" : "ELO"}
             </p>
-          ) : null}
+            <p className="mt-1 font-display text-4xl font-semibold tabular-nums leading-none tracking-tight text-gold">
+              {eloRating}
+            </p>
+            {eloLocked ? (
+              <p className="mt-1.5 text-[10px] font-medium uppercase tracking-widest text-gold/80">
+                {lockedMatchCount} sealed
+              </p>
+            ) : null}
+          </div>
+          <div
+            className="flex h-32 min-w-32 shrink-0 flex-col items-center justify-center rounded-2xl border-2 border-gold/70 bg-zinc-900 px-5 text-center"
+            aria-label={`Win-loss record ${record}`}
+          >
+            <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-gold">
+              Win–Loss
+            </p>
+            <p className="mt-1 font-display text-4xl font-semibold tabular-nums leading-none tracking-tight text-parchment">
+              {record}
+            </p>
+          </div>
         </div>
         <PledgeEscrowButton
           candidateId={candidateId}

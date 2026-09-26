@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DebateHistory } from "@/components/candidate/DebateHistory";
+import { cache } from "react";
+import { DebateHistory, type MatchOutcome, type ProfileMatch } from "@/components/candidate/DebateHistory";
 import { EscrowTracker } from "@/components/candidate/EscrowTracker";
 import { ProfileHeader } from "@/components/candidate/ProfileHeader";
 import {
@@ -10,30 +11,263 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { isUuid } from "@/lib/arena/display";
+import { DEFAULT_ELO, parseElo } from "@/lib/arena/elo";
 import { loadPublicCandidate } from "@/lib/candidate-profile";
+import { isMissingRelation } from "@/lib/coalitions";
+import { createAdminClient } from "@/lib/db/supabase-admin";
+import { createServerSupabase } from "@/lib/db/supabase-server";
+import { formatRecord, recordFromStats } from "@/lib/leaderboard";
 
 type CandidatePageProps = {
   params: Promise<{ id: string }>;
 };
 
+type AccountName = {
+  full_name: string | null;
+  created_at: string | null;
+};
+
+type StatsRow = {
+  id: string;
+  username: string | null;
+  elo_rating: number | string | null;
+  debates_won: number | null;
+  debates_played: number | null;
+};
+
+type DebateRow = {
+  id: string;
+  topic: string;
+  election_question_id: string | null;
+  winner_id: string | null;
+  expires_at: string;
+};
+
+type DemographicsRow = {
+  username: string | null;
+  residency_state: string | null;
+  residency_zip: string | null;
+};
+
+type LoadedCandidate = {
+  name: string;
+  demographics: string | null;
+  eloRating: number;
+  record: string;
+  matches: ProfileMatch[];
+  error: string | null;
+  found: boolean;
+};
+
+function outcomeFor(winnerId: string | null, candidateId: string): MatchOutcome {
+  if (!winnerId) return "tied";
+  return winnerId === candidateId ? "won" : "lost";
+}
+
+function formatJoined(iso: string | null) {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+}
+
+function formatDemographics(
+  row: DemographicsRow | null,
+  joinedAt: string | null,
+) {
+  const place = [row?.residency_state, row?.residency_zip].filter(Boolean).join(" · ");
+  const joined = formatJoined(joinedAt);
+  const since = joined ? `Joined ${joined}` : null;
+  const line = [place, since].filter(Boolean).join(" · ");
+  return line || null;
+}
+
+function isSkippableProfileError(error: { message?: string; code?: string } | null) {
+  if (!error) return false;
+  if (isMissingRelation(error)) return true;
+  const message = error.message ?? "";
+  return (
+    error.code === "42501" ||
+    /permission denied/i.test(message) ||
+    /row-level security/i.test(message)
+  );
+}
+
+async function loadAccountName(id: string): Promise<AccountName | null> {
+  const supabase = await createServerSupabase();
+  const primary = await supabase
+    .from("profiles")
+    .select("full_name, created_at")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (primary.data) {
+    return primary.data as AccountName;
+  }
+
+  if (primary.error && !isSkippableProfileError(primary.error)) {
+    return null;
+  }
+
+  try {
+    const admin = createAdminClient();
+    const fallback = await admin
+      .from("profiles")
+      .select("full_name, created_at")
+      .eq("id", id)
+      .maybeSingle();
+    if (fallback.error || !fallback.data) return null;
+    return fallback.data as AccountName;
+  } catch (caught) {
+    if (caught instanceof Error && /SUPABASE_SERVICE_ROLE_KEY/i.test(caught.message)) {
+      return null;
+    }
+    throw caught;
+  }
+}
+
+const loadCandidate = cache(async (id: string): Promise<LoadedCandidate> => {
+  const empty: LoadedCandidate = {
+    name: "Candidate",
+    demographics: null,
+    eloRating: DEFAULT_ELO,
+    record: formatRecord(0, 0),
+    matches: [],
+    error: null,
+    found: false,
+  };
+
+  if (!isUuid(id)) return empty;
+
+  const supabase = await createServerSupabase();
+  const [account, statsQuery, debatesQuery, demographicsQuery] = await Promise.all([
+    loadAccountName(id),
+    supabase
+      .from("candidate_stats")
+      .select("id, username, elo_rating, debates_won, debates_played")
+      .eq("id", id)
+      .maybeSingle(),
+    supabase
+      .from("debates")
+      .select("id, topic, election_question_id, winner_id, expires_at")
+      .eq("status", "completed")
+      .or(`candidate_a_id.eq.${id},candidate_b_id.eq.${id}`)
+      .order("expires_at", { ascending: false }),
+    supabase
+      .from("users")
+      .select("username, residency_state, residency_zip")
+      .eq("id", id)
+      .maybeSingle(),
+  ]);
+
+  if (statsQuery.error) {
+    return { ...empty, error: statsQuery.error.message };
+  }
+  if (debatesQuery.error) {
+    return { ...empty, error: debatesQuery.error.message };
+  }
+  if (demographicsQuery.error) {
+    return { ...empty, error: demographicsQuery.error.message };
+  }
+
+  const stats = (statsQuery.data as StatsRow | null) ?? null;
+  const demographics = (demographicsQuery.data as DemographicsRow | null) ?? null;
+  const debates = (debatesQuery.data ?? []) as DebateRow[];
+
+  if (!stats && !demographics && !account) {
+    return empty;
+  }
+
+  const questionIds = [
+    ...new Set(
+      debates
+        .map((debate) => debate.election_question_id)
+        .filter((questionId): questionId is string => Boolean(questionId)),
+    ),
+  ];
+
+  const prompts = new Map<string, string>();
+  if (questionIds.length > 0) {
+    const { data: questions, error: questionError } = await supabase
+      .from("election_questions")
+      .select("id, prompt")
+      .in("id", questionIds);
+
+    if (questionError && !isMissingRelation(questionError)) {
+      return { ...empty, error: questionError.message };
+    }
+
+    for (const question of (questions ?? []) as { id: string; prompt: string }[]) {
+      const prompt = question.prompt?.trim();
+      if (prompt) prompts.set(question.id, prompt);
+    }
+  }
+
+  const record = recordFromStats({
+    debates_won: stats?.debates_won ?? 0,
+    debates_played: stats?.debates_played ?? 0,
+  });
+
+  const name =
+    account?.full_name?.trim() ||
+    stats?.username?.trim() ||
+    demographics?.username?.trim() ||
+    "Unnamed candidate";
+
+  const matches: ProfileMatch[] = debates.map((debate) => {
+    const linkedPrompt = debate.election_question_id
+      ? prompts.get(debate.election_question_id)
+      : null;
+    return {
+      id: debate.id,
+      question: linkedPrompt || debate.topic.trim() || "Untitled question",
+      concludedAt: debate.expires_at,
+      outcome: outcomeFor(debate.winner_id, id),
+    };
+  });
+
+  return {
+    name,
+    demographics: formatDemographics(demographics, account?.created_at ?? null),
+    eloRating: parseElo(stats?.elo_rating) || DEFAULT_ELO,
+    record: formatRecord(record.wins, record.losses),
+    matches,
+    error: null,
+    found: true,
+  };
+});
+
 export async function generateMetadata({
   params,
 }: CandidatePageProps): Promise<Metadata> {
   const { id } = await params;
-  const { profile } = await loadPublicCandidate(id);
-  const name = profile?.username;
+  const candidate = await loadCandidate(id);
 
   return {
-    title: name ? `${name} · Candidate · WHERE 2 RUN` : "Candidate · WHERE 2 RUN",
-    description: name
-      ? `Locked ELO, vaulted escrow, and arena debate history for ${name}.`
+    title: candidate.found
+      ? `${candidate.name} · Candidate · WHERE 2 RUN`
+      : "Candidate · WHERE 2 RUN",
+    description: candidate.found
+      ? `ELO, win-loss record, and match history for ${candidate.name}.`
       : "Public candidate profile on WHERE 2 RUN.",
   };
 }
 
 export default async function CandidatePage({ params }: CandidatePageProps) {
   const { id } = await params;
-  const { profile, error } = await loadPublicCandidate(id);
+  const [candidate, loaded] = await Promise.all([
+    loadCandidate(id),
+    loadPublicCandidate(id),
+  ]);
+
+  const error = candidate.error ?? loaded.error;
+  const profile = loaded.profile;
+  const visible = candidate.found || Boolean(profile);
 
   return (
     <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
@@ -42,27 +276,31 @@ export default async function CandidatePage({ params }: CandidatePageProps) {
           <p className="mt-8 text-sm leading-6 text-zinc-400">
             Could not load this candidate. {error}
           </p>
-        ) : !profile ? (
+        ) : !visible ? (
           <MissingCandidate />
         ) : (
           <div className="flex flex-col gap-14">
             <ProfileHeader
-              candidateId={profile.id}
-              name={profile.username}
-              verificationTier={profile.verificationTier}
-              districtLabel={profile.ocdDistrict ?? profile.targetDistrictName}
-              districtVerified={profile.ocdVerified}
-              eloRating={profile.eloRating}
-              eloLocked={profile.eloLocked}
-              lockedMatchCount={profile.lockedMatchCount}
-              electionId={profile.targetDistrictId}
+              candidateId={id}
+              name={candidate.found ? candidate.name : (profile?.username ?? "Candidate")}
+              verificationTier={profile?.verificationTier ?? "unverified"}
+              districtLabel={profile?.ocdDistrict ?? profile?.targetDistrictName ?? null}
+              districtVerified={profile?.ocdVerified ?? false}
+              demographics={candidate.demographics}
+              eloRating={candidate.found ? candidate.eloRating : (profile?.eloRating ?? DEFAULT_ELO)}
+              record={candidate.record}
+              eloLocked={profile?.eloLocked ?? false}
+              lockedMatchCount={profile?.lockedMatchCount ?? 0}
+              electionId={profile?.targetDistrictId ?? null}
             />
-            <EscrowTracker
-              total={profile.escrowTotal}
-              count={profile.escrowCount}
-              candidateName={profile.username}
-            />
-            <DebateHistory matches={profile.matches} />
+            {profile ? (
+              <EscrowTracker
+                total={profile.escrowTotal}
+                count={profile.escrowCount}
+                candidateName={candidate.found ? candidate.name : profile.username}
+              />
+            ) : null}
+            <DebateHistory matches={candidate.matches} />
           </div>
         )}
       </div>

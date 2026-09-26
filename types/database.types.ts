@@ -38,6 +38,14 @@ export interface District {
   updated_at: string;
 }
 
+export type AccountProfile = {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
 export interface UserProfile {
   id: string;
   username: string;
@@ -468,6 +476,12 @@ export interface Database {
         Row: DistrictRow;
         Insert: Partial<DistrictRow> & Pick<DistrictRow, "name" | "level">;
         Update: Partial<DistrictRow>;
+        Relationships: [];
+      };
+      profiles: {
+        Row: AccountProfile;
+        Insert: Partial<AccountProfile> & Pick<AccountProfile, "id">;
+        Update: Partial<AccountProfile>;
         Relationships: [];
       };
       users: {
