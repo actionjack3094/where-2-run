@@ -16,7 +16,7 @@ import { DEFAULT_ELO, parseElo } from "@/lib/arena/elo";
 import { loadPublicCandidate } from "@/lib/candidate-profile";
 import { isMissingRelation } from "@/lib/coalitions";
 import { createAdminClient } from "@/lib/db/supabase-admin";
-import { createServerSupabase } from "@/lib/db/supabase-server";
+import { createServerSupabase, getServerUser } from "@/lib/db/supabase-server";
 import { formatRecord, recordFromStats } from "@/lib/leaderboard";
 
 type CandidatePageProps = {
@@ -258,12 +258,28 @@ export async function generateMetadata({
   };
 }
 
+async function ownStanceIsEmpty(userId: string) {
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("users")
+    .select("stance_vector")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) return false;
+  if (!data) return true;
+  return data.stance_vector == null;
+}
+
 export default async function CandidatePage({ params }: CandidatePageProps) {
   const { id } = await params;
-  const [candidate, loaded] = await Promise.all([
+  const [candidate, loaded, viewer] = await Promise.all([
     loadCandidate(id),
     loadPublicCandidate(id),
+    getServerUser(),
   ]);
+  const showStanceCta =
+    viewer != null && viewer.id === id && (await ownStanceIsEmpty(viewer.id));
 
   const error = candidate.error ?? loaded.error;
   const profile = loaded.profile;
@@ -280,6 +296,19 @@ export default async function CandidatePage({ params }: CandidatePageProps) {
           <MissingCandidate />
         ) : (
           <div className="flex flex-col gap-14">
+            {showStanceCta ? (
+              <Link
+                href="/onboarding/stance"
+                className="block rounded-xl border border-gold bg-zinc-900 px-5 py-5 shadow-[inset_3px_0_0_0_var(--gold-strong)] transition-colors hover:bg-zinc-900/80"
+              >
+                <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+                  Stance vector
+                </p>
+                <p className="mt-2 text-sm leading-6 text-parchment">
+                  Your ideological profile is empty. Complete the Stance Questionnaire to appear in Voter Matchmaking.
+                </p>
+              </Link>
+            ) : null}
             <ProfileHeader
               candidateId={id}
               name={candidate.found ? candidate.name : (profile?.username ?? "Candidate")}

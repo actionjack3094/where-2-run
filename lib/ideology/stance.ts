@@ -197,7 +197,10 @@ export function stanceVectorToArray(vector: StanceVector): number[] {
 }
 
 export function formatPgStanceVector(vector: StanceVector): string {
-  return `[${stanceVectorToArray(vector).map((value) => value.toFixed(4)).join(",")}]`;
+  const axes = stanceVectorToArray(vector);
+  const padded =
+    axes.length >= 6 ? axes.slice(0, 6) : [...axes, ...Array.from({ length: 6 - axes.length }, () => 0)];
+  return `[${padded.map((value) => value.toFixed(4)).join(",")}]`;
 }
 
 export function hasStanceVector(value: unknown) {
