@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CountdownTimer } from "@/app/components/countdown-timer";
 import { RealtimeDebateListener } from "@/app/components/realtime-debate-listener";
+import { resolveDebate } from "@/lib/actions/debate-resolution";
 import { isUuid } from "@/lib/arena/display";
 import { loadDebateComments } from "@/lib/comments";
 import { createServerSupabase } from "@/lib/db/supabase-server";
@@ -133,7 +134,23 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
   }
 
   if (error || !data) notFound();
-  const debate = data as DebateRow;
+  let debate = data as DebateRow;
+
+  if (
+    debate.status === "voting" &&
+    debate.expires_at != null &&
+    new Date(debate.expires_at) <= new Date()
+  ) {
+    await resolveDebate(debate.id);
+    const refreshed = await supabase
+      .from("debates")
+      .select(debateColumns)
+      .eq("id", debate.id)
+      .maybeSingle();
+
+    if (refreshed.error || !refreshed.data) notFound();
+    debate = refreshed.data as DebateRow;
+  }
 
   let prompt = debate.topic.trim();
   if (debate.election_question_id) {
