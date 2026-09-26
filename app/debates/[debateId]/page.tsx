@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { CountdownTimer } from "@/app/components/countdown-timer";
 import { isUuid } from "@/lib/arena/display";
 import { loadDebateComments } from "@/lib/comments";
 import { createServerSupabase } from "@/lib/db/supabase-server";
@@ -79,6 +80,18 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
   }
 
   const comments = await loadDebateComments(debateId);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const isCandidateA = user?.id != null && user.id === debate.candidate_a_id;
+  const isCandidateB = user?.id != null && user.id === debate.candidate_b_id;
+  const isCandidateATurn = debate.candidate_a_argument === null;
+  const isCandidateBTurn =
+    debate.candidate_a_argument !== null && debate.candidate_b_argument === null;
+  const isMyTurn =
+    (isCandidateA && isCandidateATurn) || (isCandidateB && isCandidateBTurn);
+  const isSeatedCandidate = isCandidateA || isCandidateB;
 
   return (
     <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
@@ -106,7 +119,9 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
             <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
               24-hour expiration
             </p>
-            <p className="mt-1 font-mono text-sm tabular-nums text-parchment">24:00:00</p>
+            <p className="mt-1 font-mono text-sm tabular-nums text-parchment">
+              <CountdownTimer expiresAt={debate.expires_at ?? ""} />
+            </p>
           </div>
         </section>
 
@@ -135,27 +150,36 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
             </article>
           </div>
 
-          <form
-            action={submitArgument.bind(null, debateId)}
-            className="mt-4 rounded-xl border border-dashed border-gold/40 bg-zinc-950 px-5 py-5"
-          >
-            <label htmlFor="argument-draft" className="text-sm font-medium text-parchment">
-              Submit an argument
-            </label>
-            <textarea
-              id="argument-draft"
-              name="argument"
-              rows={4}
-              placeholder="Write your argument…"
-              className="mt-3 w-full resize-y rounded-md border border-gold/40 bg-zinc-950 px-4 py-3 text-sm text-parchment outline-none placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-gold/60"
-            />
-            <button
-              type="submit"
-              className="mt-3 rounded-md border border-gold/50 px-4 py-2 text-[11px] font-medium uppercase tracking-widest text-gold"
+          {isMyTurn ? (
+            <form
+              action={submitArgument.bind(null, debateId)}
+              className="mt-4 rounded-xl border border-dashed border-gold/40 bg-zinc-950 px-5 py-5"
             >
-              Submit argument
-            </button>
-          </form>
+              <label htmlFor="argument-draft" className="text-sm font-medium text-parchment">
+                Submit an argument
+              </label>
+              <textarea
+                id="argument-draft"
+                name="argument"
+                rows={4}
+                placeholder="Write your argument…"
+                className="mt-3 w-full resize-y rounded-md border border-gold/40 bg-zinc-950 px-4 py-3 text-sm text-parchment outline-none placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-gold/60"
+              />
+              <button
+                type="submit"
+                className="mt-3 rounded-md border border-gold/50 px-4 py-2 text-[11px] font-medium uppercase tracking-widest text-gold"
+              >
+                Submit argument
+              </button>
+            </form>
+          ) : isSeatedCandidate ? (
+            <p
+              role="status"
+              className="mt-4 rounded-xl border border-gold/40 bg-zinc-900 px-5 py-4 text-sm font-medium text-gold"
+            >
+              Waiting for opponent&apos;s response...
+            </p>
+          ) : null}
         </section>
       </div>
 
