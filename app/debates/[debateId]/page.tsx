@@ -126,64 +126,79 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
         </section>
 
         <section aria-label="Argument stage" className="mt-8">
-          <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-            Argument stage
-          </h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <article className="rounded-xl border border-gold/40 bg-zinc-900 px-5 py-5">
-              <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
-                Candidate A
-              </p>
-              <h3 className="mt-2 text-sm font-medium text-parchment">Stance</h3>
-              <p className="mt-3 text-sm leading-6 text-zinc-400">
-                {debate.candidate_a_argument?.trim() || "Opening stance will appear here."}
-              </p>
-            </article>
-            <article className="rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-5">
-              <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-400">
-                Candidate B
-              </p>
-              <h3 className="mt-2 text-sm font-medium text-parchment">Counter-stance</h3>
-              <p className="mt-3 text-sm leading-6 text-zinc-400">
-                {debate.candidate_b_argument?.trim() || "Counter-stance will appear here."}
-              </p>
-            </article>
-          </div>
-
-          {isMyTurn ? (
-            <form
-              action={submitArgument.bind(null, debateId)}
-              className="mt-4 rounded-xl border border-dashed border-gold/40 bg-zinc-950 px-5 py-5"
-            >
-              <label htmlFor="argument-draft" className="text-sm font-medium text-parchment">
-                Submit an argument
-              </label>
-              <textarea
-                id="argument-draft"
-                name="argument"
-                rows={4}
-                placeholder="Write your argument…"
-                className="mt-3 w-full resize-y rounded-md border border-gold/40 bg-zinc-950 px-4 py-3 text-sm text-parchment outline-none placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-gold/60"
-              />
-              <button
-                type="submit"
-                className="mt-3 rounded-md border border-gold/50 px-4 py-2 text-[11px] font-medium uppercase tracking-widest text-gold"
-              >
-                Submit argument
-              </button>
-            </form>
-          ) : isSeatedCandidate ? (
+          {debate.status === "voting" ? (
             <p
               role="status"
-              className="mt-4 rounded-xl border border-gold/40 bg-zinc-900 px-5 py-4 text-sm font-medium text-gold"
+              className="rounded-xl border border-gold/40 bg-zinc-900 px-5 py-4 text-sm font-medium text-gold"
             >
-              Waiting for opponent&apos;s response...
+              Voting is now open
             </p>
-          ) : null}
+          ) : (
+            <>
+              <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+                Argument stage
+              </h2>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <article className="rounded-xl border border-gold/40 bg-zinc-900 px-5 py-5">
+                  <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+                    Candidate A
+                  </p>
+                  <h3 className="mt-2 text-sm font-medium text-parchment">Stance</h3>
+                  <p className="mt-3 text-sm leading-6 text-zinc-400">
+                    {debate.candidate_a_argument?.trim() || "Opening stance will appear here."}
+                  </p>
+                </article>
+                <article className="rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-5">
+                  <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-400">
+                    Candidate B
+                  </p>
+                  <h3 className="mt-2 text-sm font-medium text-parchment">Counter-stance</h3>
+                  <p className="mt-3 text-sm leading-6 text-zinc-400">
+                    {debate.candidate_b_argument?.trim() || "Counter-stance will appear here."}
+                  </p>
+                </article>
+              </div>
+
+              {isMyTurn ? (
+                <form
+                  action={submitArgument.bind(null, debateId)}
+                  className="mt-4 rounded-xl border border-dashed border-gold/40 bg-zinc-950 px-5 py-5"
+                >
+                  <label htmlFor="argument-draft" className="text-sm font-medium text-parchment">
+                    Submit an argument
+                  </label>
+                  <textarea
+                    id="argument-draft"
+                    name="argument"
+                    rows={4}
+                    placeholder="Write your argument…"
+                    className="mt-3 w-full resize-y rounded-md border border-gold/40 bg-zinc-950 px-4 py-3 text-sm text-parchment outline-none placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-gold/60"
+                  />
+                  <button
+                    type="submit"
+                    className="mt-3 rounded-md border border-gold/50 px-4 py-2 text-[11px] font-medium uppercase tracking-widest text-gold"
+                  >
+                    Submit argument
+                  </button>
+                </form>
+              ) : isSeatedCandidate ? (
+                <p
+                  role="status"
+                  className="mt-4 rounded-xl border border-gold/40 bg-zinc-900 px-5 py-4 text-sm font-medium text-gold"
+                >
+                  Waiting for opponent&apos;s response...
+                </p>
+              ) : null}
+            </>
+          )}
         </section>
       </div>
 
-      <DebateView debateId={debateId} comments={comments} />
+      <DebateView
+        debateId={debateId}
+        comments={comments}
+        votingOpen={debate.status === "voting"}
+      />
     </main>
   );
 }

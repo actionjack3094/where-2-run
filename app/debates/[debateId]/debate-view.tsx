@@ -68,9 +68,11 @@ function findArgument(
 export function DebateView({
   debateId,
   comments,
+  votingOpen = false,
 }: {
   debateId: string;
   comments: CommentWithAuthor[];
+  votingOpen?: boolean;
 }) {
   const router = useRouter();
   const [debate, setDebate] = useState<DebateWithCandidates | null>(null);
@@ -195,9 +197,12 @@ export function DebateView({
   const votedCandidateId = existingVote?.candidate_id ?? localVoteCandidateId;
   const hasVoted = Boolean(votedCandidateId);
   const isVotableStatus = debate?.status === "active" || debate?.status === "voting";
+  const votingPhase = votingOpen || debate?.status === "voting";
   const bothSeated = Boolean(debate?.candidate_a_id && debate?.candidate_b_id);
   const showVoteButtons = Boolean(
-    (ALLOW_CANDIDATE_DEBUG_VOTES || !isCandidate) && isVotableStatus && bothSeated,
+    bothSeated &&
+      (votingPhase ||
+        ((ALLOW_CANDIDATE_DEBUG_VOTES || !isCandidate) && isVotableStatus)),
   );
 
   const nextTurn = useMemo(() => {

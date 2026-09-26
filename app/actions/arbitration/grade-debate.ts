@@ -40,7 +40,7 @@ import type {
 type AdminClient = ReturnType<typeof createAdminClient>;
 type LanguageModel = Parameters<typeof generateObject>[0]["model"];
 
-export const gradeDebateSchema = z.object({
+const gradeDebateSchema = z.object({
   confidenceScore: z.number().min(0).max(100),
   verdict: z.enum(["Pass", "Fail", "Marginal"]),
   rationale: z.string().min(1),
