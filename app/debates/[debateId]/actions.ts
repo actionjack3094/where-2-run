@@ -167,3 +167,29 @@ export async function submitArgument(debateId: string, formData: FormData) {
 
   revalidatePath("/debates/[debateId]", "page");
 }
+
+export async function castVote(debateId: string, candidateId: string) {
+  const supabase = await createServerSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Sign in to cast a vote.");
+  }
+
+  const { error } = await supabase.from("votes").insert({
+    debate_id: debateId,
+    voter_id: user.id,
+    candidate_id: candidateId,
+  });
+
+  if (error) {
+    if (error.code === "23505") {
+      throw new Error("You already cast a vote in this debate.");
+    }
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/debates/[debateId]", "page");
+}

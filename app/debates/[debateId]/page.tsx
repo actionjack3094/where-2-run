@@ -5,7 +5,7 @@ import { RealtimeDebateListener } from "@/app/components/realtime-debate-listene
 import { isUuid } from "@/lib/arena/display";
 import { loadDebateComments } from "@/lib/comments";
 import { createServerSupabase } from "@/lib/db/supabase-server";
-import { submitArgument } from "./actions";
+import { castVote, submitArgument } from "./actions";
 import { DebateView } from "./debate-view";
 
 type ActiveDebatePageProps = {
@@ -32,6 +32,52 @@ export const metadata: Metadata = {
 function statusLabel(status: string) {
   if (!status) return "Active";
   return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function BallotChoice({
+  label,
+  debateId,
+  candidateId,
+  hasVoted,
+  selected,
+  votes,
+  share,
+}: {
+  label: string;
+  debateId: string;
+  candidateId: string;
+  hasVoted: boolean;
+  selected: boolean;
+  votes: number;
+  share: number;
+}) {
+  const buttonClass =
+    "w-full rounded-md border border-gold/50 px-4 py-2 text-[11px] font-medium uppercase tracking-widest text-gold disabled:cursor-not-allowed disabled:opacity-60";
+
+  return (
+    <article className="rounded-xl border border-gold/40 bg-zinc-900 px-5 py-5">
+      <p className="text-[11px] font-medium uppercase tracking-widest text-gold">{label}</p>
+      {hasVoted ? (
+        <>
+          <button type="button" disabled className={`mt-4 ${buttonClass}`}>
+            {selected ? "Vote Cast" : `Vote ${label}`}
+          </button>
+          <p className="mt-3 text-2xl font-semibold tabular-nums tracking-tight text-parchment">
+            {share}%
+          </p>
+          <p className="mt-1 text-xs text-zinc-400">
+            {votes} {votes === 1 ? "vote" : "votes"}
+          </p>
+        </>
+      ) : (
+        <form action={castVote.bind(null, debateId, candidateId)} className="mt-4">
+          <button type="submit" className={buttonClass}>
+            Vote {label}
+          </button>
+        </form>
+      )}
+    </article>
+  );
 }
 
 export default async function ActiveDebatePage({ params }: ActiveDebatePageProps) {
@@ -94,6 +140,51 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
     (isCandidateA && isCandidateATurn) || (isCandidateB && isCandidateBTurn);
   const isSeatedCandidate = isCandidateA || isCandidateB;
 
+  const candidateAId = debate.candidate_a_id;
+  const candidateBId = debate.candidate_b_id;
+  const ballotOpen = debate.status === "voting" && Boolean(candidateAId && candidateBId);
+
+  let aVotes = 0;
+  let bVotes = 0;
+  let votedCandidateId: string | null = null;
+
+  if (ballotOpen && candidateAId && candidateBId) {
+    const [aCount, bCount, ownVote] = await Promise.all([
+      supabase
+        .from("votes")
+        .select("id", { count: "exact", head: true })
+        .eq("debate_id", debateId)
+        .eq("candidate_id", candidateAId),
+      supabase
+        .from("votes")
+        .select("id", { count: "exact", head: true })
+        .eq("debate_id", debateId)
+        .eq("candidate_id", candidateBId),
+      user
+        ? supabase
+            .from("votes")
+            .select("candidate_id")
+            .eq("debate_id", debateId)
+            .eq("voter_id", user.id)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+    ]);
+
+    if (aCount.error) throw new Error(aCount.error.message);
+    if (bCount.error) throw new Error(bCount.error.message);
+    if (ownVote.error) throw new Error(ownVote.error.message);
+
+    aVotes = aCount.count ?? 0;
+    bVotes = bCount.count ?? 0;
+    votedCandidateId =
+      (ownVote.data as { candidate_id: string } | null)?.candidate_id ?? null;
+  }
+
+  const hasVoted = votedCandidateId !== null;
+  const totalVotes = aVotes + bVotes;
+  const aShare = totalVotes === 0 ? 0 : Math.round((aVotes / totalVotes) * 100);
+  const bShare = totalVotes === 0 ? 0 : 100 - aShare;
+
   return (
     <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
       <RealtimeDebateListener debateId={debateId} />
@@ -129,12 +220,36 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
 
         <section aria-label="Argument stage" className="mt-8">
           {debate.status === "voting" ? (
-            <p
-              role="status"
-              className="rounded-xl border border-gold/40 bg-zinc-900 px-5 py-4 text-sm font-medium text-gold"
-            >
-              Voting is now open
-            </p>
+            <div className="flex flex-col gap-4">
+              <p
+                role="status"
+                className="rounded-xl border border-gold/40 bg-zinc-900 px-5 py-4 text-sm font-medium text-gold"
+              >
+                Voting is now open
+              </p>
+              {ballotOpen && candidateAId && candidateBId && !isSeatedCandidate ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <BallotChoice
+                    label="Candidate A"
+                    candidateId={candidateAId}
+                    debateId={debateId}
+                    hasVoted={hasVoted}
+                    selected={votedCandidateId === candidateAId}
+                    votes={aVotes}
+                    share={aShare}
+                  />
+                  <BallotChoice
+                    label="Candidate B"
+                    candidateId={candidateBId}
+                    debateId={debateId}
+                    hasVoted={hasVoted}
+                    selected={votedCandidateId === candidateBId}
+                    votes={bVotes}
+                    share={bShare}
+                  />
+                </div>
+              ) : null}
+            </div>
           ) : (
             <>
               <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
