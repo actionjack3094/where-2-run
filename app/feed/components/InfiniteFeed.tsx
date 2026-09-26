@@ -7,11 +7,13 @@ import type { SocialFeedItem } from "@/lib/feed/types";
 
 export function InfiniteFeed({
   page,
+  query,
   hasMore,
   items,
   signedIn,
 }: {
   page: number;
+  query?: string;
   hasMore: boolean;
   items: SocialFeedItem[];
   signedIn: boolean;
@@ -29,7 +31,10 @@ export function InfiniteFeed({
       (entries) => {
         if (!entries[0]?.isIntersecting) return;
         startTransition(() => {
-          router.push(`/feed?page=${page + 1}`, { scroll: false });
+          const params = new URLSearchParams();
+          if (query) params.set("q", query);
+          params.set("page", String(page + 1));
+          router.push(`/feed?${params.toString()}`, { scroll: false });
         });
       },
       { rootMargin: "480px 0px" },
@@ -37,11 +42,11 @@ export function InfiniteFeed({
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [hasMore, isPending, page, router]);
+  }, [hasMore, isPending, page, query, router]);
 
   return (
     <div className="mt-8 pb-16">
-      <FeedTimeline items={items} signedIn={signedIn} />
+      <FeedTimeline items={items} signedIn={signedIn} query={query} />
       <div ref={sentinelRef} aria-hidden className="h-8 w-full" />
       {isPending ? (
         <p className="mt-2 text-center text-xs uppercase tracking-widest text-zinc-500">

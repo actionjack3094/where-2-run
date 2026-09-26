@@ -6,16 +6,20 @@ import type { SocialFeedItem } from "@/lib/feed/types";
 export function FeedTimeline({
   items,
   signedIn,
+  query,
 }: {
   items: SocialFeedItem[];
   signedIn: boolean;
+  query?: string;
 }) {
   if (items.length === 0) {
     return (
       <p className="mt-10 text-sm leading-6 text-zinc-400">
-        {signedIn
-          ? "No open candidate questions or jury debates in your districts yet."
-          : "Sign in to see candidate questions and jury debates in your districts."}
+        {query
+          ? `Nothing in the feed matches "${query}".`
+          : signedIn
+            ? "No open candidate questions or jury debates in your districts yet."
+            : "Sign in to see candidate questions and jury debates in your districts."}
       </p>
     );
   }

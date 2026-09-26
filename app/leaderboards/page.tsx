@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SearchBar } from "@/app/components/search-bar";
 import { parseElo } from "@/lib/arena/elo";
 import { createServerSupabase } from "@/lib/db/supabase-server";
 import { formatRecord, recordFromStats } from "@/lib/leaderboard";
@@ -17,14 +18,28 @@ type RankedCandidate = {
   debates_played: number | null;
 };
 
-export default async function LeaderboardsPage() {
+function ilikeContains(value: string) {
+  return `%${value.replace(/[%_\\]/g, "\\$&")}%`;
+}
+
+export default async function LeaderboardsPage(props: PageProps<"/leaderboards">) {
+  const searchParams = await props.searchParams;
+  const rawQuery = Array.isArray(searchParams.q) ? searchParams.q[0] : searchParams.q;
+  const q = rawQuery?.trim() || undefined;
+
   const supabase = await createServerSupabase();
-  const { data, error } = await supabase
+  let ranked = supabase
     .from("candidate_stats")
     .select("id, username, elo_rating, debates_won, debates_played")
     .order("elo_rating", { ascending: false })
     .order("debates_won", { ascending: false })
     .limit(50);
+
+  if (q) {
+    ranked = ranked.ilike("username", ilikeContains(q));
+  }
+
+  const { data, error } = await ranked;
 
   const candidates = ((data ?? []) as RankedCandidate[]).map((row, index) => {
     const record = recordFromStats({
@@ -53,11 +68,15 @@ export default async function LeaderboardsPage() {
           </p>
         </header>
 
+        <div className="mt-8">
+          <SearchBar placeholder="Search..." />
+        </div>
+
         {error ? (
           <p className="mt-10 text-sm leading-6 text-zinc-400">{error.message}</p>
         ) : candidates.length === 0 ? (
           <p className="mt-10 text-sm leading-6 text-zinc-400">
-            No candidates are on the board yet.
+            {q ? `No candidates match "${q}".` : "No candidates are on the board yet."}
           </p>
         ) : (
           <ol className="mt-10 divide-y divide-zinc-800 border-y border-zinc-800">

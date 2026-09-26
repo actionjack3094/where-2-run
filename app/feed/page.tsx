@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SearchBar } from "@/app/components/search-bar";
 import { DebateComposer } from "@/app/feed/components/DebateComposer";
 import { InfiniteFeed } from "@/app/feed/components/InfiniteFeed";
 import {
@@ -6,6 +7,7 @@ import {
   loadFeedViewer,
   loadJuryDebates,
   socialFeedPageFromSearch,
+  socialFeedQueryFromSearch,
 } from "@/lib/feed/load-social-feed";
 import { mergeFeedTimeline, SOCIAL_FEED_PAGE_SIZE } from "@/lib/feed/types";
 
@@ -15,13 +17,14 @@ export const metadata: Metadata = {
 };
 
 export default async function FeedPage(props: PageProps<"/feed">) {
-  const query = await props.searchParams;
-  const page = socialFeedPageFromSearch(query);
+  const searchParams = await props.searchParams;
+  const page = socialFeedPageFromSearch(searchParams);
+  const q = socialFeedQueryFromSearch(searchParams);
   const limit = page * SOCIAL_FEED_PAGE_SIZE;
   const viewer = await loadFeedViewer();
   const [red, blue] = await Promise.all([
-    loadCandidateQuestions(viewer, limit),
-    loadJuryDebates(viewer, limit),
+    loadCandidateQuestions(viewer, limit, q),
+    loadJuryDebates(viewer, limit, q),
   ]);
   const items = mergeFeedTimeline(red.items, blue.items);
   const error = items.length === 0 ? red.error || blue.error : null;
@@ -41,6 +44,10 @@ export default async function FeedPage(props: PageProps<"/feed">) {
           </p>
         </header>
 
+        <div className="mt-8">
+          <SearchBar placeholder="Search..." />
+        </div>
+
         <DebateComposer />
 
         {error ? (
@@ -48,6 +55,7 @@ export default async function FeedPage(props: PageProps<"/feed">) {
         ) : (
           <InfiniteFeed
             page={page}
+            query={q}
             hasMore={red.hasMore || blue.hasMore}
             items={items}
             signedIn={Boolean(viewer.userId)}

@@ -89,6 +89,18 @@ export function socialFeedPageFromSearch(
   return parsePage(searchParams.page);
 }
 
+export function socialFeedQueryFromSearch(
+  searchParams: Record<string, string | string[] | undefined>,
+) {
+  const raw = Array.isArray(searchParams.q) ? searchParams.q[0] : searchParams.q;
+  const trimmed = raw?.trim() ?? "";
+  return trimmed || undefined;
+}
+
+function ilikeContains(value: string) {
+  return `%${value.replace(/[%_\\]/g, "\\$&")}%`;
+}
+
 export async function loadFeedViewer(): Promise<FeedViewer> {
   const empty: FeedViewer = {
     userId: null,
@@ -209,6 +221,7 @@ async function loadParticipatedQuestionIds(
 export async function loadCandidateQuestions(
   viewer: FeedViewer,
   limit: number,
+  queryText?: string,
 ): Promise<LoopQueryResult<RedFeedQuestion>> {
   const empty: LoopQueryResult<RedFeedQuestion> = { items: [], hasMore: false, error: null };
   if (!viewer.userId) return empty;
@@ -247,6 +260,11 @@ export async function loadCandidateQuestions(
     .order("information_gain_score", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(limit);
+
+  const pattern = queryText ? ilikeContains(queryText) : null;
+  if (pattern) {
+    query = query.ilike("prompt", pattern);
+  }
 
   if (excluded.length > 0) {
     query = query.not("id", "in", `(${excluded.join(",")})`);
@@ -374,6 +392,7 @@ async function attachWaitingFloors(
 export async function loadJuryDebates(
   viewer: FeedViewer,
   limit: number,
+  queryText?: string,
 ): Promise<LoopQueryResult<BlueFeedDebate>> {
   const empty: LoopQueryResult<BlueFeedDebate> = { items: [], hasMore: false, error: null };
   if (!viewer.userId || viewer.tier2OcdIds.length === 0) return empty;
@@ -384,7 +403,7 @@ export async function loadJuryDebates(
   const matched = elections.filter((row) => wanted.has(normalizeOcdId(row.ocd_id)));
   if (matched.length === 0) return empty;
 
-  const { data, error } = await supabase
+  let debates = supabase
     .from("debates")
     .select(
       `
@@ -404,6 +423,13 @@ export async function loadJuryDebates(
     .neq("candidate_b_id", viewer.userId)
     .order("created_at", { ascending: false })
     .limit(limit);
+
+  const pattern = queryText ? ilikeContains(queryText) : null;
+  if (pattern) {
+    debates = debates.ilike("topic", pattern);
+  }
+
+  const { data, error } = await debates;
 
   if (error) {
     if (isMissingRelation(error)) return empty;
