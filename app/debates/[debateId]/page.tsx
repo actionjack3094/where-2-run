@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CountdownTimer } from "@/app/components/countdown-timer";
+import { RealtimeDebateListener } from "@/app/components/realtime-debate-listener";
 import { isUuid } from "@/lib/arena/display";
 import { loadDebateComments } from "@/lib/comments";
 import { createServerSupabase } from "@/lib/db/supabase-server";
@@ -95,6 +96,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
 
   return (
     <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+      <RealtimeDebateListener debateId={debateId} />
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
         <header>
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">

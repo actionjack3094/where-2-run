@@ -1,5 +1,5 @@
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs";
-import { createClient } from "@supabase/supabase-js";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { AppDatabase } from "@/types/database.types";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -11,7 +11,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
+const url = supabaseUrl;
+const anonKey = supabaseAnonKey;
+
+export function createClient() {
+  return createBrowserClient<AppDatabase>(url, anonKey);
+}
+
 export const supabase =
   typeof window === "undefined"
-    ? createClient<AppDatabase>(supabaseUrl, supabaseAnonKey)
-    : createBrowserClient<AppDatabase>(supabaseUrl, supabaseAnonKey);
+    ? createSupabaseClient<AppDatabase>(url, anonKey)
+    : createClient();
