@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { TOTAL_ROUNDS } from "@/lib/arena/time";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 import { createServerSupabase } from "@/lib/db/supabase-server";
+import { assertSpectatorCivicFence } from "@/lib/spectator-civic-fence";
 
 export async function submitArgument(debateId: string, formData: FormData) {
   const rawArgument = formData.get("argument");
@@ -177,6 +178,8 @@ export async function castVote(debateId: string, candidateId: string) {
   if (!user) {
     throw new Error("Sign in to cast a vote.");
   }
+
+  await assertSpectatorCivicFence(supabase, user.id, debateId);
 
   const { error } = await supabase.from("votes").insert({
     debate_id: debateId,

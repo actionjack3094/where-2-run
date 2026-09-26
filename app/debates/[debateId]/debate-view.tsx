@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ShieldCheck } from "lucide-react";
 import { gradeDebate } from "@/app/actions/arbitration/grade-debate";
+import { CIVIC_FENCE_BALLOT_NOTICE } from "@/lib/civic-fencing";
 import { AppealModal } from "@/components/debates/AppealModal";
 import { CommentSection } from "@/components/comments/CommentSection";
 import { BackCandidateButton } from "@/components/pledges/BackCandidateButton";
@@ -965,6 +967,10 @@ function SpectatorVote({
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <p className="mb-4 flex items-start gap-2 rounded-lg border border-gold/50 bg-gold/10 px-3 py-2 text-sm leading-6 text-gold">
+            <ShieldCheck aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{CIVIC_FENCE_BALLOT_NOTICE}</span>
+          </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <Button
               type="button"

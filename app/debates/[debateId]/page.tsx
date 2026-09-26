@@ -6,8 +6,9 @@ import { resolveDebate } from "@/lib/actions/debate-resolution";
 import { isUuid } from "@/lib/arena/display";
 import { loadDebateComments } from "@/lib/comments";
 import { createServerSupabase } from "@/lib/db/supabase-server";
-import { castVote, submitArgument } from "./actions";
+import { submitArgument } from "./actions";
 import { DebateView } from "./debate-view";
+import { SpectatorBallot } from "./spectator-ballot";
 
 type ActiveDebatePageProps = {
   params: Promise<{ debateId: string }>;
@@ -46,52 +47,6 @@ function concludedOutcome(debate: DebateRow) {
     return "Candidate B is the winner";
   }
   return "Tie";
-}
-
-function BallotChoice({
-  label,
-  debateId,
-  candidateId,
-  hasVoted,
-  selected,
-  votes,
-  share,
-}: {
-  label: string;
-  debateId: string;
-  candidateId: string;
-  hasVoted: boolean;
-  selected: boolean;
-  votes: number;
-  share: number;
-}) {
-  const buttonClass =
-    "w-full rounded-md border border-gold/50 px-4 py-2 text-[11px] font-medium uppercase tracking-widest text-gold disabled:cursor-not-allowed disabled:opacity-60";
-
-  return (
-    <article className="rounded-xl border border-gold/40 bg-zinc-900 px-5 py-5">
-      <p className="text-[11px] font-medium uppercase tracking-widest text-gold">{label}</p>
-      {hasVoted ? (
-        <>
-          <button type="button" disabled className={`mt-4 ${buttonClass}`}>
-            {selected ? "Vote Cast" : `Vote ${label}`}
-          </button>
-          <p className="mt-3 text-2xl font-semibold tabular-nums tracking-tight text-parchment">
-            {share}%
-          </p>
-          <p className="mt-1 text-xs text-zinc-400">
-            {votes} {votes === 1 ? "vote" : "votes"}
-          </p>
-        </>
-      ) : (
-        <form action={castVote.bind(null, debateId, candidateId)} className="mt-4">
-          <button type="submit" className={buttonClass}>
-            Vote {label}
-          </button>
-        </form>
-      )}
-    </article>
-  );
 }
 
 export default async function ActiveDebatePage({ params }: ActiveDebatePageProps) {
@@ -312,26 +267,17 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
                 Voting is now open
               </p>
               {ballotOpen && candidateAId && candidateBId && !isSeatedCandidate ? (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <BallotChoice
-                    label="Candidate A"
-                    candidateId={candidateAId}
-                    debateId={debateId}
-                    hasVoted={hasVoted}
-                    selected={votedCandidateId === candidateAId}
-                    votes={aVotes}
-                    share={aShare}
-                  />
-                  <BallotChoice
-                    label="Candidate B"
-                    candidateId={candidateBId}
-                    debateId={debateId}
-                    hasVoted={hasVoted}
-                    selected={votedCandidateId === candidateBId}
-                    votes={bVotes}
-                    share={bShare}
-                  />
-                </div>
+                <SpectatorBallot
+                  debateId={debateId}
+                  candidateAId={candidateAId}
+                  candidateBId={candidateBId}
+                  hasVoted={hasVoted}
+                  votedCandidateId={votedCandidateId}
+                  aVotes={aVotes}
+                  bVotes={bVotes}
+                  aShare={aShare}
+                  bShare={bShare}
+                />
               ) : null}
             </div>
           ) : (

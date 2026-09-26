@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { CIVIC_FENCE_BALLOT_ERROR } from "@/lib/civic-fencing";
 import { createAdminClient } from "@/lib/db/supabase-admin";
+import { assertSpectatorCivicFence } from "@/lib/spectator-civic-fence";
 
 export async function POST(request: Request) {
   try {
@@ -56,6 +58,15 @@ export async function POST(request: Request) {
 
     if (existingVote) {
       return NextResponse.json({ error: "You already voted in this debate." }, { status: 409 });
+    }
+
+    try {
+      await assertSpectatorCivicFence(admin, body.voterId, body.debateId);
+    } catch (fenceError) {
+      const message =
+        fenceError instanceof Error ? fenceError.message : CIVIC_FENCE_BALLOT_ERROR;
+      const status = message === CIVIC_FENCE_BALLOT_ERROR ? 403 : 500;
+      return NextResponse.json({ error: message }, { status });
     }
 
     const { data, error } = await admin
