@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { isUuid } from "@/lib/arena/display";
 import { loadDebateComments } from "@/lib/comments";
 import { createServerSupabase } from "@/lib/db/supabase-server";
+import { submitArgument } from "./actions";
 import { DebateView } from "./debate-view";
 
 type ActiveDebatePageProps = {
@@ -17,6 +18,8 @@ type DebateRow = {
   election_question_id: string | null;
   candidate_a_id: string | null;
   candidate_b_id: string | null;
+  candidate_a_argument: string | null;
+  candidate_b_argument: string | null;
 };
 
 export const metadata: Metadata = {
@@ -34,13 +37,32 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
   if (!isUuid(debateId)) notFound();
 
   const supabase = await createServerSupabase();
-  const { data, error } = await supabase
+  const debateColumns =
+    "id, topic, status, expires_at, election_question_id, candidate_a_id, candidate_b_id, candidate_a_argument, candidate_b_argument";
+  let { data, error } = await supabase
     .from("debates")
-    .select(
-      "id, topic, status, expires_at, election_question_id, candidate_a_id, candidate_b_id",
-    )
+    .select(debateColumns)
     .eq("id", debateId)
     .maybeSingle();
+
+  if (
+    error &&
+    (error.code === "42703" ||
+      error.code === "PGRST204" ||
+      /candidate_[ab]_argument/i.test(error.message ?? ""))
+  ) {
+    const fallback = await supabase
+      .from("debates")
+      .select(
+        "id, topic, status, expires_at, election_question_id, candidate_a_id, candidate_b_id",
+      )
+      .eq("id", debateId)
+      .maybeSingle();
+    data = fallback.data
+      ? { ...fallback.data, candidate_a_argument: null, candidate_b_argument: null }
+      : null;
+    error = fallback.error;
+  }
 
   if (error || !data) notFound();
   const debate = data as DebateRow;
@@ -99,7 +121,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
               </p>
               <h3 className="mt-2 text-sm font-medium text-parchment">Stance</h3>
               <p className="mt-3 text-sm leading-6 text-zinc-400">
-                Opening stance will appear here.
+                {debate.candidate_a_argument?.trim() || "Opening stance will appear here."}
               </p>
             </article>
             <article className="rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-5">
@@ -108,12 +130,15 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
               </p>
               <h3 className="mt-2 text-sm font-medium text-parchment">Counter-stance</h3>
               <p className="mt-3 text-sm leading-6 text-zinc-400">
-                Counter-stance will appear here.
+                {debate.candidate_b_argument?.trim() || "Counter-stance will appear here."}
               </p>
             </article>
           </div>
 
-          <form className="mt-4 rounded-xl border border-dashed border-gold/40 bg-zinc-950 px-5 py-5">
+          <form
+            action={submitArgument.bind(null, debateId)}
+            className="mt-4 rounded-xl border border-dashed border-gold/40 bg-zinc-950 px-5 py-5"
+          >
             <label htmlFor="argument-draft" className="text-sm font-medium text-parchment">
               Submit an argument
             </label>
@@ -125,7 +150,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
               className="mt-3 w-full resize-y rounded-md border border-gold/40 bg-zinc-950 px-4 py-3 text-sm text-parchment outline-none placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-gold/60"
             />
             <button
-              type="button"
+              type="submit"
               className="mt-3 rounded-md border border-gold/50 px-4 py-2 text-[11px] font-medium uppercase tracking-widest text-gold"
             >
               Submit argument
