@@ -25,6 +25,11 @@ const links = [
       path.startsWith("/my-campaign") ||
       path.startsWith("/dashboard"),
   },
+  {
+    href: "/notifications",
+    label: "Notifications",
+    match: (path: string) => path.startsWith("/notifications"),
+  },
 ] as const;
 
 export function SiteNav() {
