@@ -52,8 +52,9 @@ function CandidateQuestionCard({ item }: { item: RedFeedQuestion }) {
         data.session?.access_token ?? null,
       );
       if ("error" in result) {
-        setError(result.error);
-        setToast(result.error);
+        const message = result.error ?? "Could not open this floor.";
+        setError(message);
+        setToast(message);
         return;
       }
       router.refresh();
