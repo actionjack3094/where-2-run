@@ -69,6 +69,9 @@ export interface Debate {
   candidate_b_id: string | null;
   candidate_a_argument: string | null;
   candidate_b_argument: string | null;
+  winner_id: string | null;
+  candidate_a_votes: number;
+  candidate_b_votes: number;
   status: DebateStatus | string;
   current_round: number;
   expires_at: string;
