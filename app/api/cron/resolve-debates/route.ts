@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 
 type ExpiredDebate = {
@@ -24,7 +24,11 @@ async function countVotes(
   return count ?? 0;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  if (request.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const admin = createAdminClient();
     const now = new Date().toISOString();

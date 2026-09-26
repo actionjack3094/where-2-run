@@ -22,6 +22,9 @@ type DebateRow = {
   candidate_b_id: string | null;
   candidate_a_argument: string | null;
   candidate_b_argument: string | null;
+  winner_id: string | null;
+  candidate_a_votes: number;
+  candidate_b_votes: number;
 };
 
 export const metadata: Metadata = {
@@ -32,6 +35,16 @@ export const metadata: Metadata = {
 function statusLabel(status: string) {
   if (!status) return "Active";
   return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function concludedOutcome(debate: DebateRow) {
+  if (debate.winner_id && debate.winner_id === debate.candidate_a_id) {
+    return "Candidate A is the winner";
+  }
+  if (debate.winner_id && debate.winner_id === debate.candidate_b_id) {
+    return "Candidate B is the winner";
+  }
+  return "Tie";
 }
 
 function BallotChoice({
@@ -86,7 +99,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
 
   const supabase = await createServerSupabase();
   const debateColumns =
-    "id, topic, status, expires_at, election_question_id, candidate_a_id, candidate_b_id, candidate_a_argument, candidate_b_argument";
+    "id, topic, status, expires_at, election_question_id, candidate_a_id, candidate_b_id, candidate_a_argument, candidate_b_argument, winner_id, candidate_a_votes, candidate_b_votes";
   let { data, error } = await supabase
     .from("debates")
     .select(debateColumns)
@@ -107,7 +120,14 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
       .eq("id", debateId)
       .maybeSingle();
     data = fallback.data
-      ? { ...fallback.data, candidate_a_argument: null, candidate_b_argument: null }
+      ? {
+          ...fallback.data,
+          candidate_a_argument: null,
+          candidate_b_argument: null,
+          winner_id: null,
+          candidate_a_votes: 0,
+          candidate_b_votes: 0,
+        }
       : null;
     error = fallback.error;
   }
@@ -142,6 +162,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
 
   const candidateAId = debate.candidate_a_id;
   const candidateBId = debate.candidate_b_id;
+  const isCompleted = debate.status === "completed";
   const ballotOpen = debate.status === "voting" && Boolean(candidateAId && candidateBId);
 
   let aVotes = 0;
@@ -191,7 +212,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
         <header>
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-            Active debate
+            {isCompleted ? "Completed debate" : "Active debate"}
           </p>
           <h1 className="mt-3 font-display text-3xl font-semibold leading-tight tracking-tight text-parchment">
             {prompt || "Untitled question"}
@@ -219,7 +240,53 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
         </section>
 
         <section aria-label="Argument stage" className="mt-8">
-          {debate.status === "voting" ? (
+          {isCompleted ? (
+            <div className="flex flex-col gap-4">
+              <div
+                role="status"
+                className="rounded-xl border-2 border-gold bg-gold/10 px-6 py-6 text-center"
+              >
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-gold">
+                  Debate Concluded
+                </p>
+                <p className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment">
+                  {concludedOutcome(debate)}
+                </p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <article className="rounded-xl border border-gold/40 bg-zinc-900 px-5 py-5">
+                  <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+                    Candidate A
+                  </p>
+                  <h3 className="mt-2 text-sm font-medium text-parchment">Stance</h3>
+                  <p className="mt-3 text-sm leading-6 text-zinc-400">
+                    {debate.candidate_a_argument?.trim() || "Opening stance will appear here."}
+                  </p>
+                  <p className="mt-4 text-2xl font-semibold tabular-nums tracking-tight text-parchment">
+                    {debate.candidate_a_votes}
+                  </p>
+                  <p className="mt-1 text-xs text-zinc-400">
+                    {debate.candidate_a_votes === 1 ? "vote" : "votes"}
+                  </p>
+                </article>
+                <article className="rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-5">
+                  <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-400">
+                    Candidate B
+                  </p>
+                  <h3 className="mt-2 text-sm font-medium text-parchment">Counter-stance</h3>
+                  <p className="mt-3 text-sm leading-6 text-zinc-400">
+                    {debate.candidate_b_argument?.trim() || "Counter-stance will appear here."}
+                  </p>
+                  <p className="mt-4 text-2xl font-semibold tabular-nums tracking-tight text-parchment">
+                    {debate.candidate_b_votes}
+                  </p>
+                  <p className="mt-1 text-xs text-zinc-400">
+                    {debate.candidate_b_votes === 1 ? "vote" : "votes"}
+                  </p>
+                </article>
+              </div>
+            </div>
+          ) : debate.status === "voting" ? (
             <div className="flex flex-col gap-4">
               <p
                 role="status"
