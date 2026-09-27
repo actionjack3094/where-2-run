@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUserId } from "@/lib/arena/auth";
+import { sendChallengeEmail } from "@/lib/actions/emails";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 
 const UUID_RE =
@@ -105,10 +106,34 @@ export async function POST(request: Request) {
       );
     }
 
-    await admin
+    const { error: postUpdateError } = await admin
       .from("civic_posts")
       .update({ status: "challenged" })
       .eq("id", postId);
+
+    if (postUpdateError) {
+      return NextResponse.json({ error: postUpdateError.message }, { status: 500 });
+    }
+
+    const { data: challenger, error: challengerError } = await admin
+      .from("users")
+      .select("username")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (challengerError) {
+      return NextResponse.json({ error: challengerError.message }, { status: 500 });
+    }
+
+    const header = request.headers.get("authorization");
+    const accessToken = header?.startsWith("Bearer ") ? header.slice(7) : null;
+
+    await sendChallengeEmail(
+      post.author_id,
+      challenger?.username?.trim() || "A candidate",
+      debate.id,
+      accessToken,
+    );
 
     return NextResponse.json({ match_id: debate.id }, { status: 200 });
   } catch (error) {

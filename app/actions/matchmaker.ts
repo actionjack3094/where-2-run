@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireActionUserId } from "@/lib/arena/auth";
 import { isUuid } from "@/lib/arena/display";
 import { createAdminClient } from "@/lib/db/supabase-admin";
+import { sendChallengeEmail } from "@/lib/actions/emails";
 import {
   cosineDistanceToMatchPercent,
   hasStanceVector,
@@ -184,6 +185,13 @@ export async function challengeToDebate(
   if (error || !debate) {
     throw new Error(error?.message ?? "Could not open the debate.");
   }
+
+  await sendChallengeEmail(
+    trimmedId,
+    viewer?.username?.trim() || "A candidate",
+    debate.id,
+    accessToken,
+  );
 
   revalidatePath("/my-campaign");
   revalidatePath("/elections/[districtId]/profile", "page");

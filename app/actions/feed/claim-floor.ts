@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireActionUserId } from "@/lib/arena/auth";
 import { isUuid } from "@/lib/arena/display";
+import { sendChallengeEmail } from "@/lib/actions/emails";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 
 function isMissingQuestionLink(error: { message?: string; code?: string } | null) {
@@ -18,6 +19,31 @@ function isMissingQuestionLink(error: { message?: string; code?: string } | null
 function isWaitingStatusRejected(error: { message?: string; code?: string } | null) {
   if (!error) return false;
   return error.code === "23514" || /debates_status_check/i.test(error.message ?? "");
+}
+
+async function notifyChallengedCandidate(
+  admin: ReturnType<typeof createAdminClient>,
+  challengerId: string,
+  targetUserId: string | null,
+  debateId: string,
+  accessToken?: string | null,
+) {
+  if (!targetUserId) return;
+
+  const { data, error } = await admin
+    .from("users")
+    .select("username")
+    .eq("id", challengerId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+
+  await sendChallengeEmail(
+    targetUserId,
+    data?.username?.trim() || "A candidate",
+    debateId,
+    accessToken,
+  );
 }
 
 export async function claimQuestionFloor(
@@ -65,7 +91,7 @@ export async function claimQuestionFloor(
       .eq("status", "waiting")
       .is("candidate_b_id", null)
       .neq("candidate_a_id", userId)
-      .select("id")
+      .select("id, candidate_a_id")
       .maybeSingle();
 
     if (error) {
@@ -75,6 +101,15 @@ export async function claimQuestionFloor(
       throw new Error(error.message);
     }
     if (!updated) throw new Error("That challenge is no longer open.");
+
+    const seated = updated as { id: string; candidate_a_id: string | null };
+    await notifyChallengedCandidate(
+      admin,
+      userId,
+      seated.candidate_a_id,
+      seated.id,
+      accessToken,
+    );
 
     revalidatePath("/feed");
     revalidatePath(`/debates/${updated.id}`);
@@ -111,11 +146,21 @@ export async function claimQuestionFloor(
       .eq("status", "waiting")
       .is("candidate_b_id", null)
       .neq("candidate_a_id", userId)
-      .select("id")
+      .select("id, candidate_a_id")
       .maybeSingle();
 
     if (challengeError) throw new Error(challengeError.message);
     if (!challenged) throw new Error("That challenge is no longer open.");
+
+    const seated = challenged as { id: string; candidate_a_id: string | null };
+    await notifyChallengedCandidate(
+      admin,
+      userId,
+      seated.candidate_a_id,
+      seated.id,
+      accessToken,
+    );
+
     revalidatePath("/feed");
     revalidatePath(`/debates/${challenged.id}`);
     return { debateId: challenged.id, role: "candidate_b" as const };
