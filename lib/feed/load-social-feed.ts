@@ -28,6 +28,8 @@ export type FeedViewer = {
   ideologyVector: unknown;
   tier2OcdIds: string[];
   targetDistrictId: string | null;
+  districtId: string | null;
+  districtName: string | null;
 };
 
 type ElectionRow = {
@@ -109,6 +111,8 @@ export async function loadFeedViewer(): Promise<FeedViewer> {
     ideologyVector: null,
     tier2OcdIds: [],
     targetDistrictId: null,
+    districtId: null,
+    districtName: null,
   };
 
   const supabase = await createServerSupabase();
@@ -131,29 +135,48 @@ export async function loadFeedViewer(): Promise<FeedViewer> {
     target_district_id?: string | null;
   } | null;
 
+  const districtId = row?.target_district_id ?? null;
+  let districtName: string | null = null;
+  if (districtId) {
+    const { data: district } = await supabase
+      .from("districts")
+      .select("name")
+      .eq("id", districtId)
+      .maybeSingle();
+    const name = (district as { name?: string | null } | null)?.name?.trim();
+    districtName = name ? name : null;
+  }
+
   return {
     userId: user.id,
     tier: parseVerificationTier(row?.verification_tier),
     ocdIdentifiers: asOcdArray(row?.ocd_identifiers),
     ideologyVector: row?.ideology_vector ?? null,
     tier2OcdIds: tier2Error ? [] : asOcdArray(tier2?.ocd_ids),
-    targetDistrictId: row?.target_district_id ?? null,
+    targetDistrictId: districtId,
+    districtId,
+    districtName,
   };
 }
 
-async function loadElections() {
+async function loadElections(districtId: string | null) {
   const supabase = await createServerSupabase();
-  const full = await supabase.from("elections").select(ELECTION_COLUMNS);
-  if (!full.error) return (full.data ?? []) as ElectionRow[];
 
-  const withDistrict = await supabase
-    .from("elections")
-    .select("id, slug, office_name, district_id, ocd_id");
-  if (!withDistrict.error) return (withDistrict.data ?? []) as ElectionRow[];
+  const selectElections = (columns: string, filterDistrict: boolean) => {
+    let query = supabase.from("elections").select(columns);
+    if (filterDistrict && districtId) query = query.eq("district_id", districtId);
+    return query;
+  };
+
+  const full = await selectElections(ELECTION_COLUMNS, true);
+  if (!full.error) return (full.data ?? []) as unknown as ElectionRow[];
+
+  const withDistrict = await selectElections("id, slug, office_name, district_id, ocd_id", true);
+  if (!withDistrict.error) return (withDistrict.data ?? []) as unknown as ElectionRow[];
 
   if (!isMissingRelation(full.error)) {
-    const basic = await supabase.from("elections").select(ELECTION_COLUMNS_BASIC);
-    if (!basic.error) return (basic.data ?? []) as ElectionRow[];
+    const basic = await selectElections(ELECTION_COLUMNS_BASIC, false);
+    if (!basic.error) return (basic.data ?? []) as unknown as ElectionRow[];
   }
   return [] as ElectionRow[];
 }
@@ -227,7 +250,7 @@ export async function loadCandidateQuestions(
   if (!viewer.userId) return empty;
 
   const supabase = await createServerSupabase();
-  const elections = await loadElections();
+  const elections = await loadElections(viewer.districtId);
   const viableIds = await electionIdsForQuestions(supabase, viewer, elections);
   if (viableIds.length === 0) return empty;
 
@@ -398,7 +421,7 @@ export async function loadJuryDebates(
   if (!viewer.userId || viewer.tier2OcdIds.length === 0) return empty;
 
   const supabase = await createServerSupabase();
-  const elections = await loadElections();
+  const elections = await loadElections(viewer.districtId);
   const wanted = new Set(viewer.tier2OcdIds.map((id) => normalizeOcdId(id)));
   const matched = elections.filter((row) => wanted.has(normalizeOcdId(row.ocd_id)));
   if (matched.length === 0) return empty;
@@ -423,6 +446,10 @@ export async function loadJuryDebates(
     .neq("candidate_b_id", viewer.userId)
     .order("created_at", { ascending: false })
     .limit(limit);
+
+  if (viewer.districtId) {
+    debates = debates.eq("district_id", viewer.districtId);
+  }
 
   const pattern = queryText ? ilikeContains(queryText) : null;
   if (pattern) {

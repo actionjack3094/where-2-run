@@ -5,7 +5,7 @@ import {
   getIdeologicalMatches,
   type IdeologicalMatch,
 } from "@/lib/actions/matchmaker";
-import { getServerUser } from "@/lib/db/supabase-server";
+import { createServerSupabase, getServerUser } from "@/lib/db/supabase-server";
 
 export const metadata: Metadata = {
   title: "Matchmaker · WHERE 2 RUN",
@@ -35,6 +35,35 @@ export default async function MatchmakerPage() {
               Sign in
             </Link>
           </div>
+        </div>
+      </main>
+    );
+  }
+
+  const supabase = await createServerSupabase();
+  const { data: profile, error: stanceError } = await supabase
+    .from("users")
+    .select("stance_vector")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const stanceVector = stanceError ? undefined : (profile?.stance_vector ?? null);
+  if (stanceVector === null) {
+    return (
+      <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+        <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
+          <Link
+            href="/onboarding/stance"
+            className="block w-full rounded-xl border border-gold bg-zinc-900 px-6 py-8 shadow-[inset_3px_0_0_0_var(--gold-strong)] transition-colors hover:border-gold hover:bg-zinc-900/80"
+          >
+            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+              Stance Quiz
+            </p>
+            <p className="mt-3 font-display text-2xl font-semibold leading-snug tracking-tight text-parchment">
+              Discover your ideological matches. Complete the 2-minute Stance Quiz to instantly
+              see which local candidates align with your values.
+            </p>
+          </Link>
         </div>
       </main>
     );

@@ -99,11 +99,11 @@ export default function StanceQuestionnairePage() {
             Onboarding
           </p>
           <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment">
-            Stance Questionnaire
+            Set your ideological stances
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
-            Six local questions, each from strongly oppose (−1) to strongly support (+1).
-            Filing writes your stance vector so voter matchmaking can place you.
+            Six questions, each from strongly oppose (−1) to strongly support (+1).
+            Voters and candidates share this six-axis stance vector for ideological matchmaking.
           </p>
         </header>
 
