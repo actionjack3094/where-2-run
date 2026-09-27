@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Cinzel, Geist, Geist_Mono } from "next/font/google";
 import { PledgeHost } from "@/components/pledges/PledgeHost";
-import { SiteFooter } from "@/components/site-footer";
-import { SiteNav } from "@/components/site-nav";
+import { SiteChrome } from "@/components/site-chrome";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -34,11 +33,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <PledgeHost>
-          <div className="flex min-h-full flex-1 flex-col">
-            <SiteNav />
-            {children}
-            <SiteFooter />
-          </div>
+          <SiteChrome>{children}</SiteChrome>
         </PledgeHost>
       </body>
     </html>
