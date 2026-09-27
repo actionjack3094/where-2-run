@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "arena:sim": "tsx scripts/arena-sim.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.58",
@@ -23,6 +24,7 @@
     "ai": "^7.0.107",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "dotenv": "^18.0.4",
     "lucide-react": "^1.47.0",
     "next": "16.3.5",
     "react": "19.2.8",
@@ -42,6 +44,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^4.1.11"
   }
