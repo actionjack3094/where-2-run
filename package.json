@@ -19,6 +19,7 @@
     "@stripe/stripe-js": "^9.17.0",
     "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@supabase/supabase-js": "^2.116.0",
+    "@vercel/og": "^1.0.3",
     "ai": "^7.0.107",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
