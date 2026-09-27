@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { saveStanceVector } from "@/lib/actions/stance-vector";
 
@@ -66,7 +65,6 @@ function isNextRedirectError(error: unknown) {
 }
 
 export default function StanceQuestionnairePage() {
-  const router = useRouter();
   const [responses, setResponses] = useState<number[]>(() => QUESTIONS.map(() => 0));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -80,19 +78,14 @@ export default function StanceQuestionnairePage() {
     setError(null);
   }
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function fileStance() {
     if (busy) return;
     setBusy(true);
     setError(null);
     try {
       await saveStanceVector(responses);
-      router.push("/matchmaker");
     } catch (caught) {
-      if (isNextRedirectError(caught)) {
-        router.push("/matchmaker");
-        return;
-      }
+      if (isNextRedirectError(caught)) throw caught;
       setError(caught instanceof Error ? caught.message : "Could not file your stance vector.");
       setBusy(false);
     }
@@ -114,7 +107,7 @@ export default function StanceQuestionnairePage() {
           </p>
         </header>
 
-        <form onSubmit={(event) => void onSubmit(event)} className="mt-10 flex flex-col gap-6">
+        <form action={fileStance} className="mt-10 flex flex-col gap-6">
           {QUESTIONS.map((question, index) => {
             const value = responses[index] ?? 0;
             return (

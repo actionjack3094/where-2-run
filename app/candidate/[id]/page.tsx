@@ -272,14 +272,14 @@ async function ownStanceIsEmpty(userId: string) {
 }
 
 export default async function CandidatePage({ params }: CandidatePageProps) {
-  const { id } = await params;
-  const [candidate, loaded, viewer] = await Promise.all([
-    loadCandidate(id),
-    loadPublicCandidate(id),
+  const { id: candidateId } = await params;
+  const [candidate, loaded, user] = await Promise.all([
+    loadCandidate(candidateId),
+    loadPublicCandidate(candidateId),
     getServerUser(),
   ]);
-  const showStanceCta =
-    viewer != null && viewer.id === id && (await ownStanceIsEmpty(viewer.id));
+  const viewingOwnProfile = user != null && user.id === candidateId;
+  const showStanceCta = viewingOwnProfile && (await ownStanceIsEmpty(user.id));
 
   const error = candidate.error ?? loaded.error;
   const profile = loaded.profile;
@@ -310,7 +310,7 @@ export default async function CandidatePage({ params }: CandidatePageProps) {
               </Link>
             ) : null}
             <ProfileHeader
-              candidateId={id}
+              candidateId={candidateId}
               name={candidate.found ? candidate.name : (profile?.username ?? "Candidate")}
               verificationTier={profile?.verificationTier ?? "unverified"}
               districtLabel={profile?.ocdDistrict ?? profile?.targetDistrictName ?? null}

@@ -35,8 +35,27 @@ export async function saveStanceVector(responses: number[]) {
     throw new Error("Sign in to file a stance vector.");
   }
 
-  // Candidate profiles live on public.users. candidate_stats projects this
-  // column, and only the service role can update that view.
+  const { data: existing, error: readError } = await supabase
+    .from("users")
+    .select("id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (readError) {
+    throw new Error(readError.message);
+  }
+
+  if (!existing) {
+    const username = `runner-${user.id.replace(/-/g, "").slice(0, 8)}`;
+    const { error: insertError } = await supabase.from("users").insert({
+      id: user.id,
+      username,
+    });
+    if (insertError && insertError.code !== "23505") {
+      throw new Error(insertError.message);
+    }
+  }
+
   const { error } = await supabase
     .from("users")
     .update({
@@ -49,7 +68,6 @@ export async function saveStanceVector(responses: number[]) {
     throw new Error(error.message);
   }
 
-  revalidatePath("/matchmaker");
-  revalidatePath(`/candidate/${user.id}`);
+  revalidatePath("/", "layout");
   redirect("/matchmaker");
 }
