@@ -42,6 +42,7 @@ export type AccountProfile = {
   id: string;
   email: string | null;
   full_name: string | null;
+  verification_tier: string | null;
   created_at: string | null;
   updated_at: string | null;
 };

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { SearchBar } from "@/app/components/search-bar";
 import { DebateComposer } from "@/app/feed/components/DebateComposer";
 import { InfiniteFeed } from "@/app/feed/components/InfiniteFeed";
@@ -22,6 +23,27 @@ export default async function FeedPage(props: PageProps<"/feed">) {
   const q = socialFeedQueryFromSearch(searchParams);
   const limit = page * SOCIAL_FEED_PAGE_SIZE;
   const viewer = await loadFeedViewer();
+  if (viewer.userId && viewer.districtId == null) {
+    return (
+      <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+        <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
+          <Link
+            href="/onboarding/district"
+            className="block w-full rounded-xl border border-gold bg-zinc-900 px-6 py-8 shadow-[inset_3px_0_0_0_var(--gold-strong)] transition-colors hover:border-gold hover:bg-zinc-900/80"
+          >
+            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+              Verify district
+            </p>
+            <p className="mt-3 font-display text-2xl font-semibold leading-snug tracking-tight text-parchment">
+              Welcome! To unlock your live civic feed and voter matchmaking, please verify your
+              local district.
+            </p>
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
   const [red, blue] = await Promise.all([
     loadCandidateQuestions(viewer, limit, q),
     loadJuryDebates(viewer, limit, q),
