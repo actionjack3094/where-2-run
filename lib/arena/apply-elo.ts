@@ -45,7 +45,8 @@ async function resolveWinnerId(admin: AdminClient, debate: DebateRow) {
   const { data: votes } = await admin
     .from("votes")
     .select("candidate_id")
-    .eq("debate_id", debate.id);
+    .eq("debate_id", debate.id)
+    .is("voided_at", null);
 
   return pickDebateWinnerId(debate, (votes ?? []) as Pick<Vote, "candidate_id">[]);
 }

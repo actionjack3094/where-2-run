@@ -4,6 +4,8 @@ const links = [
   { href: "/feed", label: "Feed" },
   { href: "/leaderboards", label: "Leaderboards" },
   { href: "/profile", label: "My Profile" },
+  { href: "/verify", label: "Verify" },
+  { href: "/jury", label: "Jury" },
   { href: "/about", label: "About Us" },
 ] as const;
 

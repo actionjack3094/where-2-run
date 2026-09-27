@@ -147,12 +147,14 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
         .from("votes")
         .select("id", { count: "exact", head: true })
         .eq("debate_id", debateId)
-        .eq("candidate_id", candidateAId),
+        .eq("candidate_id", candidateAId)
+        .is("voided_at", null),
       supabase
         .from("votes")
         .select("id", { count: "exact", head: true })
         .eq("debate_id", debateId)
-        .eq("candidate_id", candidateBId),
+        .eq("candidate_id", candidateBId)
+        .is("voided_at", null),
       user
         ? supabase
             .from("votes")

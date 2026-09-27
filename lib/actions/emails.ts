@@ -4,8 +4,15 @@ import { Resend } from "resend";
 import { requireActionUserId } from "@/lib/arena/auth";
 import { isUuid } from "@/lib/arena/display";
 import { createAdminClient } from "@/lib/db/supabase-admin";
+import {
+  digestCopy,
+  digestHtml,
+  digestSubject,
+  type DigestKind,
+} from "@/lib/notifications/digests";
+import { siteOrigin } from "@/lib/site";
 
-const DEBATE_ORIGIN = "https://where-2-run.vercel.app";
+const DEBATE_ORIGIN = siteOrigin();
 
 function escapeHtml(value: string) {
   return value
@@ -100,4 +107,50 @@ export async function sendChallengeEmail(
   }
 
   console.log(`[resend] challenge email accepted id=${data?.id ?? "unknown"}`);
+}
+
+export async function sendDistrictDigest(
+  input: {
+    recipientId: string;
+    kind: DigestKind;
+    topic: string;
+    districtLabel: string;
+    debateId: string;
+    hoursRemaining?: number;
+  },
+  cronSecret: string,
+) {
+  const expected = process.env.CRON_SECRET?.trim();
+  if (!expected || cronSecret !== expected) {
+    throw new Error("District digests are sent by the district cron.");
+  }
+  if (!isUuid(input.recipientId) || !isUuid(input.debateId)) {
+    throw new Error("A valid constituent and debate are required.");
+  }
+
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  const from = process.env.RESEND_FROM_EMAIL?.trim();
+  if (!apiKey) throw new Error("Missing RESEND_API_KEY");
+  if (!from) throw new Error("Missing RESEND_FROM_EMAIL");
+
+  const admin = createAdminClient();
+  const email = await recipientEmail(admin, input.recipientId);
+  const text = digestCopy(input);
+  const html = digestHtml(input);
+
+  const resend = new Resend(apiKey);
+  const { data, error } = await resend.emails.send({
+    from,
+    to: email,
+    subject: digestSubject(input.kind, input.districtLabel),
+    text: `${text}\n\n${DEBATE_ORIGIN}/debates/${input.debateId}`,
+    html,
+  });
+
+  if (error) {
+    console.error(`[resend] district digest failed: ${error.message}`);
+    throw new Error(error.message);
+  }
+
+  console.log(`[resend] district digest accepted id=${data?.id ?? "unknown"}`);
 }

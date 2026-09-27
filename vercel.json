@@ -3,6 +3,14 @@
     {
       "path": "/api/cron/resolve-debates",
       "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/district-alerts",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/sync-elections",
+      "schedule": "15 6 * * *"
     }
   ]
 }

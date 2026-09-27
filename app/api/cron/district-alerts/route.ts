@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isCronAuthorized } from "@/lib/cron/auth";
-import { finalizeExpiredDebates } from "@/lib/moderation/nightly";
+import { runDistrictAlerts } from "@/lib/notifications/district-alerts";
 
 export async function GET(request: NextRequest) {
   if (!isCronAuthorized(request)) {
@@ -8,10 +8,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const result = await finalizeExpiredDebates();
+    const result = await runDistrictAlerts();
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not resolve debates.";
+    const message = error instanceof Error ? error.message : "Could not send district alerts.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -24,12 +24,20 @@ export default async function VerifyPage() {
             baseline, a voter registration file match unlocks voting rights, and a
             government ID review opens ballot access.
           </p>
-          <Link
-            href="/my-campaign"
-            className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
-          >
-            Back to ideological engine
-          </Link>
+          <div className="mt-4 flex flex-wrap gap-4">
+            <Link
+              href="/my-campaign"
+              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+            >
+              Back to ideological engine
+            </Link>
+            <Link
+              href="/verify"
+              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+            >
+              Claim a seeded profile
+            </Link>
+          </div>
         </header>
         <VerificationDesk />
       </div>

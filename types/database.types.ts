@@ -31,6 +31,7 @@ export interface District {
   level: DistrictLevel;
   pvi_score: number | null;
   historical_lean: string | null;
+  ocd_id?: string | null;
   median_ideology_vector: IdeologyVector | string | null;
   zip_code: string | null;
   state: string | null;
@@ -189,6 +190,8 @@ export interface Vote {
   debate_id: string;
   voter_id: string;
   candidate_id: string;
+  /** Set when the jury upholds a report against this ballot. */
+  voided_at?: string | null;
   created_at: string;
 }
 
@@ -257,6 +260,81 @@ export interface Tier2Verification {
   verified_at: string;
 }
 
+export type CivicDataSource = "google_civic" | "democracy_works";
+export type CivicCycleLevel = "federal" | "state" | "municipal";
+export type Tier3ClaimStatus = "pending" | "submitted" | "matched" | "rejected";
+export type GovernmentIdStatus = "unsubmitted" | "submitted" | "matched" | "rejected";
+export type ReportTargetKind = "argument" | "vote" | "debate";
+export type ReportReason = "bad_faith" | "spam" | "abandoned" | "off_platform" | "other";
+export type ReportStatus = "open" | "queued" | "upheld" | "dismissed";
+export type ArbitrationKind = "flagged_vote" | "bad_faith_argument" | "abandoned_debate";
+export type ArbitrationStatus = "open" | "upheld" | "dismissed";
+export type NotificationKind = "debate_countdown" | "local_challenge" | "digest";
+
+export interface ElectionCycle {
+  id: string;
+  source: CivicDataSource | string;
+  external_id: string;
+  name: string;
+  election_day: string;
+  ocd_id: string;
+  level: CivicCycleLevel | string;
+  election_id: string | null;
+  raw: Record<string, unknown>;
+  synced_at: string;
+}
+
+export interface Tier3Verification {
+  user_id: string;
+  claimed_candidate_id: string | null;
+  claim_status: Tier3ClaimStatus | string;
+  government_id_reference: string | null;
+  government_id_status: GovernmentIdStatus | string;
+  ballot_name: string | null;
+  ballot_ocd_id: string | null;
+  ballot_source: string | null;
+  ballot_cross_reference: Record<string, unknown>;
+  submitted_at: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CommunityReport {
+  id: string;
+  reporter_id: string;
+  target_kind: ReportTargetKind | string;
+  argument_id: string | null;
+  vote_id: string | null;
+  debate_id: string;
+  reason: ReportReason | string;
+  note: string | null;
+  status: ReportStatus | string;
+  created_at: string;
+}
+
+export interface ArbitrationCase {
+  id: string;
+  debate_id: string;
+  report_id: string | null;
+  kind: ArbitrationKind | string;
+  status: ArbitrationStatus | string;
+  holds_elo: boolean;
+  reviewer_id: string | null;
+  resolution_note: string | null;
+  opened_at: string;
+  resolved_at: string | null;
+}
+
+export interface NotificationDispatch {
+  id: string;
+  kind: NotificationKind | string;
+  debate_id: string | null;
+  recipient_id: string;
+  ocd_id: string | null;
+  sent_at: string;
+}
+
 export interface Candidate {
   id: string;
   display_name: string;
@@ -266,6 +344,8 @@ export interface Candidate {
   ideology_vector: IdeologyVector | string;
   pac_agreement_accepted: boolean;
   pac_agreement_accepted_at: string | null;
+  /** Campaign manager who filed a tier-3 claim on this seeded ticket. */
+  claimed_by?: string | null;
   onboarding_completed: boolean;
   created_at: string;
   updated_at: string;
@@ -786,6 +866,97 @@ export interface Database {
             foreignKeyName: "tier2_verifications_user_id_fkey";
             columns: ["user_id"];
             isOneToOne: true;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      election_cycles: {
+        Row: ElectionCycle;
+        Insert: Partial<ElectionCycle> &
+          Pick<
+            ElectionCycle,
+            "source" | "external_id" | "name" | "election_day" | "ocd_id" | "level"
+          >;
+        Update: Partial<ElectionCycle>;
+        Relationships: [
+          {
+            foreignKeyName: "election_cycles_election_id_fkey";
+            columns: ["election_id"];
+            isOneToOne: false;
+            referencedRelation: "elections";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      tier3_verifications: {
+        Row: Tier3Verification;
+        Insert: Partial<Tier3Verification> & Pick<Tier3Verification, "user_id">;
+        Update: Partial<Tier3Verification>;
+        Relationships: [
+          {
+            foreignKeyName: "tier3_verifications_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tier3_verifications_claimed_candidate_id_fkey";
+            columns: ["claimed_candidate_id"];
+            isOneToOne: false;
+            referencedRelation: "candidates";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      community_reports: {
+        Row: CommunityReport;
+        Insert: Partial<CommunityReport> &
+          Pick<CommunityReport, "reporter_id" | "target_kind" | "debate_id" | "reason">;
+        Update: Partial<CommunityReport>;
+        Relationships: [
+          {
+            foreignKeyName: "community_reports_reporter_id_fkey";
+            columns: ["reporter_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "community_reports_debate_id_fkey";
+            columns: ["debate_id"];
+            isOneToOne: false;
+            referencedRelation: "debates";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      arbitration_cases: {
+        Row: ArbitrationCase;
+        Insert: Partial<ArbitrationCase> &
+          Pick<ArbitrationCase, "debate_id" | "kind">;
+        Update: Partial<ArbitrationCase>;
+        Relationships: [
+          {
+            foreignKeyName: "arbitration_cases_debate_id_fkey";
+            columns: ["debate_id"];
+            isOneToOne: false;
+            referencedRelation: "debates";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      notification_dispatches: {
+        Row: NotificationDispatch;
+        Insert: Partial<NotificationDispatch> &
+          Pick<NotificationDispatch, "kind" | "recipient_id">;
+        Update: Partial<NotificationDispatch>;
+        Relationships: [
+          {
+            foreignKeyName: "notification_dispatches_recipient_id_fkey";
+            columns: ["recipient_id"];
+            isOneToOne: false;
             referencedRelation: "users";
             referencedColumns: ["id"];
           },

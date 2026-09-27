@@ -37,6 +37,16 @@ const links = [
     label: "Notifications",
     match: (path: string) => path.startsWith("/notifications"),
   },
+  {
+    href: "/verify",
+    label: "Verify",
+    match: (path: string) => path === "/verify" || path.startsWith("/verify/"),
+  },
+  {
+    href: "/jury",
+    label: "Jury",
+    match: (path: string) => path.startsWith("/jury"),
+  },
 ] as const;
 
 export function SiteNav() {

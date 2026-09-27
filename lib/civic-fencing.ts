@@ -187,6 +187,25 @@ export function pickPrimaryOcdId(ids: readonly string[] | null | undefined) {
   return ranked[0] ?? null;
 }
 
+export type OcdCycleLevel = "federal" | "state" | "municipal";
+
+/** Maps an OCD division onto a federal, state, or municipal election cycle. */
+export function classifyOcdLevel(
+  ocdId: string | null | undefined,
+): OcdCycleLevel | null {
+  const normalized = normalizeOcdId(ocdId);
+  if (!normalized.startsWith("ocd-division/country:")) return null;
+
+  const parts = parseOcdParts(normalized);
+  if (!parts.country) return null;
+  if (parts.place || parts.county || parts.council_district || parts.ward) {
+    return "municipal";
+  }
+  if (parts.cd) return "federal";
+  if (parts.sldu || parts.sldl || parts.state) return "state";
+  return "federal";
+}
+
 export function formatOcdDivision(ocdId: string | null | undefined) {
   if (!ocdId?.trim()) return null;
   const parts = parseOcdParts(ocdId);

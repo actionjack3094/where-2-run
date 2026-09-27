@@ -19,7 +19,8 @@ async function countVotes(
     .from("votes")
     .select("id", { count: "exact", head: true })
     .eq("debate_id", debateId)
-    .eq("candidate_id", candidateId);
+    .eq("candidate_id", candidateId)
+    .is("voided_at", null);
 
   if (error) throw new Error(error.message);
   return count ?? 0;
