@@ -86,7 +86,7 @@ export async function sendChallengeEmail(
   const message = challengeMessage(challengerName);
 
   const resend = new Resend(apiKey);
-  const { error } = await resend.emails.send({
+  const { data, error } = await resend.emails.send({
     from,
     to: email,
     subject: "You have been challenged to a debate",
@@ -94,5 +94,10 @@ export async function sendChallengeEmail(
     html: `<p>${escapeHtml(message)}</p><p><a href="${debateUrl}">${debateUrl}</a></p>`,
   });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error(`[resend] challenge email failed: ${error.message}`);
+    throw new Error(error.message);
+  }
+
+  console.log(`[resend] challenge email accepted id=${data?.id ?? "unknown"}`);
 }
