@@ -535,7 +535,7 @@ export function DebateView({
         <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-300">{actionError}</p>
       )}
 
-      <section className="mt-10 flex flex-col gap-8">
+      <section className="mt-10 flex h-[60vh] flex-col gap-8 overflow-y-auto">
         {Array.from({ length: TOTAL_ROUNDS }, (_, index) => {
           const round = index + 1;
           const aArg = findArgument(args, debate.candidate_a_id, round);
@@ -921,7 +921,12 @@ function ArgumentSlot({
               placeholder="Lock in this round’s argument…"
               className="min-h-32 w-full resize-none rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm leading-6 outline-none focus:border-zinc-950 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-50"
             />
-            <Button type="submit" size="sm" className="w-fit" disabled={composer.busy || !composer.draft.trim()}>
+            <Button
+              type="submit"
+              size="sm"
+              className="w-fit transition-colors duration-200 hover:bg-zinc-800"
+              disabled={composer.busy || !composer.draft.trim()}
+            >
               {composer.busy ? "Locking in…" : "Lock In Argument"}
             </Button>
           </form>
@@ -971,11 +976,12 @@ function SpectatorVote({
             <ShieldCheck aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{CIVIC_FENCE_BALLOT_NOTICE}</span>
           </p>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-4 sm:flex-row">
             <Button
               type="button"
               size="lg"
               variant={votedForA ? "default" : "outline"}
+              className="flex-1 transition-colors duration-200 hover:bg-zinc-800"
               disabled={submitting || hasVoted}
               aria-pressed={votedForA}
               onClick={() => onVote("a")}
@@ -990,6 +996,7 @@ function SpectatorVote({
               type="button"
               size="lg"
               variant={votedForB ? "default" : "outline"}
+              className="flex-1 transition-colors duration-200 hover:bg-zinc-800"
               disabled={submitting || hasVoted}
               aria-pressed={votedForB}
               onClick={() => onVote("b")}

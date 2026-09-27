@@ -28,10 +28,10 @@ function BallotChoice({
   onVote: (candidateId: string) => void;
 }) {
   const buttonClass =
-    "w-full rounded-md border border-gold/50 px-4 py-2 text-[11px] font-medium uppercase tracking-widest text-gold disabled:cursor-not-allowed disabled:opacity-60";
+    "w-full rounded-md border border-gold/50 px-4 py-2 text-[11px] font-medium uppercase tracking-widest text-gold transition-colors duration-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60";
 
   return (
-    <article className="rounded-xl border border-gold/40 bg-zinc-900 px-5 py-5">
+    <article className="flex-1 rounded-xl border border-gold/40 bg-zinc-900 px-5 py-5">
       <p className="text-[11px] font-medium uppercase tracking-widest text-gold">{label}</p>
       {hasVoted ? (
         <>
@@ -107,7 +107,7 @@ export function SpectatorBallot({
         <ShieldCheck aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
         <span>{CIVIC_FENCE_BALLOT_NOTICE}</span>
       </p>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="flex flex-col gap-4 sm:flex-row">
         <BallotChoice
           label="Candidate A"
           candidateId={candidateAId}

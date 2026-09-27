@@ -58,7 +58,7 @@ export default async function LeaderboardsPage(props: PageProps<"/leaderboards">
 
   return (
     <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
-      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
+      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10 pb-16">
         <header>
           <h1 className="font-display text-3xl font-semibold tracking-[0.18em] text-parchment">
             LEADERBOARDS
@@ -79,20 +79,20 @@ export default async function LeaderboardsPage(props: PageProps<"/leaderboards">
             {q ? `No candidates match "${q}".` : "No candidates are on the board yet."}
           </p>
         ) : (
-          <ol className="mt-10 divide-y divide-zinc-800 border-y border-zinc-800">
+          <ol className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {candidates.map((candidate) => (
               <li key={candidate.id}>
                 <Link
                   href={`/candidate/${candidate.id}`}
-                  className="flex items-center gap-4 py-4 transition-colors hover:text-gold"
+                  className="group flex h-full flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-5 transition-all hover:border-zinc-500"
                 >
-                  <span className="w-10 shrink-0 font-display text-lg tabular-nums text-gold">
+                  <span className="font-display text-lg tabular-nums text-gold">
                     {candidate.rank}
                   </span>
-                  <span className="min-w-0 flex-1 truncate font-medium text-parchment">
+                  <span className="min-w-0 truncate font-medium text-parchment group-hover:text-gold">
                     {candidate.name}
                   </span>
-                  <span className="shrink-0 text-right">
+                  <span>
                     <span className="block text-sm tabular-nums text-zinc-100">
                       {formatRecord(candidate.wins, candidate.losses)}
                     </span>

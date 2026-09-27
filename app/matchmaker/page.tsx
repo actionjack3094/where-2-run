@@ -101,7 +101,7 @@ export default async function MatchmakerPage() {
 
   return (
     <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
-      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
+      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10 pb-16">
         <header>
           <h1 className="font-display text-3xl font-semibold tracking-[0.18em] text-parchment">
             YOUR MATCHES
@@ -118,11 +118,11 @@ export default async function MatchmakerPage() {
             No matches yet. File a stance so the matchmaker can score candidates.
           </p>
         ) : (
-          <ol className="mt-10 flex flex-col gap-4">
+          <ol className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {matches.map((candidate, index) => (
               <li key={candidate.id}>
-                <Link href={`/candidate/${candidate.id}`} className="block">
-                  <Card className="transition-colors hover:border-gold hover:bg-zinc-900/80">
+                <Link href={`/candidate/${candidate.id}`} className="group block h-full">
+                  <Card className="h-full transition-all group-hover:border-zinc-500">
                     <CardContent className="flex items-center gap-4 px-5 py-5">
                       <span className="w-10 shrink-0 font-display text-lg tabular-nums text-gold">
                         {index + 1}

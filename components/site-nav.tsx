@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Menu, X } from "lucide-react";
 import { LogOutButton } from "@/components/LogOutButton";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +41,11 @@ const links = [
 
 export function SiteNav() {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   return (
     <header className="border-b-2 border-gold bg-zinc-950 shadow-[inset_0_3px_0_0_var(--gold)]">
@@ -50,7 +57,7 @@ export function SiteNav() {
         >
           Where 2 Run
         </Link>
-        <nav className="ml-auto flex min-w-0 items-center gap-4 overflow-x-auto text-nowrap">
+        <nav className="ml-auto hidden min-w-0 items-center gap-4 overflow-x-auto text-nowrap [-ms-overflow-style:none] [scrollbar-width:none] sm:flex [&::-webkit-scrollbar]:hidden">
           {links.map((link) => {
             const active = link.match(pathname);
             return (
@@ -70,7 +77,42 @@ export function SiteNav() {
           })}
           <LogOutButton />
         </nav>
+        <button
+          type="button"
+          className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-md text-zinc-200 transition-colors duration-200 hover:bg-zinc-800 sm:hidden"
+          aria-expanded={open}
+          aria-controls="mobile-nav"
+          onClick={() => setOpen((current) => !current)}
+        >
+          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          <span className="sr-only">{open ? "Close menu" : "Open menu"}</span>
+        </button>
       </div>
+      {open ? (
+        <nav
+          id="mobile-nav"
+          className="flex flex-col gap-1 border-t border-zinc-800 px-6 py-3 sm:hidden"
+        >
+          {links.map((link) => {
+            const active = link.match(pathname);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  "rounded-md px-2 py-2 text-[11px] font-medium uppercase tracking-widest transition-colors duration-200 hover:bg-zinc-800",
+                  active ? "text-gold" : "text-zinc-300",
+                )}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+          <div className="px-2 py-2">
+            <LogOutButton />
+          </div>
+        </nav>
+      ) : null}
     </header>
   );
 }

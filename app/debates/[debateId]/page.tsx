@@ -225,7 +225,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
                   {concludedOutcome(debate)}
                 </p>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="flex h-[60vh] flex-col gap-4 overflow-y-auto">
                 <article className="rounded-xl border border-gold/40 bg-zinc-900 px-5 py-5">
                   <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
                     Candidate A
@@ -285,7 +285,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
               <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
                 Argument stage
               </h2>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="mt-4 flex h-[60vh] flex-col gap-4 overflow-y-auto">
                 <article className="rounded-xl border border-gold/40 bg-zinc-900 px-5 py-5">
                   <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
                     Candidate A
@@ -323,7 +323,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
                   />
                   <button
                     type="submit"
-                    className="mt-3 rounded-md border border-gold/50 px-4 py-2 text-[11px] font-medium uppercase tracking-widest text-gold"
+                    className="mt-3 rounded-md border border-gold/50 px-4 py-2 text-[11px] font-medium uppercase tracking-widest text-gold transition-colors duration-200 hover:bg-zinc-800"
                   >
                     Submit argument
                   </button>
