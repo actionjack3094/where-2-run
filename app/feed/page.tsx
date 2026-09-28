@@ -12,6 +12,8 @@ import {
 } from "@/lib/feed/load-social-feed";
 import { mergeFeedTimeline, SOCIAL_FEED_PAGE_SIZE } from "@/lib/feed/types";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Civic Feed · WHERE 2 RUN",
   description: "Candidate questions you can still answer, and jury debates in your verified districts.",

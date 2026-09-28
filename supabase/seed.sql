@@ -1370,3 +1370,35 @@ set
   primary_axis = excluded.primary_axis,
   applicable_ocd_ids = excluded.applicable_ocd_ids,
   information_gain_score = excluded.information_gain_score;
+
+-- TX-37 has a seeded floor and no banked question, so the civic feed
+-- for that district rendered empty. The prompt matches the debate topic.
+insert into public.election_questions (
+  id,
+  election_id,
+  prompt,
+  jurisdictional_level,
+  primary_axis,
+  applicable_ocd_ids,
+  information_gain_score
+)
+values (
+  'a10e0001-0037-4000-8000-000000000037',
+  'e1ec0001-0037-4000-8000-000000000037',
+  'Should Congress speed interstate transmission lines across the Texas grid?',
+  'federal',
+  'climate',
+  jsonb_build_array('ocd-division/country:us/state:tx/cd:37'),
+  1
+)
+on conflict (election_id, prompt) do update
+set
+  jurisdictional_level = excluded.jurisdictional_level,
+  primary_axis = excluded.primary_axis,
+  applicable_ocd_ids = excluded.applicable_ocd_ids,
+  information_gain_score = excluded.information_gain_score;
+
+update public.debates
+set election_question_id = 'a10e0001-0037-4000-8000-000000000037'
+where id = 'deba0001-0004-4000-8000-000000000004'
+  and election_question_id is null;
