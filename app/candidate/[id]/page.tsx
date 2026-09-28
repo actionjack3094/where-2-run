@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cache } from "react";
+import { CandidateProfile, type LockedCampaignTarget } from "@/app/components/CandidateProfile";
 import { DebateHistory, type MatchOutcome, type ProfileMatch } from "@/components/candidate/DebateHistory";
 import { EscrowTracker } from "@/components/candidate/EscrowTracker";
 import { ProfileHeader } from "@/components/candidate/ProfileHeader";
@@ -16,7 +17,9 @@ import { DEFAULT_ELO, parseElo } from "@/lib/arena/elo";
 import { loadPublicCandidate } from "@/lib/candidate-profile";
 import { isMissingRelation } from "@/lib/coalitions";
 import { createAdminClient } from "@/lib/db/supabase-admin";
+import { isMissingSchema } from "@/lib/db/schema-errors";
 import { createServerSupabase, getServerUser } from "@/lib/db/supabase-server";
+import { normalizeEscrowStatus, officialDonationHref } from "@/lib/escrow/candidacy";
 import { formatRecord, recordFromStats } from "@/lib/leaderboard";
 
 type CandidatePageProps = {
@@ -258,6 +261,61 @@ export async function generateMetadata({
   };
 }
 
+async function loadLockedTargets(candidateId: string): Promise<LockedCampaignTarget[]> {
+  try {
+    const admin = createAdminClient();
+    const loaded = await admin
+      .from("campaign_targets")
+      .select("id, pledged_escrow, election_id, escrow_status, donation_url")
+      .eq("user_id", candidateId)
+      .eq("is_locked", true);
+
+    const data = loaded.error && isMissingSchema(loaded.error)
+      ? (
+          await admin
+            .from("campaign_targets")
+            .select("id, pledged_escrow, election_id")
+            .eq("user_id", candidateId)
+            .eq("is_locked", true)
+        ).data
+      : loaded.data;
+
+    if (loaded.error && !isMissingSchema(loaded.error)) return [];
+    if (!data?.length) return [];
+
+    const rows = data as {
+      id: string;
+      pledged_escrow: number | string | null;
+      election_id: string;
+      escrow_status?: string | null;
+      donation_url?: string | null;
+    }[];
+    const { data: elections } = await admin
+      .from("elections")
+      .select("id, office_name")
+      .in(
+        "id",
+        rows.map((row) => row.election_id),
+      );
+    const names = new Map(
+      ((elections ?? []) as { id: string; office_name: string | null }[]).map((row) => [
+        row.id,
+        row.office_name?.trim() || "Open race",
+      ]),
+    );
+
+    return rows.map((row) => ({
+      id: row.id,
+      label: names.get(row.election_id) ?? "Open race",
+      pledgedEscrow: Number(row.pledged_escrow ?? 0) || 0,
+      escrowStatus: normalizeEscrowStatus(row.escrow_status),
+      donationUrl: officialDonationHref(row.donation_url),
+    }));
+  } catch {
+    return [];
+  }
+}
+
 async function ownStanceIsEmpty(userId: string) {
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
@@ -273,10 +331,11 @@ async function ownStanceIsEmpty(userId: string) {
 
 export default async function CandidatePage({ params }: CandidatePageProps) {
   const { id: candidateId } = await params;
-  const [candidate, loaded, user] = await Promise.all([
+  const [candidate, loaded, user, lockedTargets] = await Promise.all([
     loadCandidate(candidateId),
     loadPublicCandidate(candidateId),
     getServerUser(),
+    loadLockedTargets(candidateId),
   ]);
   const viewingOwnProfile = user != null && user.id === candidateId;
   const showStanceCta = viewingOwnProfile && (await ownStanceIsEmpty(user.id));
@@ -309,6 +368,11 @@ export default async function CandidatePage({ params }: CandidatePageProps) {
                 </p>
               </Link>
             ) : null}
+            <CandidateProfile
+              candidateName={candidate.found ? candidate.name : (profile?.username ?? "Candidate")}
+              lockedTargets={lockedTargets}
+              viewingOwnProfile={viewingOwnProfile}
+            />
             <ProfileHeader
               candidateId={candidateId}
               name={candidate.found ? candidate.name : (profile?.username ?? "Candidate")}
