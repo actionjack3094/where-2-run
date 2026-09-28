@@ -4,9 +4,9 @@ import { SearchBar } from "@/app/components/search-bar";
 import { DebateComposer } from "@/app/feed/components/DebateComposer";
 import { InfiniteFeed } from "@/app/feed/components/InfiniteFeed";
 import {
-  loadCandidateQuestions,
   loadFeedViewer,
-  loadJuryDebates,
+  loadHomeDebates,
+  loadMatchedDebates,
   socialFeedPageFromSearch,
   socialFeedQueryFromSearch,
 } from "@/lib/feed/load-social-feed";
@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Civic Feed · WHERE 2 RUN",
-  description: "Candidate questions you can still answer, and jury debates in your verified districts.",
+  description: "Backyard debates on your physical ballot, and arena debates in races that match your ideology.",
 };
 
 export default async function FeedPage(props: PageProps<"/feed">) {
@@ -25,7 +25,8 @@ export default async function FeedPage(props: PageProps<"/feed">) {
   const q = socialFeedQueryFromSearch(searchParams);
   const limit = page * SOCIAL_FEED_PAGE_SIZE;
   const viewer = await loadFeedViewer();
-  if (viewer.userId && viewer.districtId == null) {
+  const hasBallot = viewer.homeOcdIds.length > 0 || viewer.matchedOcdIds.length > 0;
+  if (viewer.userId && !hasBallot && viewer.districtId == null) {
     return (
       <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
         <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
@@ -47,8 +48,8 @@ export default async function FeedPage(props: PageProps<"/feed">) {
   }
 
   const [red, blue] = await Promise.all([
-    loadCandidateQuestions(viewer, limit, q),
-    loadJuryDebates(viewer, limit, q),
+    loadMatchedDebates(viewer, limit, q),
+    loadHomeDebates(viewer, limit, q),
   ]);
   const items = mergeFeedTimeline(red.items, blue.items);
   const error = items.length === 0 ? red.error || blue.error : null;
@@ -75,7 +76,7 @@ export default async function FeedPage(props: PageProps<"/feed">) {
             Endless Social Feed
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
-            Answer open questions in races you can win, and judge debates in districts you have verified.
+            Blue cards are debates on your physical ballot. Red cards are debates in races that match your ideology.
           </p>
         </header>
 

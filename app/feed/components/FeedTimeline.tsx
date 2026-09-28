@@ -18,8 +18,8 @@ export function FeedTimeline({
         {query
           ? `Nothing in the feed matches "${query}".`
           : signedIn
-            ? "No open candidate questions or jury debates in your districts yet."
-            : "Sign in to see candidate questions and jury debates in your districts."}
+            ? "No backyard or arena debates in your districts yet."
+            : "Sign in to see debates on your ballot and in your matched races."}
       </p>
     );
   }

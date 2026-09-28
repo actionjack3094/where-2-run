@@ -86,16 +86,32 @@ export type BlueFeedDebate = {
   votingOpen: boolean;
 };
 
-export type SocialFeedItem = RedFeedQuestion | BlueFeedDebate;
+/** A live debate on either the physical ballot (blue) or an ideological match (red). */
+export type OcdTrackDebate = {
+  loop: "blue" | "red";
+  track: "backyard" | "arena";
+  id: string;
+  createdAt: string;
+  title: string;
+  policyText: string;
+  status: string;
+  districtName: string;
+  electionSlug: string | null;
+  candidateA: DebateCandidate | null;
+  candidateB: DebateCandidate | null;
+  votingOpen: boolean;
+};
+
+export type SocialFeedItem = RedFeedQuestion | BlueFeedDebate | OcdTrackDebate;
 
 export function passesViabilityGate(viability: number) {
   return Number.isFinite(viability) && viability > CANDIDATE_VIABILITY_GATE;
 }
 
-/** Zip candidate questions (information gain) with jury debates (recency). */
+/** Zip arena debates (matched districts) with backyard debates (home ballot). */
 export function mergeFeedTimeline(
-  red: readonly RedFeedQuestion[],
-  blue: readonly BlueFeedDebate[],
+  red: readonly SocialFeedItem[],
+  blue: readonly SocialFeedItem[],
 ) {
   const items: SocialFeedItem[] = [];
   const length = Math.max(red.length, blue.length);

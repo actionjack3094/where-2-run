@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { explainPolicy } from "@/app/actions/explainPolicy";
 import { claimQuestionFloor } from "@/app/actions/feed/claim-floor";
 import { ensureArenaUser } from "@/lib/arena/identity";
 import { supabase } from "@/lib/db/supabase";
 import { questionFloorMode } from "@/lib/feed/types";
 import { SIX_AXIS_LABELS } from "@/lib/ideology/six-axis";
 import { cn } from "@/lib/utils";
-import type { BlueFeedDebate, RedFeedQuestion, SocialFeedItem } from "@/lib/feed/types";
+import type { BlueFeedDebate, OcdTrackDebate, RedFeedQuestion, SocialFeedItem } from "@/lib/feed/types";
 
 function statusLabel(status: string) {
   if (status === "matching") return "Matching";
@@ -19,8 +20,117 @@ function statusLabel(status: string) {
 }
 
 export function DebateCard({ item }: { item: SocialFeedItem }) {
+  if ("track" in item) return <TrackDebateCard item={item} />;
   if (item.loop === "red") return <CandidateQuestionCard item={item} />;
   return <JuryDebateCard item={item} />;
+}
+
+function TrackDebateCard({ item }: { item: OcdTrackDebate }) {
+  const backyard = item.track === "backyard";
+  return (
+    <article
+      className={cn(
+        "rounded-xl border bg-zinc-900 p-5",
+        backyard
+          ? "border-blue-400/25 shadow-[inset_3px_0_0_0_rgba(59,130,246,0.45)]"
+          : "border-red-400/25 shadow-[inset_3px_0_0_0_rgba(239,68,68,0.4)]",
+      )}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <span
+          className={cn(
+            "rounded-full border px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest",
+            backyard
+              ? "border-blue-400/30 bg-blue-500/10 text-blue-200"
+              : "border-red-400/30 bg-red-500/10 text-red-200",
+          )}
+        >
+          {backyard ? "The Backyard" : "The Arena"}
+        </span>
+        <span className="rounded-full border border-white/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-zinc-400">
+          {statusLabel(item.status)}
+        </span>
+      </div>
+
+      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <Link href={`/debates/${item.id}`} className="min-w-0">
+          <h2 className="text-lg font-semibold leading-snug tracking-tight text-parchment">
+            {item.title}
+          </h2>
+        </Link>
+        {item.electionSlug ? (
+          <Link
+            href={`/elections/${item.electionSlug}/profile`}
+            className={cn(
+              "shrink-0 text-[11px] font-medium uppercase tracking-widest",
+              backyard ? "text-blue-200" : "text-red-200",
+            )}
+          >
+            {item.districtName}
+          </Link>
+        ) : (
+          <p
+            className={cn(
+              "shrink-0 text-[11px] font-medium uppercase tracking-widest",
+              backyard ? "text-blue-200" : "text-red-200",
+            )}
+          >
+            {item.districtName}
+          </p>
+        )}
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-zinc-300">
+        <span>{item.candidateA?.username ?? "Open seat"}</span>
+        <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">vs</span>
+        <span>{item.candidateB?.username ?? "Open seat"}</span>
+      </div>
+
+      {backyard ? <ExplainPolicy policyText={item.policyText} /> : null}
+    </article>
+  );
+}
+
+function ExplainPolicy({ policyText }: { policyText: string }) {
+  const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [breakdown, setBreakdown] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function explain() {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    setOpen(true);
+    if (breakdown || pending) return;
+    setPending(true);
+    setError(null);
+    try {
+      setBreakdown(await explainPolicy(policyText));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not explain this policy.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="mt-5">
+      <button
+        type="button"
+        onClick={() => void explain()}
+        className="inline-flex h-10 w-fit items-center justify-center rounded-md border border-blue-400/40 px-4 text-xs font-medium uppercase tracking-widest text-blue-100 transition-colors hover:border-blue-300 hover:text-white"
+      >
+        Explain this Policy
+      </button>
+      {open ? (
+        <div className="mt-3 whitespace-pre-wrap rounded-lg border border-blue-400/20 bg-blue-950/20 px-4 py-3 text-sm leading-6 text-zinc-200">
+          {pending ? "Reading the policy…" : error ?? breakdown}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 function CandidateQuestionCard({ item }: { item: RedFeedQuestion }) {

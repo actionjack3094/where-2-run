@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Radar, ShieldCheck, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getServerUser } from "@/lib/db/supabase-server";
 
@@ -13,24 +12,24 @@ export const metadata: Metadata = {
 
 const SIGN_UP_HREF = "/auth/login?mode=create";
 
-const PILLARS = [
+const TRACKS = [
   {
-    step: "01",
-    title: "Stance Matching",
-    body: "Find candidates using 6-axis policy vector math. Positions become a coordinate, and the closest candidates surface first.",
-    icon: Radar,
+    title: "The Policy Track (Citizens)",
+    accent: "border-blue-700/30 shadow-[inset_3px_0_0_0_rgba(29,78,216,0.45)]",
+    steps: [
+      "Map your real ballot.",
+      "Vote and comment on local debates.",
+      "Elevate policies you care about.",
+    ],
   },
   {
-    step: "02",
-    title: "Time-Boxed Debates",
-    body: "Watch candidates defend their positions in structured arenas. The floor opens on a clock, and the argument has to hold.",
-    icon: Timer,
-  },
-  {
-    step: "03",
-    title: "Civic Fencing",
-    body: "Only verified local constituents cast the deciding votes. Everyone else can read the floor. They cannot decide it.",
-    icon: ShieldCheck,
+    title: "The Campaign Track (Contenders)",
+    accent: "border-red-800/25 shadow-[inset_3px_0_0_0_rgba(190,18,60,0.4)]",
+    steps: [
+      "Match your ideology to winnable elections.",
+      "Debate peers to elevate your rank.",
+      "Target a race, unlock pledged donations, and run.",
+    ],
   },
 ] as const;
 
@@ -57,22 +56,14 @@ export default async function Home() {
           positions in a timed arena, then leave the deciding ballots to verified
           constituents inside the district.
         </p>
-        <div className="mt-10 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+        <div className="mt-10">
           <Button
             asChild
             variant="gold"
             size="lg"
             className="h-auto min-h-12 whitespace-normal px-6 py-3 text-center text-xs leading-5 sm:text-sm"
           >
-            <Link href={SIGN_UP_HREF}>Find Your Matches (Voters)</Link>
-          </Button>
-          <Button
-            asChild
-            variant="outline"
-            size="lg"
-            className="h-auto min-h-12 whitespace-normal px-6 py-3 text-center text-xs leading-5 sm:text-sm"
-          >
-            <Link href={SIGN_UP_HREF}>Enter the Arena (Candidates)</Link>
+            <Link href={SIGN_UP_HREF}>Enter the Arena</Link>
           </Button>
         </div>
       </section>
@@ -87,29 +78,25 @@ export default async function Home() {
           </h2>
         </div>
 
-        <div className="mt-10 grid gap-5 md:grid-cols-3">
-          {PILLARS.map((pillar) => {
-            const Icon = pillar.icon;
-            return (
-              <article
-                key={pillar.title}
-                className="flex flex-col rounded-xl border border-gold/40 bg-zinc-900 p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)]"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex size-10 items-center justify-center rounded-md border border-gold/40 bg-zinc-950 text-gold">
-                    <Icon className="size-4" aria-hidden="true" />
-                  </span>
-                  <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-zinc-500">
-                    {pillar.step}
-                  </span>
-                </div>
-                <h3 className="mt-5 font-display text-xl font-semibold tracking-tight text-parchment">
-                  {pillar.title}
-                </h3>
-                <p className="mt-3 text-sm leading-7 text-zinc-400">{pillar.body}</p>
-              </article>
-            );
-          })}
+        <div className="mt-10 grid gap-6 md:grid-cols-2">
+          {TRACKS.map((track) => (
+            <article
+              key={track.title}
+              className={`flex flex-col rounded-xl border bg-parchment-light p-6 ${track.accent}`}
+            >
+              <h3 className="font-display text-xl font-semibold tracking-tight text-charcoal">
+                {track.title}
+              </h3>
+              <ol className="mt-6 flex flex-col gap-4">
+                {track.steps.map((step, index) => (
+                  <li key={step} className="flex gap-4 text-sm leading-6 text-charcoal">
+                    <span className="font-display text-base text-brass">{index + 1}</span>
+                    <span>{step}</span>
+                  </li>
+                ))}
+              </ol>
+            </article>
+          ))}
         </div>
       </section>
     </main>
