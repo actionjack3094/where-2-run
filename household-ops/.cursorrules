@@ -1,0 +1,10 @@
+# Household Operations & Mediation Platform
+
+This is a Next.js App Router project using Supabase for Auth/DB and the Vercel AI SDK. Enforce strict separation of Server Actions (in `app/actions/`) and Client Components (in `app/components/`). All LLM calls must utilize structured JSON outputs via `generateObject` and Zod schemas.
+
+This app is scaffolded with a `src/` directory, so those folders are `src/app/actions/` and `src/app/components/`.
+
+- Server Actions are the only place that writes to Supabase or calls a model. Mark those modules with `"use server"`.
+- Client Components render UI and call Server Actions. Do not import model SDKs or the Supabase service role into client code.
+- Every model call goes through `generateObject` with a Zod schema. Do not parse free-form model text.
+- Household data is dual-user: each household has one User A and one User B. Do not expose one household's channels or messages to another household.
