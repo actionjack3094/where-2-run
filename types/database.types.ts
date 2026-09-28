@@ -58,6 +58,10 @@ export interface UserProfile {
   is_verified: boolean;
   verification_tier: VerificationTier | string;
   ocd_identifiers: string[];
+  /** Permanent physical ballot OCD-IDs. Blue Cards. */
+  home_ocd_ids: string[];
+  /** Dynamically sorted ideological OCD-IDs. Red Cards. */
+  matched_ocd_ids: string[];
   tier_2_verified: boolean;
   residency_state: string | null;
   residency_zip: string | null;
@@ -144,6 +148,9 @@ export interface CampaignTarget {
   user_id: string;
   election_id: string;
   status: CampaignTargetStatus | string;
+  is_locked: boolean;
+  alignment_streak: number;
+  pledged_escrow: number | string;
   created_at: string;
 }
 
@@ -1157,6 +1164,10 @@ export interface Database {
       calculate_electability: {
         Args: { p_user_id: string; p_district_id: string };
         Returns: number | string;
+      };
+      calibrate_district_alignment: {
+        Args: { p_user_id: string; p_district_id: string };
+        Returns: undefined;
       };
       complete_expired_debates: {
         Args: Record<PropertyKey, never>;

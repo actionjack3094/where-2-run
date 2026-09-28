@@ -45,14 +45,14 @@ export default async function Home() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-[radial-gradient(ellipse_at_top,color-mix(in_oklch,var(--gold)_16%,transparent),transparent_68%)]" />
 
       <section className="relative mx-auto flex w-full max-w-4xl flex-col items-start px-6 pb-16 pt-20 sm:pt-28">
-        <p className="text-xs font-medium uppercase tracking-[0.22em] text-gold">
+        <p className="text-xs font-medium uppercase tracking-[0.22em] text-brass">
           Public arena
         </p>
-        <h1 className="mt-5 max-w-3xl font-display text-5xl font-semibold leading-[1.05] tracking-tight text-parchment sm:text-6xl lg:text-7xl">
+        <h1 className="mt-5 max-w-3xl font-display text-5xl font-semibold leading-[1.05] tracking-tight text-charcoal sm:text-6xl lg:text-7xl">
           The Civic Arena.{" "}
-          <span className="text-gold">No soundbites. Just substance.</span>
+          <span className="text-brass">No soundbites. Just substance.</span>
         </h1>
-        <p className="mt-6 max-w-2xl text-base leading-7 text-zinc-400 sm:text-lg sm:leading-8">
+        <p className="mt-6 max-w-2xl text-base leading-7 text-charcoal-muted sm:text-lg sm:leading-8">
           Score where you stand on six policy axes, watch candidates defend those
           positions in a timed arena, then leave the deciding ballots to verified
           constituents inside the district.
@@ -78,11 +78,11 @@ export default async function Home() {
       </section>
 
       <section className="relative mx-auto w-full max-w-6xl px-6 pb-24">
-        <div className="border-t border-gold/30 pt-14">
-          <p className="text-xs font-medium uppercase tracking-[0.22em] text-zinc-500">
+        <div className="border-t border-brass/30 pt-14">
+          <p className="text-xs font-medium uppercase tracking-[0.22em] text-charcoal-muted">
             The core loop
           </p>
-          <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment">
+          <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-charcoal">
             How it Works
           </h2>
         </div>

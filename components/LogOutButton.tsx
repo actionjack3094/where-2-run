@@ -18,7 +18,7 @@ export function LogOutButton() {
           void signOutAction();
         });
       }}
-      className="h-auto px-0 text-[11px] font-medium uppercase tracking-widest text-zinc-400 hover:bg-transparent hover:text-zinc-200"
+      className="h-auto px-0 text-[11px] font-medium uppercase tracking-widest text-charcoal-muted hover:bg-transparent hover:text-charcoal"
     >
       {pending ? "Signing out" : "Log Out"}
     </Button>

@@ -5,22 +5,21 @@ const links = [
   { href: "/leaderboards", label: "Leaderboards" },
   { href: "/profile", label: "My Profile" },
   { href: "/verify", label: "Verify" },
-  { href: "/jury", label: "Jury" },
   { href: "/about", label: "About Us" },
 ] as const;
 
 export function SiteFooter() {
   return (
-    <footer className="mt-auto border-t-2 border-gold bg-zinc-950">
+    <footer className="mt-auto border-t-2 border-brass bg-parchment">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-10 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <Link
             href="/feed"
-            className="font-display text-xs font-medium uppercase tracking-[0.2em] text-gold"
+            className="font-display text-xs font-medium uppercase tracking-[0.2em] text-brass"
           >
             Where 2 Run
           </Link>
-          <p className="mt-3 max-w-xs text-sm leading-6 text-zinc-500 dark:text-zinc-400">
+          <p className="mt-3 max-w-xs text-sm leading-6 text-charcoal-muted">
             Match a district, take the floor, and let the room decide.
           </p>
         </div>
@@ -29,7 +28,7 @@ export function SiteFooter() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-[11px] font-medium uppercase tracking-widest text-zinc-400 transition-colors hover:text-zinc-700 dark:hover:text-zinc-200"
+              className="text-[11px] font-medium uppercase tracking-widest text-charcoal-muted transition-colors hover:text-charcoal"
             >
               {link.label}
             </Link>
