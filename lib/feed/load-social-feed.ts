@@ -631,3 +631,39 @@ export function loadHomeDebates(viewer: FeedViewer, limit: number, queryText?: s
 export function loadMatchedDebates(viewer: FeedViewer, limit: number, queryText?: string) {
   return loadDebatesForOcdIds(viewer, viewer.matchedOcdIds, "red", limit, queryText);
 }
+
+/** Debates in matched districts where this user sat as a candidate. Null when the count cannot be read. */
+export async function answeredRedDebateCount(viewer: FeedViewer): Promise<number | null> {
+  if (!viewer.userId) return null;
+  if (viewer.matchedOcdIds.length === 0) return 0;
+
+  const supabase = await createServerSupabase();
+  const { data: elections, error: electionError } = await supabase
+    .from("elections")
+    .select("id, ocd_id");
+
+  if (electionError) {
+    if (isMissingRelation(electionError)) return 0;
+    return null;
+  }
+
+  const wanted = new Set(viewer.matchedOcdIds.map((id) => normalizeOcdId(id)));
+  const electionIds = ((elections ?? []) as { id: string; ocd_id?: string | null }[])
+    .filter((row) => wanted.has(normalizeOcdId(row.ocd_id)))
+    .map((row) => row.id);
+
+  if (electionIds.length === 0) return 0;
+
+  const { count, error } = await supabase
+    .from("debates")
+    .select("id", { count: "exact", head: true })
+    .in("election_id", electionIds)
+    .or(`candidate_a_id.eq.${viewer.userId},candidate_b_id.eq.${viewer.userId}`);
+
+  if (error) {
+    if (isMissingRelation(error)) return 0;
+    return null;
+  }
+
+  return count ?? 0;
+}

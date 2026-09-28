@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SearchBar } from "@/app/components/search-bar";
+import { CalibrationBanner } from "@/app/feed/components/CalibrationBanner";
 import { DebateComposer } from "@/app/feed/components/DebateComposer";
 import { InfiniteFeed } from "@/app/feed/components/InfiniteFeed";
 import {
+  answeredRedDebateCount,
   loadFeedViewer,
   loadHomeDebates,
   loadMatchedDebates,
@@ -47,10 +49,12 @@ export default async function FeedPage(props: PageProps<"/feed">) {
     );
   }
 
-  const [red, blue] = await Promise.all([
+  const [red, blue, answeredRed] = await Promise.all([
     loadMatchedDebates(viewer, limit, q),
     loadHomeDebates(viewer, limit, q),
+    answeredRedDebateCount(viewer),
   ]);
+  const showCalibration = answeredRed != null && answeredRed < 5;
   const items = mergeFeedTimeline(red.items, blue.items);
   const error = items.length === 0 ? red.error || blue.error : null;
 
@@ -59,6 +63,7 @@ export default async function FeedPage(props: PageProps<"/feed">) {
   return (
     <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
+        {showCalibration ? <CalibrationBanner /> : null}
         <div className="mb-8 rounded-xl border border-gold/50 bg-zinc-900 px-5 py-4 shadow-[inset_3px_0_0_0_var(--gold-strong)]">
           <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
             Local Context
