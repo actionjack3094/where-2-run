@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Bell, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import { LibertyBell } from "@/app/components/LibertyBell";
 import { LogOutButton } from "@/components/LogOutButton";
 import { cn } from "@/lib/utils";
 
@@ -81,7 +82,7 @@ export function SiteNav() {
                 )}
               >
                 {notifications ? (
-                  <Bell className="text-brass-dark hover:text-brass transition-colors" />
+                  <LibertyBell className="text-brass-dark hover:text-brass transition-colors" />
                 ) : (
                   link.label
                 )}
@@ -124,7 +125,7 @@ export function SiteNav() {
                 )}
               >
                 {notifications ? (
-                  <Bell className="text-brass-dark hover:text-brass transition-colors" />
+                  <LibertyBell className="text-brass-dark hover:text-brass transition-colors" />
                 ) : (
                   link.label
                 )}
