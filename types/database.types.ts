@@ -143,6 +143,8 @@ export interface Election {
 
 export type CampaignTargetStatus = "exploring" | "relocating" | "filed";
 
+export type CampaignEscrowStatus = "accumulating" | "verification_pending" | "released";
+
 export interface CampaignTarget {
   id: string;
   user_id: string;
@@ -151,6 +153,14 @@ export interface CampaignTarget {
   is_locked: boolean;
   alignment_streak: number;
   pledged_escrow: number | string;
+  /** FEC candidate ID or state election board equivalent. */
+  official_candidate_id: string | null;
+  escrow_status: CampaignEscrowStatus | string;
+  committee_name: string | null;
+  /** Private storage path of the Statement of Candidacy PDF. */
+  candidacy_document_url: string | null;
+  /** ActBlue or WinRed page used once escrow is released. */
+  donation_url: string | null;
   created_at: string;
 }
 

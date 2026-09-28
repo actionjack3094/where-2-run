@@ -11,6 +11,14 @@ type Mode = "sign-in" | "create-account";
 const INPUT_CLASS =
   "h-12 w-full rounded-md border border-gold/40 bg-zinc-950 px-4 text-sm text-parchment outline-none placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-gold/60";
 
+function safeNextPath(value: string | null) {
+  if (!value || !value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) {
+    return null;
+  }
+  if (value.includes("://") || value.includes("\\") || value.includes("\0")) return null;
+  return value;
+}
+
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -40,7 +48,7 @@ export function LoginForm() {
     }
 
     if (data?.onboarding_completed) {
-      router.push("/feed");
+      router.push(safeNextPath(searchParams.get("next")) ?? "/feed");
       router.refresh();
       return;
     }
