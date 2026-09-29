@@ -1,15 +1,18 @@
 /**
  * Autonomous arena simulation.
  *
- * Seeds 20 voter personas, then every 10 seconds asks 3–5 of them to take
- * one structured action in the live arena. The service-role client bypasses
- * RLS so a single process can write as many users.
+ * Seeds 20 voter personas on the V2 ideological sorting model, then every
+ * 10 seconds asks 3–5 of them to take one structured action in the live arena.
+ * Each bot has a static physical ballot (`home_ocd_ids`, Blue Cards) and a
+ * starting ideological ballot (`matched_ocd_ids`, Red Cards). The service-role
+ * client bypasses RLS so a single process can write as many users.
  *
  *   npm run arena:sim
  *   npm run arena:sim -- --once
  *
  * Reads .env.local. Requires NEXT_PUBLIC_SUPABASE_URL,
- * SUPABASE_SERVICE_ROLE_KEY, and OPENAI_API_KEY or ANTHROPIC_API_KEY.
+ * SUPABASE_SERVICE_ROLE_KEY, and OPENAI_API_KEY (debate arguments and
+ * comments) or ANTHROPIC_API_KEY (other structured actions).
  */
 
 import { createHash } from "node:crypto";
@@ -22,13 +25,18 @@ import { config as loadDotenv } from "dotenv";
 import { z } from "zod";
 
 const TICK_MS = 10_000;
+const UNLOCK_STREAK = 10;
+const EXCESS_WALLET = 400;
 const AXIS_IDS = ["climate", "healthcare", "immigration", "economy", "social", "safety"] as const;
 const REPORT_REASONS = ["bad_faith", "spam", "abandoned", "off_platform", "other"] as const;
+const BASE_IDEOLOGIES = ["progressive", "conservative", "centrist"] as const;
 
 type AxisId = (typeof AXIS_IDS)[number];
 type Lean = [number, number, number, number, number, number];
 type ReportReason = (typeof REPORT_REASONS)[number];
 type DistrictKey = keyof typeof DISTRICTS;
+type BaseIdeology = (typeof BASE_IDEOLOGIES)[number];
+type DecisionMode = "red" | "blue" | "pledge" | "floor";
 
 type Persona = {
   slug: string;
@@ -51,6 +59,8 @@ type DebateBrief = {
   candidateAId: string | null;
   candidateBId: string | null;
   districtId: string | null;
+  electionId: string | null;
+  ocdId: string | null;
 };
 
 type SpeechBrief = {
@@ -72,22 +82,42 @@ type QuestionBrief = {
   prompt: string;
   axis: string;
   electionId: string;
+  ocdIds: string[];
+};
+
+type CampaignTargetBrief = {
+  id: string;
+  userId: string;
+  electionId: string;
+  ocdId: string | null;
+  alignmentStreak: number;
+  isLocked: boolean;
+  pledgedEscrow: number;
 };
 
 type ArenaContext = {
   elo: number;
   tier: string;
+  ideology: BaseIdeology;
   districtId: string | null;
   electionId: string | null;
+  homeOcdIds: string[];
+  matchedOcdIds: string[];
   openFloors: DebateBrief[];
   activeDebates: DebateBrief[];
   votable: DebateBrief[];
+  homeDebates: DebateBrief[];
+  homeVotable: DebateBrief[];
   votedDebateIds: Set<string>;
   speech: SpeechBrief[];
   highElo: CandidateBrief[];
   coalitions: { id: string; name: string }[];
   unanswered: QuestionBrief[];
+  redQuestions: QuestionBrief[];
   stance: number[];
+  campaignTargets: CampaignTargetBrief[];
+  lockedTargets: CampaignTargetBrief[];
+  walletDollars: number;
 };
 
 const DISTRICTS = {
@@ -112,6 +142,32 @@ const DISTRICTS = {
     ocdId: "ocd-division/country:us/state:mi/cd:7",
   },
 } as const;
+
+/** Starting Red Card. Physical home can differ from this ideological assignment. */
+const IDEOLOGY_BALLOT: Record<BaseIdeology, readonly DistrictKey[]> = {
+  progressive: ["austin", "tx37"],
+  conservative: ["tx10", "mi7"],
+  centrist: ["mi7", "txSenate"],
+};
+
+/**
+ * District centroids from supabase/seed.sql. New bots start on the centroid
+ * for their ideology so calibrate_district_alignment can anchor a streak.
+ */
+const IDEOLOGY_CENTROID: Record<BaseIdeology, readonly number[]> = {
+  progressive: [0.8, 0.82, 0.42, 0.34, 0.69, 0.82, 0.26, 0.34, 0.77, 0.74],
+  conservative: [0.32, 0.34, 0.74, 0.64, 0.28, 0.34, 0.7, 0.64, 0.31, 0.3],
+  centrist: [0.48, 0.47, 0.56, 0.58, 0.46, 0.47, 0.5, 0.58, 0.49, 0.5],
+};
+
+const IDEOLOGY_VOICE: Record<BaseIdeology, string> = {
+  progressive:
+    "Progressive. Public investment, labor power, climate build-out, and civil rights. Do not drift conservative.",
+  conservative:
+    "Conservative. Markets, traditional institutions, border control, and limited government. Do not drift progressive.",
+  centrist:
+    "Centrist. Name the tradeoff, refuse both partisan scripts, and keep the claim local and specific.",
+};
 
 const AXIS_POLES: Record<AxisId, { low: string; high: string }> = {
   climate: { low: "fossil expansion", high: "public renewables" },
@@ -340,11 +396,17 @@ const claimCandidacy = z.object({
   statement: z.string().min(12).max(500),
 });
 
+const leaveComment = z.object({
+  action: z.literal("LEAVE_COMMENT"),
+  debateTopic: z.string().min(2).max(280),
+});
+
 const agentActionSchema = z.discriminatedUnion("action", [
   answerStance,
   proposeDebate,
   enterDebate,
   voteSpectator,
+  leaveComment,
   flagUser,
   formCoalition,
   pledgeFunds,
@@ -356,6 +418,7 @@ type AgentAction = z.infer<typeof agentActionSchema>;
 let admin: SupabaseClient | undefined;
 const callSigns = new Map<string, string>();
 const usernames = new Map<string, string>();
+const wallets = new Map<string, number>();
 
 function loadEnv() {
   for (const path of [".env.local", ".env"]) {
@@ -386,6 +449,16 @@ function personaUserId(slug: string) {
   ].join("-");
 }
 
+function startingWallet(slug: string) {
+  const hex = createHash("sha256").update(`where2run-arena-sim-wallet:${slug}`).digest("hex");
+  const roll = Number.parseInt(hex.slice(0, 4), 16);
+  return 80 + (roll % 920);
+}
+
+function walletOf(userId: string) {
+  return wallets.get(userId) ?? 0;
+}
+
 function ocdIdsFor(specific: string) {
   const parts = specific.split("/");
   const ids: string[] = [];
@@ -398,6 +471,63 @@ function ocdIdsFor(specific: string) {
 function stateFromOcd(ocdId: string) {
   const match = ocdId.match(/state:([a-z]{2})/i);
   return match?.[1]?.toUpperCase() ?? null;
+}
+
+function normalizeOcd(value: string | null | undefined) {
+  return (value ?? "").trim().toLowerCase();
+}
+
+function asOcdList(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map((entry) => String(entry).trim()).filter(Boolean);
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    try {
+      const parsed = JSON.parse(trimmed) as unknown;
+      if (Array.isArray(parsed)) return asOcdList(parsed);
+    } catch {
+      return trimmed
+        .replace(/[{}]/g, "")
+        .split(",")
+        .map((entry) => entry.trim().replace(/^"|"$/g, ""))
+        .filter(Boolean);
+    }
+  }
+  return [];
+}
+
+function ocdSet(ids: readonly string[]) {
+  return new Set(ids.map((id) => normalizeOcd(id)).filter(Boolean));
+}
+
+function overlapsOcd(ids: readonly string[], wanted: ReadonlySet<string>) {
+  return ids.some((id) => wanted.has(normalizeOcd(id)));
+}
+
+/** Progressive pole is the high end of climate, healthcare, economy, and social. */
+function ideologyOf(persona: Persona): BaseIdeology {
+  const lean = persona.lean;
+  const score = ((lean[0] ?? 0.5) + (lean[1] ?? 0.5) + (lean[3] ?? 0.5) + (lean[4] ?? 0.5)) / 4;
+  if (score >= 0.62) return "progressive";
+  if (score <= 0.4) return "conservative";
+  return "centrist";
+}
+
+function physicalBallot(persona: Persona) {
+  return [districtFor(persona).ocdId];
+}
+
+function ideologicalBallot(persona: Persona) {
+  return IDEOLOGY_BALLOT[ideologyOf(persona)].map((key) => DISTRICTS[key].ocdId);
+}
+
+function speechModel() {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("Set OPENAI_API_KEY before bots write debate arguments or comments.");
+  }
+  return openai("gpt-4o-mini");
 }
 
 function formatVector(values: readonly number[], size: number) {
@@ -618,11 +748,51 @@ async function ensureAuthUser(persona: Persona) {
   throw new Error(created.error?.message ?? `Could not create ${persona.callSign}.`);
 }
 
+async function ensureCampaignTargets(userId: string, ocdIds: readonly string[]) {
+  for (const ocdId of ocdIds) {
+    const election = await db().from("elections").select("id").eq("ocd_id", ocdId).limit(1);
+    if (election.error) {
+      if (isMissingRelation(election.error) || missingColumn(election.error.message)) return;
+      throw new Error(election.error.message);
+    }
+    const electionId = election.data?.[0]?.id as string | undefined;
+    if (!electionId) continue;
+
+    const existing = await db()
+      .from("campaign_targets")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("election_id", electionId)
+      .maybeSingle();
+    if (existing.error) {
+      if (isMissingRelation(existing.error)) return;
+      throw new Error(existing.error.message);
+    }
+    if (existing.data) continue;
+
+    try {
+      await insertRow("campaign_targets", {
+        user_id: userId,
+        election_id: electionId,
+        status: "exploring",
+        is_locked: false,
+        alignment_streak: 0,
+        pledged_escrow: 0,
+      });
+    } catch (error) {
+      if (isDuplicate(error as { message?: string; code?: string })) continue;
+      throw error;
+    }
+  }
+}
+
 async function ensurePublicUser(userId: string, persona: Persona, districtId: string | null) {
   const district = districtFor(persona);
+  const homeOcdIds = physicalBallot(persona);
+  const matchedOcdIds = ideologicalBallot(persona);
   const existing = await db()
     .from("users")
-    .select("id, verification_tier, username")
+    .select("id, verification_tier, username, matched_ocd_ids")
     .eq("id", userId)
     .maybeSingle();
   if (existing.error) throw new Error(existing.error.message);
@@ -634,7 +804,10 @@ async function ensurePublicUser(userId: string, persona: Persona, districtId: st
     residency_state: stateFromOcd(district.ocdId),
     tier_2_verified: true,
     is_verified: true,
+    home_ocd_ids: homeOcdIds,
   };
+
+  const ideologyVector = formatVector(IDEOLOGY_CENTROID[ideologyOf(persona)], 10);
 
   if (!existing.data) {
     await insertRow("users", {
@@ -642,21 +815,32 @@ async function ensurePublicUser(userId: string, persona: Persona, districtId: st
       username,
       verification_tier: "voter_verified",
       elo_rating: persona.startingElo,
-      ideology_vector: formatVector(persona.lean, 10),
+      ideology_vector: ideologyVector,
       stance_vector: formatVector(persona.lean, 6),
+      matched_ocd_ids: matchedOcdIds,
       ...shared,
     });
+    await ensureCampaignTargets(userId, matchedOcdIds);
     rememberUser(userId, username, persona.callSign);
     return;
   }
 
   const tier =
     existing.data.verification_tier === "candidate_verified" ? "candidate_verified" : "voter_verified";
+  const existingMatched = asOcdList(existing.data.matched_ocd_ids);
+  const nextMatched = existingMatched.length > 0 ? existingMatched : matchedOcdIds;
   const { error } = await db()
     .from("users")
-    .update({ ...shared, verification_tier: tier })
+    .update({
+      ...shared,
+      verification_tier: tier,
+      ...(existingMatched.length > 0
+        ? {}
+        : { matched_ocd_ids: matchedOcdIds, ideology_vector: ideologyVector }),
+    })
     .eq("id", userId);
   if (error) throw new Error(error.message);
+  await ensureCampaignTargets(userId, nextMatched);
   rememberUser(userId, (existing.data.username as string | null) ?? username, persona.callSign);
 }
 
@@ -666,29 +850,71 @@ async function seedAgents(): Promise<SimAgent[]> {
     const authUser = await ensureAuthUser(persona);
     const districtId = await districtUuid(districtFor(persona).ocdId);
     await ensurePublicUser(authUser.userId, persona, districtId);
+    if (!wallets.has(authUser.userId)) wallets.set(authUser.userId, startingWallet(persona.slug));
     agents.push({ userId: authUser.userId, persona });
+    const ideology = ideologyOf(persona);
     console.log(
-      `[Sim] ${authUser.created ? "Created" : "Ready"} ${persona.callSign} · ${districtFor(persona).ocdId}`,
+      `[Sim] ${authUser.created ? "Created" : "Ready"} ${persona.callSign} · ${ideology} · home ${physicalBallot(persona).join(", ")} · matched ${ideologicalBallot(persona).join(", ")}`,
     );
   }
   return agents;
 }
 
-function asDebate(row: Record<string, unknown>): DebateBrief {
+function asDebate(
+  row: Record<string, unknown>,
+  electionOcd: Map<string, string | null>,
+  districtOcd: Map<string, string | null>,
+): DebateBrief {
+  const electionId = (row.election_id as string | null) ?? null;
+  const districtId = (row.district_id as string | null) ?? null;
+  const ocdId =
+    (electionId ? electionOcd.get(electionId) : null) ??
+    (districtId ? districtOcd.get(districtId) : null) ??
+    null;
   return {
     id: String(row.id),
     topic: String(row.topic ?? "Untitled floor"),
     status: String(row.status ?? ""),
     candidateAId: (row.candidate_a_id as string | null) ?? null,
     candidateBId: (row.candidate_b_id as string | null) ?? null,
-    districtId: (row.district_id as string | null) ?? null,
+    districtId,
+    electionId,
+    ocdId,
+  };
+}
+
+function asQuestion(row: Record<string, unknown>, electionOcd: Map<string, string | null>): QuestionBrief {
+  const electionId = String(row.election_id);
+  const electionOcdId = electionOcd.get(electionId);
+  const applicable = asOcdList(row.applicable_ocd_ids);
+  return {
+    id: String(row.id),
+    prompt: String(row.prompt),
+    axis: String(row.primary_axis),
+    electionId,
+    ocdIds: electionOcdId ? [...applicable, electionOcdId] : applicable,
+  };
+}
+
+function asCampaignTarget(row: Record<string, unknown>, electionOcd: Map<string, string | null>): CampaignTargetBrief {
+  const electionId = String(row.election_id);
+  return {
+    id: String(row.id),
+    userId: String(row.user_id),
+    electionId,
+    ocdId: electionOcd.get(electionId) ?? null,
+    alignmentStreak: Number(row.alignment_streak ?? 0),
+    isLocked: Boolean(row.is_locked),
+    pledgedEscrow: Number(row.pledged_escrow ?? 0),
   };
 }
 
 async function loadArenaContext(userId: string, persona: Persona): Promise<ArenaContext> {
   const profileResult = await db()
     .from("users")
-    .select("elo_rating, verification_tier, target_district_id, stance_vector, username")
+    .select(
+      "elo_rating, verification_tier, target_district_id, stance_vector, username, home_ocd_ids, matched_ocd_ids",
+    )
     .eq("id", userId)
     .maybeSingle();
   if (profileResult.error) throw new Error(profileResult.error.message);
@@ -696,67 +922,96 @@ async function loadArenaContext(userId: string, persona: Persona): Promise<Arena
   const districtId = (profile?.target_district_id as string | null) ?? null;
   rememberUser(userId, profile?.username as string | undefined, persona.callSign);
 
+  const homeOcdIds = asOcdList(profile?.home_ocd_ids);
+  const matchedOcdIds = asOcdList(profile?.matched_ocd_ids);
+  const resolvedHome = homeOcdIds.length > 0 ? homeOcdIds : physicalBallot(persona);
+  const resolvedMatched = matchedOcdIds.length > 0 ? matchedOcdIds : ideologicalBallot(persona);
+  const homeWanted = ocdSet(resolvedHome);
+  const matchedWanted = ocdSet(resolvedMatched);
+
   const district = districtFor(persona);
-  const electionResult = await db()
-    .from("elections")
-    .select("id, district_id, ocd_id, office_name")
-    .eq("ocd_id", district.ocdId)
-    .limit(1);
-  const electionId =
-    electionResult.error || !electionResult.data?.[0]
-      ? null
-      : (electionResult.data[0].id as string);
-
-  let debateQuery = db()
-    .from("debates")
-    .select("id, topic, status, candidate_a_id, candidate_b_id, district_id")
-    .order("created_at", { ascending: false })
-    .limit(24);
-  if (districtId) {
-    debateQuery = debateQuery.or(
-      `district_id.eq.${districtId},candidate_a_id.eq.${userId},candidate_b_id.eq.${userId}`,
-    );
-  }
-  const debateRows = await readRows<Record<string, unknown>>(debateQuery);
-  const debates = debateRows.map(asDebate);
-
-  const [questions, stances, coalitionRows, eloRows, comments, argumentRows, votes] = await Promise.all([
-    readRows<Record<string, unknown>>(
-      db()
-        .from("election_questions")
-        .select("id, prompt, primary_axis, election_id")
-        .order("information_gain_score", { ascending: false })
-        .limit(16),
-    ),
-    readRows<Record<string, unknown>>(
-      db().from("user_stances").select("question_id").eq("user_id", userId),
-    ),
-    readRows<Record<string, unknown>>(
-      db().from("coalitions").select("id, name, founder_id").order("created_at", { ascending: false }).limit(8),
-    ),
-    readRows<Record<string, unknown>>(
-      db()
-        .from("users")
-        .select("id, username, elo_rating, verification_tier")
-        .order("elo_rating", { ascending: false })
-        .limit(8),
-    ),
-    readRows<Record<string, unknown>>(
-      db()
-        .from("comments")
-        .select("id, debate_id, author_id, body")
-        .order("created_at", { ascending: false })
-        .limit(10),
-    ),
-    readRows<Record<string, unknown>>(
-      db()
-        .from("arguments")
-        .select("id, debate_id, author_id, content")
-        .order("created_at", { ascending: false })
-        .limit(10),
-    ),
-    readRows<Record<string, unknown>>(db().from("votes").select("debate_id").eq("voter_id", userId)),
+  const [electionRows, districtRows] = await Promise.all([
+    readRows<Record<string, unknown>>(db().from("elections").select("id, district_id, ocd_id")),
+    readRows<Record<string, unknown>>(db().from("districts").select("id, ocd_id")),
   ]);
+  const electionOcd = new Map<string, string | null>(
+    electionRows.map((row) => [String(row.id), (row.ocd_id as string | null) ?? null]),
+  );
+  const districtOcd = new Map<string, string | null>(
+    districtRows.map((row) => [String(row.id), (row.ocd_id as string | null) ?? null]),
+  );
+  const homeElection =
+    electionRows.find((row) => homeWanted.has(normalizeOcd(row.ocd_id as string | null))) ??
+    electionRows.find((row) => normalizeOcd(row.ocd_id as string | null) === normalizeOcd(district.ocdId));
+  const resolvedElectionId = homeElection ? String(homeElection.id) : null;
+
+  const [recentDebates, ownDebates] = await Promise.all([
+    readRows<Record<string, unknown>>(
+      db()
+        .from("debates")
+        .select("id, topic, status, candidate_a_id, candidate_b_id, district_id, election_id")
+        .order("created_at", { ascending: false })
+        .limit(40),
+    ),
+    readRows<Record<string, unknown>>(
+      db()
+        .from("debates")
+        .select("id, topic, status, candidate_a_id, candidate_b_id, district_id, election_id")
+        .or(`candidate_a_id.eq.${userId},candidate_b_id.eq.${userId}`)
+        .order("created_at", { ascending: false })
+        .limit(12),
+    ),
+  ]);
+  const debateById = new Map<string, Record<string, unknown>>();
+  for (const row of [...recentDebates, ...ownDebates]) debateById.set(String(row.id), row);
+  const debates = [...debateById.values()].map((row) => asDebate(row, electionOcd, districtOcd));
+
+  const [questions, stances, coalitionRows, eloRows, comments, argumentRows, votes, ownTargets, lockedRows] =
+    await Promise.all([
+      readRows<Record<string, unknown>>(
+        db()
+          .from("election_questions")
+          .select("id, prompt, primary_axis, election_id, applicable_ocd_ids")
+          .order("information_gain_score", { ascending: false })
+          .limit(40),
+      ),
+      readRows<Record<string, unknown>>(db().from("user_stances").select("question_id").eq("user_id", userId)),
+      readRows<Record<string, unknown>>(
+        db().from("coalitions").select("id, name, founder_id").order("created_at", { ascending: false }).limit(8),
+      ),
+      readRows<Record<string, unknown>>(
+        db()
+          .from("users")
+          .select("id, username, elo_rating, verification_tier")
+          .order("elo_rating", { ascending: false })
+          .limit(8),
+      ),
+      readRows<Record<string, unknown>>(
+        db().from("comments").select("id, debate_id, author_id, body").order("created_at", { ascending: false }).limit(10),
+      ),
+      readRows<Record<string, unknown>>(
+        db()
+          .from("arguments")
+          .select("id, debate_id, author_id, content")
+          .order("created_at", { ascending: false })
+          .limit(10),
+      ),
+      readRows<Record<string, unknown>>(db().from("votes").select("debate_id").eq("voter_id", userId)),
+      readRows<Record<string, unknown>>(
+        db()
+          .from("campaign_targets")
+          .select("id, user_id, election_id, alignment_streak, is_locked, pledged_escrow")
+          .eq("user_id", userId),
+      ),
+      readRows<Record<string, unknown>>(
+        db()
+          .from("campaign_targets")
+          .select("id, user_id, election_id, alignment_streak, is_locked, pledged_escrow")
+          .eq("is_locked", true)
+          .neq("user_id", userId)
+          .limit(12),
+      ),
+    ]);
 
   const answered = new Set(stances.map((row) => String(row.question_id)));
   const votedDebateIds = new Set(votes.map((row) => String(row.debate_id)));
@@ -779,9 +1034,13 @@ async function loadArenaContext(userId: string, persona: Persona): Promise<Arena
     })),
   ].filter((item) => item.authorId !== userId);
 
+  const campaignTargets = ownTargets.map((row) => asCampaignTarget(row, electionOcd));
+  const lockedTargets = lockedRows.map((row) => asCampaignTarget(row, electionOcd));
+
   await rememberIds([
     ...debates.flatMap((debate) => [debate.candidateAId, debate.candidateBId]),
     ...speech.map((item) => item.authorId),
+    ...lockedTargets.map((target) => target.userId),
   ]);
 
   const openFloors = debates.filter(
@@ -792,8 +1051,7 @@ async function loadArenaContext(userId: string, persona: Persona): Promise<Arena
   );
   const activeDebates = debates.filter(
     (debate) =>
-      debate.status === "active" &&
-      (debate.candidateAId === userId || debate.candidateBId === userId),
+      debate.status === "active" && (debate.candidateAId === userId || debate.candidateBId === userId),
   );
   const votable = debates
     .filter(
@@ -809,15 +1067,26 @@ async function loadArenaContext(userId: string, persona: Persona): Promise<Arena
       const rank = (status: string) => (status === "completed" || status === "voting" ? 0 : 1);
       return rank(left.status) - rank(right.status);
     });
+  const onHomeBallot = (debate: DebateBrief) => Boolean(debate.ocdId && homeWanted.has(normalizeOcd(debate.ocdId)));
+  const homeDebates = debates.filter(onHomeBallot);
+  const homeVotable = votable.filter(onHomeBallot);
+  const unanswered = questions
+    .filter((row) => !answered.has(String(row.id)))
+    .map((row) => asQuestion(row, electionOcd));
 
   return {
     elo: Number(profile?.elo_rating ?? persona.startingElo),
     tier: String(profile?.verification_tier ?? "voter_verified"),
+    ideology: ideologyOf(persona),
     districtId,
-    electionId,
+    electionId: resolvedElectionId,
+    homeOcdIds: resolvedHome,
+    matchedOcdIds: resolvedMatched,
     openFloors,
     activeDebates,
     votable,
+    homeDebates,
+    homeVotable,
     votedDebateIds,
     speech,
     highElo: eloRows
@@ -828,15 +1097,12 @@ async function loadArenaContext(userId: string, persona: Persona): Promise<Arena
         tier: String(row.verification_tier ?? "unverified"),
       })),
     coalitions: coalitionRows.map((row) => ({ id: String(row.id), name: String(row.name) })),
-    unanswered: questions
-      .filter((row) => !answered.has(String(row.id)))
-      .map((row) => ({
-        id: String(row.id),
-        prompt: String(row.prompt),
-        axis: String(row.primary_axis),
-        electionId: String(row.election_id),
-      })),
+    unanswered,
+    redQuestions: unanswered.filter((question) => overlapsOcd(question.ocdIds, matchedWanted)),
     stance: parseVector(profile?.stance_vector, 6),
+    campaignTargets,
+    lockedTargets,
+    walletDollars: walletOf(userId),
   };
 }
 
@@ -854,28 +1120,56 @@ function linesOf(items: string[], empty: string) {
   return items.length ? items.map((item) => `- ${item}`).join("\n") : `- ${empty}`;
 }
 
-function promptFor(userId: string, persona: Persona, context: ArenaContext) {
+function decisionInstruction(mode: DecisionMode, context: ArenaContext) {
+  switch (mode) {
+    case "red":
+      return `Red Card grind. Answer one unanswered question filed in your matched_ocd_ids (${context.matchedOcdIds.join(", ")}). Use that question's axis. The score must match your ${context.ideology} ideology. This is how alignment_streak grows. Do not vote, comment, or pledge.`;
+    case "blue":
+      return `Blue Card engagement. Cast one spectator vote or leave one comment on a debate in your home_ocd_ids (${context.homeOcdIds.join(", ")}). Grassroots only. Stay on your ${context.ideology} ideology.`;
+    case "pledge":
+      return `You have $${context.walletDollars} in simulated funds, above the $${EXCESS_WALLET} excess line. Pledge to one other bot whose campaign target is_locked is true. Never pledge to yourself.`;
+    case "floor":
+      return context.redQuestions.length
+        ? `Prefer ANSWER_STANCE on a matched_ocd_ids question when you can. Spectator votes and comments belong on home_ocd_ids debates.`
+        : `Choose the action this persona would actually take. Spectator votes and comments belong on home_ocd_ids debates.`;
+  }
+}
+
+function promptFor(userId: string, persona: Persona, context: ArenaContext, mode: DecisionMode) {
   const district = districtFor(persona);
   const lean = AXIS_IDS.map((axis, index) => `${axis} ${Math.round((persona.lean[index] ?? 0.5) * 100)}`).join(", ");
   const poles = AXIS_IDS.map((axis) => `${axis}: 1 ${AXIS_POLES[axis].low} → 100 ${AXIS_POLES[axis].high}`).join("\n");
+  const canPledge = context.walletDollars > EXCESS_WALLET && context.lockedTargets.length > 0;
   const feasible = [
-    "ANSWER_STANCE",
+    context.redQuestions.length ? "ANSWER_STANCE" : null,
     "PROPOSE_DEBATE",
     "FORM_COALITION",
     "CLAIM_CANDIDACY",
-    context.highElo.length ? "PLEDGE_FUNDS" : null,
+    canPledge ? "PLEDGE_FUNDS" : null,
     context.openFloors.length || context.activeDebates.length ? "ENTER_DEBATE" : null,
-    context.votable.length ? "VOTE_SPECTATOR" : null,
+    context.homeVotable.length ? "VOTE_SPECTATOR" : null,
+    context.homeDebates.length ? "LEAVE_COMMENT" : null,
     context.speech.length ? "FLAG_USER" : null,
   ].filter(Boolean);
+  const allowed =
+    mode === "red"
+      ? ["ANSWER_STANCE"]
+      : mode === "blue"
+        ? [context.homeVotable.length ? "VOTE_SPECTATOR" : null, context.homeDebates.length ? "LEAVE_COMMENT" : null].filter(Boolean)
+        : mode === "pledge"
+          ? ["PLEDGE_FUNDS"]
+          : feasible;
 
   return `PERSONA
 ${persona.voice}
 Call sign: ${persona.callSign}
-Home: ${district.name}
-OCD-ID: ${district.ocdId}
+Base ideology: ${context.ideology}. ${IDEOLOGY_VOICE[context.ideology]}
+Home district: ${district.name}
+Physical ballot (home_ocd_ids, Blue Cards): ${context.homeOcdIds.join(", ")}
+Ideological ballot (matched_ocd_ids, Red Cards): ${context.matchedOcdIds.join(", ")}
 Verification: ${context.tier}
 ELO: ${context.elo}
+Simulated funds: $${context.walletDollars}
 Prior scores (1-100): ${lean}
 
 AXES
@@ -896,9 +1190,18 @@ ${linesOf(
   "None.",
 )}
 
-SPECTATOR BALLOTS
+BLUE CARD DEBATES (home_ocd_ids — spectator votes and comments only)
 ${linesOf(
-  context.votable.slice(0, 5).map(
+  context.homeDebates.slice(0, 5).map(
+    (debate) =>
+      `${clip(debate.topic, 140)} | A ${labelOf(debate.candidateAId)} vs B ${labelOf(debate.candidateBId)} | ${debate.status} | ${debate.ocdId ?? "no ocd"}`,
+  ),
+  "None on the physical ballot. Do not vote or comment.",
+)}
+
+SPECTATOR BALLOTS ON THE PHYSICAL BALLOT
+${linesOf(
+  context.homeVotable.slice(0, 5).map(
     (debate) =>
       `${clip(debate.topic, 140)} | A ${labelOf(debate.candidateAId)} vs B ${labelOf(debate.candidateBId)} | ${debate.status}`,
   ),
@@ -923,28 +1226,97 @@ ${linesOf(
   "None yet.",
 )}
 
-UNANSWERED QUESTIONS
+RED CARD QUESTIONS (matched_ocd_ids — answer these to build alignment_streak)
 ${linesOf(
-  context.unanswered.slice(0, 5).map((question) => `${question.axis}: ${clip(question.prompt, 160)}`),
-  "No banked question. You may still score an axis.",
+  context.redQuestions.slice(0, 6).map((question) => `${question.axis}: ${clip(question.prompt, 160)}`),
+  "No unanswered question on the ideological ballot.",
 )}
 
-Prefer one of: ${feasible.join(", ")}.
-Choose the action that this persona would actually take in this district.`;
+YOUR CAMPAIGN TARGETS
+${linesOf(
+  context.campaignTargets
+    .slice(0, 4)
+    .map(
+      (target) =>
+        `${target.ocdId ?? target.electionId} · streak ${target.alignmentStreak} · ${target.isLocked ? "locked" : "unlocked"} · escrow $${target.pledgedEscrow}`,
+    ),
+  "No campaign target yet.",
+)}
+
+LOCKED CAMPAIGNS YOU CAN FUND
+${linesOf(
+  context.lockedTargets
+    .slice(0, 5)
+    .map((target) => `${labelOf(target.userId)} · ${target.ocdId ?? target.electionId} · escrow $${target.pledgedEscrow}`),
+  "No other bot has a locked campaign.",
+)}
+
+DECISION
+${decisionInstruction(mode, context)}
+Allowed actions: ${allowed.join(", ")}.`;
+}
+
+function isAxis(value: string): value is AxisId {
+  return (AXIS_IDS as readonly string[]).includes(value);
+}
+
+async function streakFor(userId: string, ocdId: string) {
+  const elections = await db().from("elections").select("id").eq("ocd_id", ocdId);
+  if (elections.error) return { electionIds: [] as string[], streak: 0 };
+  const electionIds = (elections.data ?? []).map((row) => String(row.id));
+  if (electionIds.length === 0) return { electionIds, streak: 0 };
+
+  const targets = await db()
+    .from("campaign_targets")
+    .select("id, alignment_streak")
+    .eq("user_id", userId)
+    .in("election_id", electionIds);
+  if (targets.error) return { electionIds, streak: 0 };
+  const streak = Math.max(0, ...(targets.data ?? []).map((row) => Number(row.alignment_streak ?? 0)));
+  return { electionIds, streak: Number.isFinite(streak) ? streak : 0, rows: targets.data ?? [] };
+}
+
+async function writeStreak(userId: string, ocdId: string, streak: number) {
+  const current = await streakFor(userId, ocdId);
+  for (const row of current.rows ?? []) {
+    await db().from("campaign_targets").update({ alignment_streak: streak }).eq("id", row.id).eq("user_id", userId);
+  }
+}
+
+async function advanceAlignment(userId: string, ocdId: string) {
+  const before = await streakFor(userId, ocdId);
+  const calibrated = await db().rpc("calibrate_district_alignment", {
+    p_user_id: userId,
+    p_district_id: ocdId,
+  });
+
+  if (!calibrated.error) {
+    const after = await streakFor(userId, ocdId);
+    if (after.streak > before.streak) return;
+    const profile = await db().from("users").select("matched_ocd_ids").eq("id", userId).maybeSingle();
+    const stillMatched = asOcdList(profile.data?.matched_ocd_ids).some((id) => normalizeOcd(id) === normalizeOcd(ocdId));
+    if (!stillMatched) return;
+  }
+
+  await writeStreak(userId, ocdId, before.streak + 1);
 }
 
 async function answerStanceAction(userId: string, persona: Persona, context: ArenaContext, action: z.infer<typeof answerStance>) {
-  const axis = action.axis;
+  const matched = ocdSet(context.matchedOcdIds);
+  const redMatch =
+    context.redQuestions.find((item) => item.axis === action.axis) ?? context.redQuestions[0] ?? null;
+  const question = redMatch ?? context.unanswered.find((item) => item.axis === action.axis) ?? null;
+  const axis = question && isAxis(question.axis) ? question.axis : action.axis;
   const score = Math.round(Math.min(100, Math.max(1, action.score)));
   const next = [...context.stance];
-  next[AXIS_IDS.indexOf(axis)] = score / 100;
+  const axisIndex = AXIS_IDS.indexOf(axis);
+  if (axisIndex >= 0) next[axisIndex] = score / 100;
   const { error } = await db()
     .from("users")
     .update({ stance_vector: formatVector(next, 6) })
     .eq("id", userId);
   if (error && !missingColumn(error.message)) throw new Error(error.message);
 
-  const question = context.unanswered.find((item) => item.axis === axis) ?? null;
   if (question) {
     const inserted = await db().from("user_stances").insert({
       user_id: userId,
@@ -957,9 +1329,13 @@ async function answerStanceAction(userId: string, persona: Persona, context: Are
     if (inserted.error && !isDuplicate(inserted.error) && !isMissingRelation(inserted.error)) {
       throw new Error(inserted.error.message);
     }
+
+    const ocdId = question.ocdIds.find((id) => matched.has(normalizeOcd(id))) ?? null;
+    if (ocdId && !inserted.error) await advanceAlignment(userId, ocdId);
   }
 
-  return `[Sim] ${persona.callSign} scored ${axis} ${score}`;
+  const district = question?.ocdIds.find((id) => matched.has(normalizeOcd(id))) ?? "open axis";
+  return `[Sim] ${persona.callSign} scored ${axis} ${score} on ${district}`;
 }
 
 async function proposeDebateAction(userId: string, persona: Persona, context: ArenaContext, action: z.infer<typeof proposeDebate>) {
@@ -1040,9 +1416,41 @@ async function fileArgument(debateId: string, userId: string, content: string, c
   if (updated.error && !missingColumn(updated.error.message)) throw new Error(updated.error.message);
 }
 
+async function composeIdeologySpeech(persona: Persona, kind: "argument" | "comment", topic: string) {
+  const ideology = ideologyOf(persona);
+  const max = kind === "comment" ? 500 : 1500;
+  const min = kind === "comment" ? 12 : 24;
+  const { object } = await generateObject({
+    model: speechModel(),
+    schema: z.object({
+      text: z.string().min(min).max(max),
+    }),
+    schemaName: kind === "comment" ? "DebateComment" : "DebateArgument",
+    schemaDescription:
+      kind === "comment"
+        ? "One public comment on a home-district debate, aligned to the voter's base ideology."
+        : "One debate argument aligned to the speaker's base ideology.",
+    system: `You write as this voter. Base ideology: ${ideology}. ${IDEOLOGY_VOICE[ideology]} Voice: ${persona.voice} Stay strictly on that ideology. Do not mention being a simulation or an AI.`,
+    prompt:
+      kind === "comment"
+        ? `Write a short public comment on this home-district debate:\n${topic}`
+        : `Write a debate argument for this floor:\n${topic}`,
+    temperature: 0.8,
+  });
+  return clip(object.text, max);
+}
+
 async function enterDebateAction(userId: string, persona: Persona, context: ArenaContext, action: z.infer<typeof enterDebate>) {
-  const content = clip(action.counterArgument, 1500);
   const floors = rankByLabel(context.openFloors, action.opponentLabel, (debate) => labelOf(debate.candidateAId));
+  const topic =
+    floors[0]?.topic ??
+    context.activeDebates[0]?.topic ??
+    action.opponentLabel;
+  const content = await composeIdeologySpeech(
+    persona,
+    "argument",
+    `Topic: ${topic}\nOpponent: ${action.opponentLabel}`,
+  );
 
   for (const floor of floors) {
     const claimed = await db()
@@ -1083,10 +1491,10 @@ async function enterDebateAction(userId: string, persona: Persona, context: Aren
 }
 
 async function voteSpectatorAction(userId: string, persona: Persona, context: ArenaContext, action: z.infer<typeof voteSpectator>) {
-  const ballots = rankByLabel(context.votable, action.debateTopic, (debate) => debate.topic);
+  const ballots = rankByLabel(context.homeVotable, action.debateTopic, (debate) => debate.topic);
   const debate = ballots[0];
   if (!debate?.candidateAId || !debate.candidateBId) {
-    return `[Sim] ${persona.callSign} found no concluded debate to judge.`;
+    return `[Sim] ${persona.callSign} found no home-district debate to judge.`;
   }
   const winnerId = action.side === "a" ? debate.candidateAId : debate.candidateBId;
   const { error } = await db().from("votes").insert({
@@ -1096,7 +1504,34 @@ async function voteSpectatorAction(userId: string, persona: Persona, context: Ar
   });
   if (error && !isDuplicate(error)) throw new Error(error.message);
   if (error && isDuplicate(error)) return `[Sim] ${persona.callSign} had already voted on that floor.`;
-  return `[Sim] ${persona.callSign} voted for ${labelOf(winnerId)}`;
+  return `[Sim] ${persona.callSign} voted for ${labelOf(winnerId)} on ${debate.ocdId ?? "home ballot"}`;
+}
+
+async function leaveCommentAction(userId: string, persona: Persona, context: ArenaContext, action: z.infer<typeof leaveComment>) {
+  const debates = rankByLabel(context.homeDebates, action.debateTopic, (debate) => debate.topic);
+  const debate = debates[0];
+  if (!debate) return `[Sim] ${persona.callSign} found no home-district debate to comment on.`;
+
+  const existing = await db()
+    .from("comments")
+    .select("id")
+    .eq("debate_id", debate.id)
+    .eq("author_id", userId)
+    .limit(1);
+  if (existing.error && !isMissingRelation(existing.error)) throw new Error(existing.error.message);
+  if (existing.data && existing.data.length > 0) {
+    return `[Sim] ${persona.callSign} had already commented on that home debate.`;
+  }
+
+  const body = await composeIdeologySpeech(persona, "comment", debate.topic);
+  const inserted = await db().from("comments").insert({
+    debate_id: debate.id,
+    author_id: userId,
+    body,
+    ai_stance_score: null,
+  });
+  if (inserted.error && !isDuplicate(inserted.error)) throw new Error(inserted.error.message);
+  return `[Sim] ${persona.callSign} commented on ${clip(debate.topic, 80)}`;
 }
 
 function juryKind(targetKind: "argument" | "debate", reason: ReportReason) {
@@ -1202,18 +1637,82 @@ async function formCoalitionAction(userId: string, persona: Persona, action: z.i
 }
 
 async function pledgeFundsAction(userId: string, persona: Persona, context: ArenaContext, action: z.infer<typeof pledgeFunds>) {
-  const ranked = rankByLabel(context.highElo, action.candidateLabel, (candidate) => labelOf(candidate.id));
-  const candidate = ranked[0];
-  if (!candidate) return `[Sim] ${persona.callSign} found no candidate worth a pledge.`;
-  const amount = Math.round(Math.min(10_000, Math.max(1, action.amountDollars)));
-  await insertRow("pledges", {
-    candidate_id: candidate.id,
-    donor_id: userId,
-    amount,
-    donor_name: persona.callSign,
-    message: clip(action.message, 240),
-  });
-  return `[Sim] ${persona.callSign} pledged $${amount} to ${labelOf(candidate.id)}`;
+  const wallet = walletOf(userId);
+  if (wallet <= EXCESS_WALLET) {
+    return `[Sim] ${persona.callSign} kept $${wallet}; that is not excess funds.`;
+  }
+  const ranked = rankByLabel(context.lockedTargets, action.candidateLabel, (target) => labelOf(target.userId));
+  const target = ranked.find((row) => row.isLocked && row.userId !== userId);
+  if (!target) return `[Sim] ${persona.callSign} found no locked campaign to fund.`;
+
+  const amount = Math.round(Math.min(wallet - 1, Math.max(1, action.amountDollars)) * 100) / 100;
+  if (amount < 1) return `[Sim] ${persona.callSign} had nothing left to pledge.`;
+
+  const current = await db()
+    .from("campaign_targets")
+    .select("id, user_id, pledged_escrow, is_locked")
+    .eq("id", target.id)
+    .maybeSingle();
+  if (current.error) throw new Error(current.error.message);
+  const row = current.data as {
+    id: string;
+    user_id: string;
+    pledged_escrow: number | string | null;
+    is_locked: boolean | null;
+  } | null;
+  if (!row?.is_locked) return `[Sim] ${persona.callSign} found that campaign is not open for pledges.`;
+  if (row.user_id === userId) return `[Sim] ${persona.callSign} cannot pledge to their own campaign.`;
+
+  const pledgedEscrow = Math.round((Number(row.pledged_escrow ?? 0) + amount) * 100) / 100;
+  const updated = await db().from("campaign_targets").update({ pledged_escrow: pledgedEscrow }).eq("id", row.id);
+  if (updated.error) throw new Error(updated.error.message);
+
+  wallets.set(userId, Math.round((wallet - amount) * 100) / 100);
+  return `[Sim] ${persona.callSign} pledged $${amount} to ${labelOf(row.user_id)} (escrow $${pledgedEscrow})`;
+}
+
+/**
+ * Service-role execution of lockCampaignTarget (app/actions/campaign/lock-target.ts).
+ * That server action reads the caller from Next.js cookies, which this process
+ * does not have. The write matches the action: is_locked = true once
+ * alignment_streak is at least 10.
+ */
+async function lockCampaignTargetAction(userId: string, persona: Persona, ocdId: string) {
+  const districtId = ocdId.trim();
+  if (!districtId) return `[Sim] ${persona.callSign} had no district to lock.`;
+
+  const elections = await db().from("elections").select("id, ocd_id");
+  if (elections.error) throw new Error(elections.error.message);
+  const wanted = normalizeOcd(districtId);
+  const electionIds = ((elections.data ?? []) as { id: string; ocd_id?: string | null }[])
+    .filter((row) => normalizeOcd(row.ocd_id) === wanted)
+    .map((row) => row.id);
+  if (electionIds.length === 0) {
+    return `[Sim] ${persona.callSign} found no election filed for ${districtId}.`;
+  }
+
+  const targets = await db()
+    .from("campaign_targets")
+    .select("id, alignment_streak, is_locked")
+    .eq("user_id", userId)
+    .in("election_id", electionIds);
+  if (targets.error) throw new Error(targets.error.message);
+
+  const ready = ((targets.data ?? []) as { id: string; alignment_streak: number | null; is_locked: boolean | null }[])
+    .filter((row) => (row.alignment_streak ?? 0) >= UNLOCK_STREAK && !row.is_locked);
+  if (ready.length === 0) {
+    return `[Sim] ${persona.callSign} is not ready to lock ${districtId}.`;
+  }
+
+  const updated = await db()
+    .from("campaign_targets")
+    .update({ is_locked: true })
+    .in(
+      "id",
+      ready.map((row) => row.id),
+    );
+  if (updated.error) throw new Error(updated.error.message);
+  return `[Sim] ${persona.callSign} locked ${districtId} after a ${UNLOCK_STREAK}+ alignment streak`;
 }
 
 async function claimCandidacyAction(userId: string, persona: Persona, action: z.infer<typeof claimCandidacy>) {
@@ -1274,6 +1773,8 @@ async function dispatch(userId: string, persona: Persona, context: ArenaContext,
       return enterDebateAction(userId, persona, context, action);
     case "VOTE_SPECTATOR":
       return voteSpectatorAction(userId, persona, context, action);
+    case "LEAVE_COMMENT":
+      return leaveCommentAction(userId, persona, context, action);
     case "FLAG_USER":
       return flagUserAction(userId, persona, context, action);
     case "FORM_COALITION":
@@ -1289,20 +1790,100 @@ async function dispatch(userId: string, persona: Persona, context: ArenaContext,
   }
 }
 
+function chooseMode(context: ArenaContext): DecisionMode {
+  const canPledge = context.walletDollars > EXCESS_WALLET && context.lockedTargets.length > 0;
+  const options: DecisionMode[] = [];
+  if (context.redQuestions.length > 0) options.push("red", "red", "red");
+  if (context.homeDebates.length > 0) options.push("blue");
+  if (canPledge) options.push("pledge");
+  options.push("floor");
+  return options[Math.floor(Math.random() * options.length)] ?? "floor";
+}
+
+function readyToLock(context: ArenaContext) {
+  return (
+    context.campaignTargets
+      .filter((row) => row.alignmentStreak >= UNLOCK_STREAK && !row.isLocked && row.ocdId)
+      .sort((left, right) => right.alignmentStreak - left.alignmentStreak)[0] ?? null
+  );
+}
+
+async function generateAction(
+  userId: string,
+  persona: Persona,
+  context: ArenaContext,
+  mode: DecisionMode,
+): Promise<AgentAction> {
+  const system = `You are this persona. Base ideology: ${context.ideology}. ${IDEOLOGY_VOICE[context.ideology]} Look at the active arena. Choose ONE action from the schema and generate only the content that action requires. Stay in character and on that ideology. Do not mention being a simulation.`;
+  const prompt = promptFor(userId, persona, context, mode);
+  const temperature = 0.9;
+
+  switch (mode) {
+    case "red": {
+      const { object } = await generateObject({
+        model: simulationModel(),
+        schema: answerStance,
+        schemaName: "RedCardStance",
+        schemaDescription: "Answer one matched-district question to build alignment_streak.",
+        system,
+        prompt,
+        temperature,
+      });
+      return object;
+    }
+    case "blue": {
+      const schema = context.homeVotable.length
+        ? z.discriminatedUnion("action", [voteSpectator, leaveComment])
+        : leaveComment;
+      const { object } = await generateObject({
+        model: simulationModel(),
+        schema,
+        schemaName: "BlueCardEngagement",
+        schemaDescription: "One spectator vote or comment on a home-district debate.",
+        system,
+        prompt,
+        temperature,
+      });
+      return object;
+    }
+    case "pledge": {
+      const { object } = await generateObject({
+        model: simulationModel(),
+        schema: pledgeFunds,
+        schemaName: "PledgeLockedCampaign",
+        schemaDescription: "Pledge simulated funds to another bot whose campaign target is locked.",
+        system,
+        prompt,
+        temperature,
+      });
+      return object;
+    }
+    case "floor": {
+      const { object } = await generateObject({
+        model: simulationModel(),
+        schema: agentActionSchema,
+        schemaName: "ArenaAgentAction",
+        schemaDescription: "One arena action. Exactly one variant. Generate only the content that action requires.",
+        system,
+        prompt,
+        temperature,
+      });
+      return object;
+    }
+  }
+}
+
 export async function tickAgent(userId: string, persona: Persona) {
   const context = await loadArenaContext(userId, persona);
-  const { object } = await generateObject({
-    model: simulationModel(),
-    schema: agentActionSchema,
-    schemaName: "ArenaAgentAction",
-    schemaDescription:
-      "One arena action. Exactly one variant. Generate only the content that action requires.",
-    system:
-      "You are this persona. Look at the active arena. Choose ONE action from the schema and generate the required content. Stay in character. Do not mention being a simulation.",
-    prompt: promptFor(userId, persona, context),
-    temperature: 0.9,
-  });
+  const lock = readyToLock(context);
+  if (lock?.ocdId) {
+    const line = await lockCampaignTargetAction(userId, persona, lock.ocdId);
+    console.log(line);
+    return { action: "LOCK_CAMPAIGN_TARGET" as const, ocdId: lock.ocdId };
+  }
 
+  const mode = chooseMode(context);
+  const object = await generateAction(userId, persona, context, mode);
   const line = await dispatch(userId, persona, context, object);
   console.log(line);
   return object;
