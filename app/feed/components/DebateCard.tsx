@@ -128,9 +128,14 @@ function ExplainPolicy({ policyText }: { policyText: string }) {
     setPending(true);
     setError(null);
     try {
-      setBreakdown(await explainPolicy(policyText));
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not explain this policy.");
+      const result = await explainPolicy(policyText);
+      if (result.ok) {
+        setBreakdown(result.breakdown);
+      } else {
+        setError(result.error);
+      }
+    } catch {
+      setError("We couldn't explain this policy right now. Try again in a moment.");
     } finally {
       setPending(false);
     }
