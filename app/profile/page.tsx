@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { loadProfileHub } from "@/app/actions/profile/load-hub";
 import { AboutMe } from "@/app/profile/components/AboutMe";
 import { CampaignHub } from "@/app/profile/components/CampaignHub";
@@ -41,6 +41,15 @@ export default function MyProfilePage() {
       cancelled = true;
     };
   }, [router]);
+
+  const refreshHub = useCallback(async () => {
+    try {
+      const next = await loadProfileHub();
+      if (next.signedIn) setHub(next);
+    } catch {
+      // Keep the current hub; the next tab switch or reload retries.
+    }
+  }, []);
 
   return (
     <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
@@ -123,7 +132,7 @@ export default function MyProfilePage() {
               </div>
             ) : (
               <div id="panel-campaign-hub" role="tabpanel" aria-labelledby="tab-campaign-hub">
-                <CampaignHub profile={hub} />
+                <CampaignHub profile={hub} onTargetsChanged={refreshHub} />
               </div>
             )}
           </>

@@ -73,6 +73,7 @@ insert into public.districts (
   median_ideology_vector,
   zip_code,
   state,
+  ocd_id,
   updated_at
 )
 values
@@ -85,6 +86,7 @@ values
     '[0.72,0.75,0.36,0.45,0.68,0.75,0.30,0.45,0.71,0.70]'::vector(10),
     '78701',
     'TX',
+    'ocd-division/country:us/state:tx/cd:37',
     now()
   ),
   (
@@ -96,6 +98,7 @@ values
     '[0.70,0.73,0.40,0.48,0.66,0.73,0.32,0.48,0.69,0.68]'::vector(10),
     '78703',
     'TX',
+    'ocd-division/country:us/state:tx/sldu:14',
     now()
   ),
   (
@@ -107,6 +110,7 @@ values
     '[0.80,0.82,0.42,0.34,0.69,0.82,0.26,0.34,0.77,0.74]'::vector(10),
     '78704',
     'TX',
+    'ocd-division/country:us/state:tx/place:austin/council_district:9',
     now()
   ),
   (
@@ -118,6 +122,7 @@ values
     '[0.32,0.34,0.74,0.64,0.28,0.34,0.70,0.64,0.31,0.30]'::vector(10),
     '78602',
     'TX',
+    'ocd-division/country:us/state:tx/cd:10',
     now()
   ),
   (
@@ -129,6 +134,7 @@ values
     '[0.48,0.47,0.56,0.58,0.46,0.47,0.50,0.58,0.49,0.50]'::vector(10),
     '48933',
     'MI',
+    'ocd-division/country:us/state:mi/cd:7',
     now()
   )
 on conflict (id) do update
@@ -140,6 +146,7 @@ set
   median_ideology_vector = excluded.median_ideology_vector,
   zip_code = excluded.zip_code,
   state = excluded.state,
+  ocd_id = excluded.ocd_id,
   updated_at = now();
 
 insert into public.elections (
@@ -1402,3 +1409,15 @@ update public.debates
 set election_question_id = 'a10e0001-0037-4000-8000-000000000037'
 where id = 'deba0001-0004-4000-8000-000000000004'
   and election_question_id is null;
+
+-- Local test state: the runner account is already exploring TX-37 with a
+-- 2-streak (1 from the debate 4cb29cbf win + 1 from calibration).
+-- campaign_targets.user_id is a uuid, so the runner is looked up by username.
+-- Auth users are created by sign-up, not this seed, so on a fresh reset the
+-- account does not exist yet and this inserts nothing. Re-run this statement
+-- after signing up as runner-a1dd76-5aa4.
+insert into public.campaign_targets (user_id, election_id, status, alignment_streak)
+select u.id, 'e1ec0001-0037-4000-8000-000000000037'::uuid, 'exploring', 2
+from public.users u
+where u.username = 'runner-a1dd76-5aa4'
+on conflict (user_id, election_id) do nothing;

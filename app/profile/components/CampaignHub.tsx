@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Lock } from "lucide-react";
+import { declareCampaignTarget } from "@/lib/actions/campaign-targets";
 import { CoalitionNetwork } from "@/app/profile/components/CoalitionNetwork";
 import { EscrowVaultButton } from "@/app/profile/components/EscrowVaultModal";
 import {
@@ -12,7 +13,8 @@ import {
 import { treasurerFilingLink } from "@/lib/compliance/treasurer";
 import { supabase } from "@/lib/db/supabase";
 import { formatUsd } from "@/lib/pledges";
-import type { ProfileHubData } from "@/lib/profile/hub";
+import type { MatchedRace, ProfileHubData } from "@/lib/profile/hub";
+import { cn } from "@/lib/utils";
 import type { CampaignTargetStatus } from "@/types/database.types";
 
 type TargetedRace = {
@@ -28,7 +30,15 @@ const STATUS_LABEL: Record<string, string> = {
   filed: "Filed",
 };
 
-export function CampaignHub({ profile }: { profile: ProfileHubData }) {
+const UNLOCK_STREAK = 10;
+
+export function CampaignHub({
+  profile,
+  onTargetsChanged,
+}: {
+  profile: ProfileHubData;
+  onTargetsChanged?: () => void | Promise<void>;
+}) {
   const filing = profile.election
     ? treasurerFilingLink({
         slug: profile.election.slug,
@@ -40,6 +50,7 @@ export function CampaignHub({ profile }: { profile: ProfileHubData }) {
   const [targets, setTargets] = useState<TargetedRace[]>([]);
   const [targetsLoading, setTargetsLoading] = useState(true);
   const [targetsError, setTargetsError] = useState<string | null>(null);
+  const [targetsVersion, setTargetsVersion] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -97,10 +108,17 @@ export function CampaignHub({ profile }: { profile: ProfileHubData }) {
     return () => {
       cancelled = true;
     };
-  }, [profile.userId]);
+  }, [profile.userId, targetsVersion]);
+
+  async function handleTargeted() {
+    setTargetsVersion((value) => value + 1);
+    await onTargetsChanged?.();
+  }
 
   return (
     <div className="mt-10 flex flex-col gap-14">
+      <MatchedRaces races={profile.matchedRaces} onTargeted={handleTargeted} />
+
       <section aria-labelledby="eligibility-roadmap-heading">
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
           Targeting
@@ -308,6 +326,151 @@ function EligibilityRoadmapCard({ race }: { race: TargetedRace }) {
       <p className="mt-4 rounded-lg border border-gold bg-zinc-950 px-4 py-3 text-sm font-medium leading-6 text-gold">
         {RESIDENCY_DISCLAIMER}
       </p>
+    </article>
+  );
+}
+
+function MatchedRaces({
+  races,
+  onTargeted,
+}: {
+  races: MatchedRace[];
+  onTargeted: () => void | Promise<void>;
+}) {
+  return (
+    <section aria-labelledby="matched-races-heading">
+      <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">Ballot</p>
+      <h2
+        id="matched-races-heading"
+        className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment"
+      >
+        Matched Races
+      </h2>
+      <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+        Races that match your ideology. Target one to start building an alignment streak; ten
+        unlocks locking the race in.
+      </p>
+
+      {races.length === 0 ? (
+        <p className="mt-6 text-sm leading-6 text-zinc-400">
+          No matched races yet. Finish calibrating your stance vector and your matched ballot
+          will fill in here.
+        </p>
+      ) : (
+        <ul className="mt-6 flex flex-col gap-4">
+          {races.map((race) => (
+            <li key={race.electionId}>
+              <MatchedRaceCard race={race} onTargeted={onTargeted} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function MatchedRaceCard({
+  race,
+  onTargeted,
+}: {
+  race: MatchedRace;
+  onTargeted: () => void | Promise<void>;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const targeting = race.targetId !== null;
+  const streak = Math.min(race.alignmentStreak, UNLOCK_STREAK);
+
+  async function target() {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await declareCampaignTarget(race.electionId);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      await onTargeted();
+    } catch {
+      setError("We couldn't target that race. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <article
+      className={cn(
+        "rounded-xl border bg-zinc-900 px-5 py-5",
+        targeting
+          ? "border-gold/50 shadow-[inset_3px_0_0_0_var(--gold-strong)]"
+          : "border-zinc-800",
+      )}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p
+            className={cn(
+              "text-[11px] font-medium uppercase tracking-widest",
+              targeting ? "text-gold" : "text-zinc-500",
+            )}
+          >
+            {targeting
+              ? race.isLocked
+                ? "Locked"
+                : (STATUS_LABEL[race.status ?? ""] ?? race.status)
+              : (race.level ?? "Race")}
+          </p>
+          <h3 className="mt-2 font-display text-xl font-semibold tracking-tight text-parchment">
+            {race.officeName}
+          </h3>
+        </div>
+
+        {targeting ? null : (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void target()}
+            className="inline-flex h-10 items-center justify-center rounded-md bg-gold-strong px-4 text-[11px] font-semibold uppercase tracking-widest text-zinc-950 transition-colors hover:bg-gold disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {busy ? "Targeting…" : "Target This Race"}
+          </button>
+        )}
+      </div>
+
+      {targeting ? (
+        <div className="mt-4">
+          <div className="flex items-baseline justify-between gap-4">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+              Alignment streak
+            </p>
+            <p className="font-display text-2xl font-semibold tabular-nums tracking-tight text-parchment">
+              {race.alignmentStreak}
+              <span className="text-sm font-normal text-zinc-500"> / {UNLOCK_STREAK}</span>
+            </p>
+          </div>
+          <div
+            role="progressbar"
+            aria-label={`${race.officeName} alignment streak`}
+            aria-valuemin={0}
+            aria-valuemax={UNLOCK_STREAK}
+            aria-valuenow={streak}
+            className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-800"
+          >
+            <div
+              className="h-full rounded-full bg-gold-strong"
+              style={{ width: `${(streak / UNLOCK_STREAK) * 100}%` }}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {error ? (
+        <p className="mt-3 text-sm leading-6 text-rose-300" role="alert">
+          {error}
+        </p>
+      ) : null}
     </article>
   );
 }

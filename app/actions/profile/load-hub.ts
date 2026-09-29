@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/db/supabase-admin";
 import { createServerSupabase, getServerUser } from "@/lib/db/supabase-server";
 import { unlockConditionLabel } from "@/lib/escrow";
 import { toNumber } from "@/lib/electability";
+import { normalizeOcdId } from "@/lib/civic-fencing";
 import { parseVector } from "@/lib/ideology/vector";
 import { recordFromStats } from "@/lib/leaderboard";
 import { parseAmount } from "@/lib/pledges";
@@ -13,6 +14,7 @@ import type {
   CoalitionContact,
   DraftBounty,
   MatchedElection,
+  MatchedRace,
   ProfileHub,
 } from "@/lib/profile/hub";
 import type { CampaignPledge, FilingRequirements } from "@/types/database.types";
@@ -30,6 +32,7 @@ type ElectionRow = {
   office_name: string;
   district_id: string | null;
   filing_requirements: unknown;
+  ocd_id?: string | null;
 };
 
 type PersonRow = {
@@ -91,7 +94,7 @@ export async function loadProfileHub(): Promise<ProfileHub> {
         .eq("user_id", user.id),
       supabase
         .from("elections")
-        .select("id, slug, office_name, district_id, filing_requirements"),
+        .select("id, slug, office_name, district_id, filing_requirements, ocd_id"),
     ]);
 
   const fatal =
@@ -181,6 +184,8 @@ export async function loadProfileHub(): Promise<ProfileHub> {
       }
     : null;
 
+  const matchedRaces = await loadMatchedRaces(supabase, user.id, elections);
+
   const pledges = await loadUncapturedBounties(user.id);
   const allies = await loadAllyIds(user.id);
   const followerIds = [
@@ -223,9 +228,70 @@ export async function loadProfileHub(): Promise<ProfileHub> {
     ideologyVector,
     bounties,
     election,
+    matchedRaces,
     network,
     error: fatal,
   };
+}
+
+type ServerSupabase = Awaited<ReturnType<typeof createServerSupabase>>;
+
+/**
+ * Elections on the user's matched ballot (users.matched_ocd_ids), plus any race
+ * they already target, each joined to their campaign_targets row.
+ */
+async function loadMatchedRaces(
+  supabase: ServerSupabase,
+  userId: string,
+  elections: ElectionRow[],
+): Promise<MatchedRace[]> {
+  const [profileQuery, targetsQuery] = await Promise.all([
+    supabase.from("users").select("matched_ocd_ids").eq("id", userId).maybeSingle(),
+    supabase
+      .from("campaign_targets")
+      .select("id, election_id, status, alignment_streak, is_locked")
+      .eq("user_id", userId),
+  ]);
+
+  const matchedIds = new Set(
+    ((profileQuery.error ? [] : (profileQuery.data?.matched_ocd_ids ?? [])) as string[]).map(
+      (id) => normalizeOcdId(id),
+    ),
+  );
+
+  const targets = new Map(
+    (
+      (targetsQuery.error ? [] : (targetsQuery.data ?? [])) as {
+        id: string;
+        election_id: string;
+        status: string;
+        alignment_streak: number | null;
+        is_locked: boolean | null;
+      }[]
+    ).map((row) => [row.election_id, row]),
+  );
+
+  return elections
+    .filter((row) => targets.has(row.id) || matchedIds.has(normalizeOcdId(row.ocd_id)))
+    .map((row) => {
+      const target = targets.get(row.id);
+      return {
+        electionId: row.id,
+        slug: row.slug,
+        officeName: row.office_name,
+        ocdId: row.ocd_id ?? null,
+        level: asRequirements(row.filing_requirements).level ?? null,
+        targetId: target?.id ?? null,
+        status: target?.status ?? null,
+        alignmentStreak: target?.alignment_streak ?? 0,
+        isLocked: Boolean(target?.is_locked),
+      };
+    })
+    .sort(
+      (left, right) =>
+        Number(Boolean(right.targetId)) - Number(Boolean(left.targetId)) ||
+        left.officeName.localeCompare(right.officeName),
+    );
 }
 
 function toContact(

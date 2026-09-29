@@ -2,11 +2,20 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { electionProfileHref } from "@/lib/election-links";
+import { formatRecord } from "@/lib/leaderboard";
 import { loadLeaderboardDashboard, type BoardPerson } from "@/lib/leaderboards/dashboard";
+import {
+  getDistrictLeaderboard,
+  loadGlobalLeaderboard,
+  type DistrictRanking,
+  type GlobalRanking,
+} from "@/lib/queries/leaderboard";
 import { getServerUser } from "@/lib/db/supabase-server";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+
+const TX37_OCD_ID = "ocd-division/country:us/state:tx/cd:37";
 
 export const metadata: Metadata = {
   title: "Leaderboards · WHERE 2 RUN",
@@ -15,7 +24,11 @@ export const metadata: Metadata = {
 
 export default async function LeaderboardsPage() {
   const user = await getServerUser();
-  const dashboard = await loadLeaderboardDashboard(user?.id ?? null);
+  const [dashboard, global, rivals] = await Promise.all([
+    loadLeaderboardDashboard(user?.id ?? null),
+    loadGlobalLeaderboard(user?.id ?? null),
+    getDistrictLeaderboard(TX37_OCD_ID, user?.id ?? null),
+  ]);
 
   return (
     <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
@@ -29,7 +42,9 @@ export default async function LeaderboardsPage() {
           </p>
         </header>
 
-        <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <GlobalRankings rankings={global.rankings} error={global.error} />
+
+        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Panel title="My Matched Elections" eyebrow="Your field">
             {!dashboard.matched.signedIn ? (
               <Empty>Sign in to see your rank inside matched districts.</Empty>
@@ -65,13 +80,13 @@ export default async function LeaderboardsPage() {
             )}
           </Panel>
 
-          <Panel title="The War Room" eyebrow="Global">
-            {dashboard.warRoom.error ? (
-              <Empty>{dashboard.warRoom.error}</Empty>
-            ) : dashboard.warRoom.people.length === 0 ? (
-              <Empty>No candidates are on the board yet.</Empty>
+          <Panel title="TX-37 Rivals" eyebrow="Local">
+            {rivals.error ? (
+              <Empty>{rivals.error}</Empty>
+            ) : rivals.rankings.length === 0 ? (
+              <Empty>No candidates are targeting TX-37 yet.</Empty>
             ) : (
-              <PersonList people={dashboard.warRoom.people} />
+              <RivalList rivals={rivals.rankings} />
             )}
           </Panel>
 
@@ -181,6 +196,122 @@ function PersonList({ people }: { people: BoardPerson[] }) {
             </span>
             <span className="shrink-0 text-[11px] uppercase tracking-widest text-zinc-500">
               {person.elo} ELO
+            </span>
+          </Link>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function GlobalRankings({
+  rankings,
+  error,
+}: {
+  rankings: GlobalRanking[];
+  error: string | null;
+}) {
+  return (
+    <section
+      aria-labelledby="global-rankings-heading"
+      className="mt-10 rounded-xl border border-gold/30 bg-zinc-900 px-5 py-5"
+    >
+      <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">Global</p>
+      <h2
+        id="global-rankings-heading"
+        className="mt-2 font-display text-xl font-semibold tracking-tight text-parchment"
+      >
+        Top Candidates by Elo
+      </h2>
+      <p className="mt-2 text-sm leading-6 text-zinc-400">
+        Every candidate with at least one completed debate. Ties break on wins.
+      </p>
+
+      {error ? (
+        <p className="mt-5 text-sm leading-6 text-rose-300" role="alert">
+          Could not load the rankings. {error}
+        </p>
+      ) : rankings.length === 0 ? (
+        <p className="mt-5 text-sm leading-6 text-zinc-400">
+          No completed debates yet. Rankings appear once a debate is resolved.
+        </p>
+      ) : (
+        <div className="mt-5 overflow-x-auto">
+          <table className="w-full min-w-[20rem] border-collapse text-sm">
+            <caption className="sr-only">Candidates ranked by Elo rating</caption>
+            <thead>
+              <tr className="border-b border-white/10 text-left text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                <th scope="col" className="w-14 py-2 pr-3 font-medium">
+                  #
+                </th>
+                <th scope="col" className="py-2 pr-3 font-medium">
+                  Candidate
+                </th>
+                <th scope="col" className="w-24 py-2 pr-3 text-right font-medium">
+                  Elo
+                </th>
+                <th scope="col" className="w-24 py-2 text-right font-medium">
+                  W-L
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rankings.map((entry) => (
+                <tr
+                  key={entry.id}
+                  className={cn(
+                    "border-b border-white/5 last:border-0",
+                    entry.isViewer && "bg-gold/10",
+                  )}
+                >
+                  <td className="py-2.5 pr-3 font-display tabular-nums text-gold">{entry.rank}</td>
+                  <td className="max-w-0 truncate py-2.5 pr-3 text-parchment">
+                    <Link href={`/candidate/${entry.id}`} className="hover:text-gold">
+                      {entry.username}
+                    </Link>
+                    {entry.isViewer ? (
+                      <span className="ml-2 text-[10px] uppercase tracking-widest text-gold">
+                        You
+                      </span>
+                    ) : null}
+                  </td>
+                  <td className="py-2.5 pr-3 text-right font-display tabular-nums text-parchment">
+                    {entry.elo}
+                  </td>
+                  <td className="py-2.5 text-right tabular-nums text-zinc-300">
+                    {formatRecord(entry.wins, entry.losses)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function RivalList({ rivals }: { rivals: DistrictRanking[] }) {
+  return (
+    <ol className="flex flex-col gap-2">
+      {rivals.map((rival) => (
+        <li key={rival.id}>
+          <Link
+            href={`/candidate/${rival.id}`}
+            className={cn(
+              "flex items-baseline justify-between gap-3 rounded-md px-2 py-1.5 text-sm hover:bg-white/5",
+              rival.isViewer && "bg-gold/10",
+            )}
+          >
+            <span className="min-w-0 truncate text-parchment">
+              <span className="mr-2 font-display tabular-nums text-gold">{rival.rank}</span>
+              {rival.username}
+              {rival.isViewer ? (
+                <span className="ml-2 text-[10px] uppercase tracking-widest text-gold">You</span>
+              ) : null}
+            </span>
+            <span className="shrink-0 text-[11px] uppercase tracking-widest text-zinc-500">
+              {rival.elo} ELO · {formatRecord(rival.wins, rival.losses)} · streak {rival.alignmentStreak}
             </span>
           </Link>
         </li>

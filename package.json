@@ -11,6 +11,7 @@
     "test:run": "vitest run",
     "arena:sim": "tsx scripts/arena-sim.ts",
     "debate:resolve": "tsx scripts/resolve-debate.ts",
+    "sim:season": "tsx scripts/sim-season.ts",
     "feed:patch": "tsx scripts/patch-feed-user.ts"
   },
   "dependencies": {

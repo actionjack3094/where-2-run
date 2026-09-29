@@ -14,6 +14,19 @@ export type MatchedElection = {
   state: string | null;
 };
 
+/** A race on the user's matched ballot, with their campaign target if they have one. */
+export type MatchedRace = {
+  electionId: string;
+  slug: string;
+  officeName: string;
+  ocdId: string | null;
+  level: string | null;
+  targetId: string | null;
+  status: string | null;
+  alignmentStreak: number;
+  isLocked: boolean;
+};
+
 export type CoalitionContact = {
   id: string;
   name: string;
@@ -32,6 +45,7 @@ export type ProfileHubData = {
   ideologyVector: number[];
   bounties: DraftBounty[];
   election: MatchedElection | null;
+  matchedRaces: MatchedRace[];
   network: CoalitionContact[];
   error: string | null;
 };
