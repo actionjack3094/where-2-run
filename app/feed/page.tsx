@@ -9,6 +9,7 @@ import {
   loadFeedViewer,
   loadHomeDebates,
   loadMatchedDebates,
+  loadMatchedFloors,
   socialFeedPageFromSearch,
   socialFeedQueryFromSearch,
 } from "@/lib/feed/load-social-feed";
@@ -49,14 +50,19 @@ export default async function FeedPage(props: PageProps<"/feed">) {
     );
   }
 
-  const [red, blue, answeredRed] = await Promise.all([
+  const [floors, red, blue, answeredRed] = await Promise.all([
+    loadMatchedFloors(viewer, limit, q),
     loadMatchedDebates(viewer, limit, q),
     loadHomeDebates(viewer, limit, q),
     answeredRedDebateCount(viewer),
   ]);
   const showCalibration = answeredRed != null && answeredRed < 5;
-  const items = mergeFeedTimeline(red.items, blue.items);
-  const error = items.length === 0 ? red.error || blue.error : null;
+  // A race can be both home ballot and ideological match. Show that debate once,
+  // as a Blue Card. Open floors lead the red lane: they are what a runner can act on.
+  const blueIds = new Set(blue.items.map((item) => item.id));
+  const redDebates = red.items.filter((item) => !blueIds.has(item.id));
+  const items = mergeFeedTimeline([...floors.items, ...redDebates], blue.items);
+  const error = items.length === 0 ? floors.error || red.error || blue.error : null;
 
   const districtLabel = viewer.districtName ?? "your district";
 
@@ -97,7 +103,7 @@ export default async function FeedPage(props: PageProps<"/feed">) {
           <InfiniteFeed
             page={page}
             query={q}
-            hasMore={red.hasMore || blue.hasMore}
+            hasMore={floors.hasMore || red.hasMore || blue.hasMore}
             items={items}
             signedIn={Boolean(viewer.userId)}
           />

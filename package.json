@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest",
     "test:run": "vitest run",
-    "arena:sim": "tsx scripts/arena-sim.ts"
+    "arena:sim": "tsx scripts/arena-sim.ts",
+    "feed:patch": "tsx scripts/patch-feed-user.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.58",

@@ -197,7 +197,7 @@ function CandidateQuestionCard({ item }: { item: RedFeedQuestion }) {
           ? `${opponent} is waiting on this question. Challenge them instead of starting a new thread.`
           : mode === "holding"
             ? "You have the floor. Waiting for an opponent to answer this thread."
-            : "No one is waiting in your district. Take the floor to start a new thread."}
+            : "No one is waiting on this race yet. Take the floor to start a new thread."}
       </p>
 
       <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

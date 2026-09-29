@@ -320,9 +320,16 @@ export async function loadCandidateQuestions(
     return { ...empty, error: error.message };
   }
 
+  const items = questionRowsToCards((data ?? []) as QuestionRow[], elections);
+  const annotated = await attachWaitingFloors(supabase, viewer, items);
+
+  return { items: annotated, hasMore: annotated.length === limit, error: null };
+}
+
+function questionRowsToCards(rows: QuestionRow[], elections: ElectionRow[]): RedFeedQuestion[] {
   const byId = new Map(elections.map((row) => [row.id, row]));
   const items: RedFeedQuestion[] = [];
-  for (const row of (data ?? []) as QuestionRow[]) {
+  for (const row of rows) {
     if (!isJurisdictionalLevel(row.jurisdictional_level)) continue;
     if (!isPrimaryAxis(row.primary_axis)) continue;
     const election = byId.get(row.election_id);
@@ -342,10 +349,115 @@ export async function loadCandidateQuestions(
       viewerHoldsFloor: false,
     });
   }
+  return items;
+}
 
-  const annotated = await attachWaitingFloors(supabase, viewer, items);
+/** A floor is open while it waits for a challenger. Both statuses count. */
+const OPEN_FLOOR_STATUSES = ["waiting", "matching"] as const;
 
-  return { items: annotated, hasMore: annotated.length === limit, error: null };
+function isOpenFloor(debate: { status?: string | null; candidate_b_id?: string | null }) {
+  return (
+    OPEN_FLOOR_STATUSES.includes(debate.status as (typeof OPEN_FLOOR_STATUSES)[number]) &&
+    !debate.candidate_b_id
+  );
+}
+
+/**
+ * Red Cards. Open floors in races the ideological sort matched.
+ *
+ * A question qualifies when its election OCD-ID is in matched_ocd_ids. No
+ * completed debate is required, and no viability gate applies: the sort
+ * already decided this race belongs to the viewer. A waiting or matching
+ * debate on the question turns the card into a challenge; no debate leaves it
+ * as an open floor. Either way the card carries "Take the Floor".
+ *
+ * Dropped: questions the viewer already answered, and questions where they sit
+ * in a live or finished debate. A floor the viewer opened stays as "holding".
+ */
+export async function loadMatchedFloors(
+  viewer: FeedViewer,
+  limit: number,
+  queryText?: string,
+): Promise<LoopQueryResult<RedFeedQuestion>> {
+  const empty: LoopQueryResult<RedFeedQuestion> = { items: [], hasMore: false, error: null };
+  if (!viewer.userId || viewer.matchedOcdIds.length === 0) return empty;
+
+  const wanted = new Set(viewer.matchedOcdIds.map((id) => normalizeOcdId(id)).filter(Boolean));
+  if (wanted.size === 0) return empty;
+
+  const supabase = await createServerSupabase();
+  const { data: electionRows, error: electionError } = await supabase
+    .from("elections")
+    .select("id, slug, office_name, district_id, ocd_id");
+  if (electionError) {
+    if (isMissingRelation(electionError)) return empty;
+    return { ...empty, error: electionError.message };
+  }
+
+  const elections = ((electionRows ?? []) as ElectionRow[]).filter((row) =>
+    wanted.has(normalizeOcdId(row.ocd_id)),
+  );
+  if (elections.length === 0) return empty;
+
+  const [{ data: stanceRows, error: stanceError }, { data: seatedRows, error: seatedError }] =
+    await Promise.all([
+      supabase.from("user_stances").select("question_id").eq("user_id", viewer.userId),
+      supabase
+        .from("debates")
+        .select("election_question_id, status, candidate_a_id, candidate_b_id")
+        .or(`candidate_a_id.eq.${viewer.userId},candidate_b_id.eq.${viewer.userId}`),
+    ]);
+
+  if (stanceError && !isMissingRelation(stanceError)) return { ...empty, error: stanceError.message };
+  if (seatedError && !isMissingRelation(seatedError)) return { ...empty, error: seatedError.message };
+
+  const excluded = new Set<string>();
+  if (!stanceError) {
+    for (const row of (stanceRows ?? []) as { question_id: string }[]) {
+      if (row.question_id) excluded.add(row.question_id);
+    }
+  }
+  for (const row of (seatedRows ?? []) as {
+    election_question_id: string | null;
+    status: string;
+    candidate_a_id: string | null;
+    candidate_b_id: string | null;
+  }[]) {
+    if (!row.election_question_id) continue;
+    const holdingOpenFloor = isOpenFloor(row) && row.candidate_a_id === viewer.userId;
+    if (!holdingOpenFloor) excluded.add(row.election_question_id);
+  }
+
+  let query = supabase
+    .from("election_questions")
+    .select(
+      "id, prompt, election_id, jurisdictional_level, primary_axis, information_gain_score, created_at",
+    )
+    .in(
+      "election_id",
+      elections.map((row) => row.id),
+    )
+    .order("information_gain_score", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  const pattern = queryText ? ilikeContains(queryText) : null;
+  if (pattern) query = query.ilike("prompt", pattern);
+  if (excluded.size > 0) query = query.not("id", "in", `(${[...excluded].join(",")})`);
+
+  const { data, error } = await query;
+  if (error) {
+    if (isMissingRelation(error)) return empty;
+    return { ...empty, error: error.message };
+  }
+
+  const rows = (data ?? []) as QuestionRow[];
+  const items = questionRowsToCards(rows, elections);
+  // null: questions are already fenced to matched races, so a floor's own
+  // district_id (which can be the claimer's filed seat) must not hide it.
+  const annotated = await attachWaitingFloors(supabase, viewer, items, null);
+
+  return { items: annotated, hasMore: rows.length === limit, error: null };
 }
 
 /** Viable races, plus every election filed on the viewer's district. */
@@ -393,11 +505,24 @@ async function attachWaitingFloors(
   supabase: Awaited<ReturnType<typeof createServerSupabase>>,
   viewer: FeedViewer,
   items: RedFeedQuestion[],
+  /**
+   * Districts a floor must sit in. Undefined scopes to the viewer's filed
+   * district. Null drops the district filter, for questions already fenced to
+   * the viewer's matched races.
+   */
+  districtIds?: string[] | null,
 ) {
   if (!viewer.userId || items.length === 0) return [...items];
-  if (!viewer.targetDistrictId) return applyWaitingFloors(items, [], viewer.userId);
 
-  const { data, error } = await supabase
+  const scope =
+    districtIds === undefined
+      ? viewer.targetDistrictId
+        ? [viewer.targetDistrictId]
+        : []
+      : districtIds;
+  if (scope !== null && scope.length === 0) return applyWaitingFloors(items, [], viewer.userId);
+
+  let query = supabase
     .from("debates")
     .select(
       `
@@ -411,10 +536,12 @@ async function attachWaitingFloors(
       "election_question_id",
       items.map((item) => item.id),
     )
-    .eq("district_id", viewer.targetDistrictId)
-    .eq("status", "waiting")
+    .in("status", [...OPEN_FLOOR_STATUSES])
     .is("candidate_b_id", null)
     .order("created_at", { ascending: true });
+  if (scope) query = query.in("district_id", scope);
+
+  const { data, error } = await query;
 
   if (error) return applyWaitingFloors(items, [], viewer.userId);
 
@@ -597,8 +724,14 @@ async function loadDebatesForOcdIds(
   const electionById = new Map(elections.map((row) => [row.id, row]));
   const districtById = new Map(districts.map((row) => [row.id, row]));
   const items: OcdTrackDebate[] = [];
+  const rows = (data ?? []) as DebateWithCandidates[];
 
-  for (const debate of (data ?? []) as DebateWithCandidates[]) {
+  for (const debate of rows) {
+    // Open Red floors that hang off a question render as question cards with
+    // "Take the Floor" (loadMatchedFloors). Listing them here too would show
+    // the same floor twice, once without a way to claim it.
+    if (loop === "red" && debate.election_question_id && isOpenFloor(debate)) continue;
+
     const election = debate.election_id ? electionById.get(debate.election_id) : undefined;
     const district = debate.district_id ? districtById.get(debate.district_id) : undefined;
     const candidateA = unwrapCandidate(debate.candidate_a);
@@ -619,7 +752,7 @@ async function loadDebatesForOcdIds(
     });
   }
 
-  return { items, hasMore: items.length === limit, error: null };
+  return { items, hasMore: rows.length === limit, error: null };
 }
 
 /** Blue Cards. Debates on the user's permanent physical ballot. */

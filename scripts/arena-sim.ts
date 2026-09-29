@@ -9,6 +9,11 @@
  *
  *   npm run arena:sim
  *   npm run arena:sim -- --once
+ *   npm run arena:sim -- --coverage-only   (seed bots and TX-37 debates, no LLM tick)
+ *
+ * Every run first guarantees TX-37 (ocd-division/country:us/state:tx/cd:37)
+ * traffic: one bot opens a floor, a second bot with a different ideology
+ * answers it, and one floor is left open for a human challenger.
  *
  * Reads .env.local. Requires NEXT_PUBLIC_SUPABASE_URL,
  * SUPABASE_SERVICE_ROLE_KEY, and OPENAI_API_KEY (debate arguments and
@@ -1338,21 +1343,32 @@ async function answerStanceAction(userId: string, persona: Persona, context: Are
   return `[Sim] ${persona.callSign} scored ${axis} ${score} on ${district}`;
 }
 
-async function proposeDebateAction(userId: string, persona: Persona, context: ArenaContext, action: z.infer<typeof proposeDebate>) {
-  const district = districtFor(persona);
-  const question = clip(action.question, 280);
+/**
+ * Bank a question on a race and open a floor on it, with the caller in seat A.
+ * The debate is tagged by election_id (whose ocd_id is the race) and district_id.
+ */
+async function openDebateFloor(input: {
+  userId: string;
+  question: string;
+  axis: AxisId;
+  level: "federal" | "state" | "local";
+  electionId: string | null;
+  districtId: string | null;
+  ocdIds: string[];
+}) {
+  const question = clip(input.question, 280);
   let questionId: string | null = null;
 
-  if (context.electionId) {
+  if (input.electionId) {
     const created = await db()
       .from("election_questions")
       .insert({
-        election_id: context.electionId,
-        author_id: userId,
+        election_id: input.electionId,
+        author_id: input.userId,
         prompt: question,
-        jurisdictional_level: action.jurisdictionalLevel,
-        primary_axis: action.axis,
-        applicable_ocd_ids: ocdIdsFor(district.ocdId),
+        jurisdictional_level: input.level,
+        primary_axis: input.axis,
+        applicable_ocd_ids: input.ocdIds,
         information_gain_score: 1,
       })
       .select("id")
@@ -1362,7 +1378,7 @@ async function proposeDebateAction(userId: string, persona: Persona, context: Ar
       const existing = await db()
         .from("election_questions")
         .select("id")
-        .eq("election_id", context.electionId)
+        .eq("election_id", input.electionId)
         .eq("prompt", question)
         .maybeSingle();
       questionId = (existing.data?.id as string | undefined) ?? null;
@@ -1375,22 +1391,34 @@ async function proposeDebateAction(userId: string, persona: Persona, context: Ar
 
   const floor = {
     topic: question,
-    district_id: context.districtId,
-    election_id: context.electionId,
+    district_id: input.districtId,
+    election_id: input.electionId,
     election_question_id: questionId,
-    candidate_a_id: userId,
+    candidate_a_id: input.userId,
     status: "waiting",
     current_round: 1,
   };
-  let debate: Record<string, unknown>;
   try {
-    debate = await insertRow("debates", floor);
+    return await insertRow("debates", floor);
   } catch (error) {
     if (!/debates_status_check|status/i.test(errorMessage(error))) throw error;
-    debate = await insertRow("debates", { ...floor, status: "matching" });
+    return insertRow("debates", { ...floor, status: "matching" });
   }
+}
 
-  return `[Sim] ${persona.callSign} proposed “${clip(String(debate.topic ?? question), 90)}”`;
+async function proposeDebateAction(userId: string, persona: Persona, context: ArenaContext, action: z.infer<typeof proposeDebate>) {
+  const district = districtFor(persona);
+  const debate = await openDebateFloor({
+    userId,
+    question: action.question,
+    axis: action.axis,
+    level: action.jurisdictionalLevel,
+    electionId: context.electionId,
+    districtId: context.districtId,
+    ocdIds: ocdIdsFor(district.ocdId),
+  });
+
+  return `[Sim] ${persona.callSign} proposed “${clip(String(debate.topic ?? action.question), 90)}”`;
 }
 
 async function fileArgument(debateId: string, userId: string, content: string, candidateColumn: "candidate_a_argument" | "candidate_b_argument") {
@@ -1904,6 +1932,205 @@ async function chaosTick(agents: SimAgent[]) {
   );
 }
 
+const TX37_OCD_ID = DISTRICTS.tx37.ocdId;
+
+/** Questions the coverage step rotates through. One is consumed per run. */
+const TX37_TOPICS: { question: string; axis: AxisId; level: "federal" | "state" | "local" }[] = [
+  {
+    question: "Should Congress fund a public health option for Texas's 37th Congressional District?",
+    axis: "healthcare",
+    level: "federal",
+  },
+  {
+    question: "Should federal grants favor transit and housing along I-35 over highway widening in Austin?",
+    axis: "economy",
+    level: "federal",
+  },
+  {
+    question: "Should Congress expand asylum processing capacity and legal pathways for Central Texas?",
+    axis: "immigration",
+    level: "federal",
+  },
+  {
+    question: "Should federal policing grants require community responders for mental-health calls?",
+    axis: "safety",
+    level: "federal",
+  },
+  {
+    question: "Should Congress preempt state grid rules to speed clean-energy transmission through Travis County?",
+    axis: "climate",
+    level: "federal",
+  },
+  {
+    question: "Should Congress codify a federal right to contraception?",
+    axis: "social",
+    level: "federal",
+  },
+];
+
+/** Used only when OPENAI_API_KEY is missing, so coverage can still be verified offline. */
+const SCRIPTED_SPEECH: Record<BaseIdeology, { opening: string; response: string }> = {
+  progressive: {
+    opening:
+      "This is a public-investment question, and TX-37 families pay the price when we treat it as optional. A funded federal program lowers costs, protects workers, and gives the district something durable. Waiting on the market has not delivered it.",
+    response:
+      "My opponent describes the cost of acting and skips the cost of not acting. Rents, premiums, and commute times in this district keep climbing. A public program is the only option on the table that grows with the need.",
+  },
+  conservative: {
+    opening:
+      "Washington should not be writing this check. Every federal mandate here lands on taxpayers in TX-37 and on the small businesses that already carry the load. Keep the decision local, keep the rules light, and let people keep more of what they earn.",
+    response:
+      "That proposal sounds generous until the bill arrives. Federal programs grow, cost more than promised, and crowd out what communities do better on their own. I would rather cut the friction than add another agency.",
+  },
+  centrist: {
+    opening:
+      "Both sides have a real point here, and TX-37 deserves an answer that survives an election cycle. Start with a scoped pilot, measure what it costs and what it delivers, and only then decide how far to go.",
+    response:
+      "Neither script fits this district. I would take the strongest piece of each plan, fund it in stages, and put a sunset date on it so voters can judge the result instead of the slogan.",
+  },
+};
+
+async function coverageSpeech(persona: Persona, topic: string, role: "opening" | "response") {
+  if (process.env.OPENAI_API_KEY) {
+    return composeIdeologySpeech(persona, "argument", `Topic: ${topic}\nRole: ${role} statement`);
+  }
+  return SCRIPTED_SPEECH[ideologyOf(persona)][role];
+}
+
+async function tx37Debates(electionId: string) {
+  return readRows<Record<string, unknown>>(
+    db()
+      .from("debates")
+      .select("id, topic, status, candidate_a_id, candidate_b_id")
+      .eq("election_id", electionId),
+  );
+}
+
+/**
+ * Guarantee that TX-37 has live sim traffic:
+ *   1. at least two bots list cd:37 on their home ballot,
+ *   2. one bot opens a floor tagged to the TX-37 election and a second bot with
+ *      a different ideology answers it, so the debate goes active,
+ *   3. one more floor is left open with a waiting challenger, so the Red Card
+ *      "Take the Floor" path has real data.
+ * Each run consumes one unused topic, so repeated runs cannot pile up debates.
+ */
+async function ensureTx37Coverage(agents: SimAgent[]) {
+  const wanted = normalizeOcd(TX37_OCD_ID);
+  const homes = await readRows<Record<string, unknown>>(
+    db()
+      .from("users")
+      .select("id, home_ocd_ids")
+      .in(
+        "id",
+        agents.map((agent) => agent.userId),
+      ),
+  );
+  const homeById = new Map(homes.map((row) => [String(row.id), asOcdList(row.home_ocd_ids)]));
+  const residents = agents.filter((agent) =>
+    (homeById.get(agent.userId) ?? []).some((id) => normalizeOcd(id) === wanted),
+  );
+
+  console.log(
+    `[Sim] TX-37 residents (${residents.length}): ${residents.map((agent) => `${agent.persona.callSign} [${ideologyOf(agent.persona)}]`).join(", ") || "none"}`,
+  );
+  if (residents.length < 2) {
+    throw new Error(`Need at least 2 bots with ${TX37_OCD_ID} in home_ocd_ids, found ${residents.length}.`);
+  }
+
+  const electionResult = await db()
+    .from("elections")
+    .select("id, district_id")
+    .eq("ocd_id", TX37_OCD_ID)
+    .limit(1);
+  if (electionResult.error) throw new Error(electionResult.error.message);
+  const election = electionResult.data?.[0] as { id: string; district_id: string | null } | undefined;
+  if (!election) {
+    console.warn(`[Sim] No election filed for ${TX37_OCD_ID}. Run supabase db reset to load the seed.`);
+    return;
+  }
+  const districtId = election.district_id ?? (await districtUuid(TX37_OCD_ID));
+
+  const existing = await tx37Debates(election.id);
+  const usedTopics = new Set(existing.map((row) => String(row.topic ?? "")));
+  const unused = TX37_TOPICS.filter((entry) => !usedTopics.has(clip(entry.question, 280)));
+
+  const primary = unused[0];
+  if (!primary) {
+    console.log("[Sim] TX-37 coverage: every rotation topic already has a debate. Nothing new to open.");
+    return;
+  }
+
+  const pool = shuffle(residents);
+  const first = pool[0] as SimAgent;
+  const second =
+    pool.find((agent) => agent.userId !== first.userId && ideologyOf(agent.persona) !== ideologyOf(first.persona)) ??
+    (pool.find((agent) => agent.userId !== first.userId) as SimAgent);
+
+  const debate = await openDebateFloor({
+    userId: first.userId,
+    question: primary.question,
+    axis: primary.axis,
+    level: primary.level,
+    electionId: election.id,
+    districtId,
+    ocdIds: ocdIdsFor(TX37_OCD_ID),
+  });
+  const debateId = String(debate.id);
+  const topic = String(debate.topic ?? primary.question);
+
+  await fileArgument(
+    debateId,
+    first.userId,
+    clip(await coverageSpeech(first.persona, topic, "opening"), 1500),
+    "candidate_a_argument",
+  );
+  console.log(`[Sim] ${first.persona.callSign} opened a TX-37 floor: “${clip(topic, 90)}”`);
+
+  const reply = clip(await coverageSpeech(second.persona, topic, "response"), 1500);
+  const claimed = await db()
+    .from("debates")
+    .update({ candidate_b_id: second.userId, status: "active", candidate_b_argument: reply })
+    .eq("id", debateId)
+    .is("candidate_b_id", null)
+    .neq("candidate_a_id", second.userId)
+    .select("id")
+    .maybeSingle();
+  if (claimed.error) throw new Error(claimed.error.message);
+  if (!claimed.data) throw new Error(`Could not seat ${second.persona.callSign} on TX-37 debate ${debateId}.`);
+  await fileArgument(debateId, second.userId, reply, "candidate_b_argument");
+  console.log(
+    `[Sim] ${second.persona.callSign} [${ideologyOf(second.persona)}] answered ${first.persona.callSign} [${ideologyOf(first.persona)}] on TX-37`,
+  );
+
+  const stillOpen = existing.some(
+    (row) =>
+      row.candidate_a_id &&
+      !row.candidate_b_id &&
+      (row.status === "waiting" || row.status === "matching"),
+  );
+  const third = pool.find((agent) => agent.userId !== first.userId && agent.userId !== second.userId);
+  const extra = unused[1];
+  if (!stillOpen && third && extra) {
+    const floor = await openDebateFloor({
+      userId: third.userId,
+      question: extra.question,
+      axis: extra.axis,
+      level: extra.level,
+      electionId: election.id,
+      districtId,
+      ocdIds: ocdIdsFor(TX37_OCD_ID),
+    });
+    await fileArgument(
+      String(floor.id),
+      third.userId,
+      clip(await coverageSpeech(third.persona, String(floor.topic ?? extra.question), "opening"), 1500),
+      "candidate_a_argument",
+    );
+    console.log(`[Sim] ${third.persona.callSign} left a TX-37 floor open for a challenger: “${clip(extra.question, 90)}”`);
+  }
+}
+
 async function main() {
   loadEnv();
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -1923,6 +2150,10 @@ async function main() {
   console.log("[Sim] Seeding arena agents.");
   const agents = await seedAgents();
   console.log(`[Sim] ${agents.length} agents ready.`);
+
+  await ensureTx37Coverage(agents);
+  if (process.argv.includes("--coverage-only")) return;
+
   simulationModel();
 
   const once = process.argv.includes("--once");
