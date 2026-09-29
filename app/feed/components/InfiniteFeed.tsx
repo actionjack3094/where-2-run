@@ -11,12 +11,14 @@ export function InfiniteFeed({
   hasMore,
   items,
   signedIn,
+  viewerId,
 }: {
   page: number;
   query?: string;
   hasMore: boolean;
   items: SocialFeedItem[];
   signedIn: boolean;
+  viewerId: string | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -46,7 +48,7 @@ export function InfiniteFeed({
 
   return (
     <div className="mt-8 pb-16">
-      <FeedTimeline items={items} signedIn={signedIn} query={query} />
+      <FeedTimeline items={items} signedIn={signedIn} viewerId={viewerId} query={query} />
       <div ref={sentinelRef} aria-hidden className="h-8 w-full" />
       {isPending ? (
         <p className="mt-2 text-center text-xs uppercase tracking-widest text-zinc-500">

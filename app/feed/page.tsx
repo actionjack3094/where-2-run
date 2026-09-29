@@ -106,6 +106,7 @@ export default async function FeedPage(props: PageProps<"/feed">) {
             hasMore={floors.hasMore || red.hasMore || blue.hasMore}
             items={items}
             signedIn={Boolean(viewer.userId)}
+            viewerId={viewer.userId}
           />
         )}
       </div>

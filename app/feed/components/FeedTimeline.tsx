@@ -6,10 +6,12 @@ import type { SocialFeedItem } from "@/lib/feed/types";
 export function FeedTimeline({
   items,
   signedIn,
+  viewerId,
   query,
 }: {
   items: SocialFeedItem[];
   signedIn: boolean;
+  viewerId: string | null;
   query?: string;
 }) {
   if (items.length === 0) {
@@ -27,7 +29,7 @@ export function FeedTimeline({
   return (
     <section className="flex flex-col gap-4">
       {items.map((item) => (
-        <DebateCard key={`${item.loop}-${item.id}`} item={item} />
+        <DebateCard key={`${item.loop}-${item.id}`} item={item} viewerId={viewerId} />
       ))}
     </section>
   );

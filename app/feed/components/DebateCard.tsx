@@ -19,14 +19,24 @@ function statusLabel(status: string) {
   return status;
 }
 
-export function DebateCard({ item }: { item: SocialFeedItem }) {
-  if ("track" in item) return <TrackDebateCard item={item} />;
+export function DebateCard({ item, viewerId }: { item: SocialFeedItem; viewerId: string | null }) {
+  if ("track" in item) return <TrackDebateCard item={item} viewerId={viewerId} />;
   if (item.loop === "red") return <CandidateQuestionCard item={item} />;
   return <JuryDebateCard item={item} />;
 }
 
-function TrackDebateCard({ item }: { item: OcdTrackDebate }) {
+/** The viewer sits in candidate seat A or B. */
+function isParticipant(
+  item: Pick<OcdTrackDebate, "candidateA" | "candidateB">,
+  viewerId: string | null,
+) {
+  if (!viewerId) return false;
+  return item.candidateA?.id === viewerId || item.candidateB?.id === viewerId;
+}
+
+function TrackDebateCard({ item, viewerId }: { item: OcdTrackDebate; viewerId: string | null }) {
   const backyard = item.track === "backyard";
+  const canEnter = item.status === "active" && isParticipant(item, viewerId);
   return (
     <article
       className={cn(
@@ -85,6 +95,17 @@ function TrackDebateCard({ item }: { item: OcdTrackDebate }) {
         <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">vs</span>
         <span>{item.candidateB?.username ?? "Open seat"}</span>
       </div>
+
+      {canEnter ? (
+        <div className="mt-5">
+          <Link
+            href={`/debates/${item.id}`}
+            className="inline-flex h-10 w-fit items-center justify-center rounded bg-red-900 px-4 py-2 text-xs font-medium uppercase tracking-widest text-parchment transition-colors hover:bg-red-800"
+          >
+            ENTER ARENA (YOUR TURN)
+          </Link>
+        </div>
+      ) : null}
 
       {backyard ? <ExplainPolicy policyText={item.policyText} /> : null}
     </article>
@@ -201,9 +222,17 @@ function CandidateQuestionCard({ item }: { item: RedFeedQuestion }) {
       </p>
 
       <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <h2 className="text-lg font-semibold leading-snug tracking-tight text-parchment">
-          {item.prompt}
-        </h2>
+        {item.waitingDebateId ? (
+          <Link href={`/debates/${item.waitingDebateId}`} className="min-w-0">
+            <h2 className="text-lg font-semibold leading-snug tracking-tight text-parchment hover:text-red-300">
+              {item.prompt}
+            </h2>
+          </Link>
+        ) : (
+          <h2 className="text-lg font-semibold leading-snug tracking-tight text-parchment">
+            {item.prompt}
+          </h2>
+        )}
         {item.electionSlug ? (
           <Link
             href={`/elections/${item.electionSlug}/profile`}
