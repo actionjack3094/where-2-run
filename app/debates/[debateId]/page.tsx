@@ -6,6 +6,8 @@ import { resolveDebate } from "@/lib/actions/debate-resolution";
 import { isUuid } from "@/lib/arena/display";
 import { loadDebateComments } from "@/lib/comments";
 import { createServerSupabase } from "@/lib/db/supabase-server";
+import { roundPairs, turnFor, type ArgumentRow, type RoundPair } from "@/lib/debates/round-state";
+import { TOTAL_ROUNDS } from "@/lib/arena/time";
 import { submitArgument } from "./actions";
 import { DebateView } from "./debate-view";
 import { SpectatorBallot } from "./spectator-ballot";
@@ -27,6 +29,7 @@ type DebateRow = {
   winner_id: string | null;
   candidate_a_votes: number;
   candidate_b_votes: number;
+  current_round?: number | null;
 };
 
 export const metadata: Metadata = {
@@ -55,7 +58,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
 
   const supabase = await createServerSupabase();
   const debateColumns =
-    "id, topic, status, expires_at, election_question_id, candidate_a_id, candidate_b_id, candidate_a_argument, candidate_b_argument, winner_id, candidate_a_votes, candidate_b_votes";
+    "id, topic, status, expires_at, election_question_id, candidate_a_id, candidate_b_id, candidate_a_argument, candidate_b_argument, winner_id, candidate_a_votes, candidate_b_votes, current_round";
   let { data, error } = await supabase
     .from("debates")
     .select(debateColumns)
@@ -71,7 +74,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
     const fallback = await supabase
       .from("debates")
       .select(
-        "id, topic, status, expires_at, election_question_id, candidate_a_id, candidate_b_id",
+        "id, topic, status, expires_at, election_question_id, candidate_a_id, candidate_b_id, current_round",
       )
       .eq("id", debateId)
       .maybeSingle();
@@ -118,6 +121,25 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
     if (questionPrompt) prompt = questionPrompt;
   }
 
+  const { data: argumentData, error: argumentError } = await supabase
+    .from("arguments")
+    .select("author_id, round_number, content")
+    .eq("debate_id", debateId)
+    .order("round_number", { ascending: true })
+    .order("created_at", { ascending: true });
+  if (argumentError) throw new Error(argumentError.message);
+
+  const argumentRows = (argumentData ?? []) as ArgumentRow[];
+  const roundState = {
+    candidate_a_id: debate.candidate_a_id,
+    candidate_b_id: debate.candidate_b_id,
+    current_round: debate.current_round ?? 1,
+    candidate_a_argument: debate.candidate_a_argument,
+    candidate_b_argument: debate.candidate_b_argument,
+  };
+  const rounds = roundPairs(argumentRows, roundState);
+  const turn = turnFor(argumentRows, roundState);
+
   const comments = await loadDebateComments(debateId);
   const {
     data: { user },
@@ -125,9 +147,8 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
 
   const isCandidateA = user?.id != null && user.id === debate.candidate_a_id;
   const isCandidateB = user?.id != null && user.id === debate.candidate_b_id;
-  const isCandidateATurn = debate.candidate_a_argument === null;
-  const isCandidateBTurn =
-    debate.candidate_a_argument !== null && debate.candidate_b_argument === null;
+  const isCandidateATurn = turn === "a";
+  const isCandidateBTurn = turn === "b";
   const isMyTurn =
     (isCandidateA && isCandidateATurn) || (isCandidateB && isCandidateBTurn);
   const isSeatedCandidate = isCandidateA || isCandidateB;
@@ -227,38 +248,11 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
                   {concludedOutcome(debate)}
                 </p>
               </div>
-              <div className="flex h-[60vh] flex-col gap-4 overflow-y-auto">
-                <article className="rounded-xl border border-gold/40 bg-zinc-900 px-5 py-5">
-                  <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
-                    Candidate A
-                  </p>
-                  <h3 className="mt-2 text-sm font-medium text-parchment">Stance</h3>
-                  <p className="mt-3 text-sm leading-6 text-zinc-400">
-                    {debate.candidate_a_argument?.trim() || "Opening stance will appear here."}
-                  </p>
-                  <p className="mt-4 text-2xl font-semibold tabular-nums tracking-tight text-parchment">
-                    {debate.candidate_a_votes}
-                  </p>
-                  <p className="mt-1 text-xs text-zinc-400">
-                    {debate.candidate_a_votes === 1 ? "vote" : "votes"}
-                  </p>
-                </article>
-                <article className="rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-5">
-                  <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-400">
-                    Candidate B
-                  </p>
-                  <h3 className="mt-2 text-sm font-medium text-parchment">Counter-stance</h3>
-                  <p className="mt-3 text-sm leading-6 text-zinc-400">
-                    {debate.candidate_b_argument?.trim() || "Counter-stance will appear here."}
-                  </p>
-                  <p className="mt-4 text-2xl font-semibold tabular-nums tracking-tight text-parchment">
-                    {debate.candidate_b_votes}
-                  </p>
-                  <p className="mt-1 text-xs text-zinc-400">
-                    {debate.candidate_b_votes === 1 ? "vote" : "votes"}
-                  </p>
-                </article>
-              </div>
+              <RoundCards
+                rounds={rounds}
+                aVotes={debate.candidate_a_votes}
+                bVotes={debate.candidate_b_votes}
+              />
             </div>
           ) : debate.status === "voting" ? (
             <div className="flex flex-col gap-4">
@@ -268,6 +262,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
               >
                 Voting is now open
               </p>
+              <RoundCards rounds={rounds} />
               {ballotOpen && candidateAId && candidateBId && !isSeatedCandidate ? (
                 <SpectatorBallot
                   debateId={debateId}
@@ -287,25 +282,8 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
               <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
                 Argument stage
               </h2>
-              <div className="mt-4 flex h-[60vh] flex-col gap-4 overflow-y-auto">
-                <article className="rounded-xl border border-gold/40 bg-zinc-900 px-5 py-5">
-                  <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
-                    Candidate A
-                  </p>
-                  <h3 className="mt-2 text-sm font-medium text-parchment">Stance</h3>
-                  <p className="mt-3 text-sm leading-6 text-zinc-400">
-                    {debate.candidate_a_argument?.trim() || "Opening stance will appear here."}
-                  </p>
-                </article>
-                <article className="rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-5">
-                  <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-400">
-                    Candidate B
-                  </p>
-                  <h3 className="mt-2 text-sm font-medium text-parchment">Counter-stance</h3>
-                  <p className="mt-3 text-sm leading-6 text-zinc-400">
-                    {debate.candidate_b_argument?.trim() || "Counter-stance will appear here."}
-                  </p>
-                </article>
+              <div className="mt-4">
+                <RoundCards rounds={rounds} activeRound={debate.current_round ?? 1} />
               </div>
 
               {isMyTurn ? (
@@ -335,7 +313,9 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
                   role="status"
                   className="mt-4 rounded-xl border border-gold/40 bg-zinc-900 px-5 py-4 text-sm font-medium text-gold"
                 >
-                  Waiting for opponent&apos;s response...
+                  {turn === "complete"
+                    ? "Both arguments are in. Advancing the debate..."
+                    : `Waiting for opponent's response... (Round ${Math.min(debate.current_round ?? 1, TOTAL_ROUNDS)} of ${TOTAL_ROUNDS})`}
                 </p>
               ) : null}
             </>
@@ -349,5 +329,65 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
         votingOpen={debate.status === "voting"}
       />
     </main>
+  );
+}
+
+function RoundCards({
+  rounds,
+  activeRound,
+  aVotes,
+  bVotes,
+}: {
+  rounds: RoundPair[];
+  activeRound?: number;
+  aVotes?: number;
+  bVotes?: number;
+}) {
+  const showVotes = aVotes !== undefined && bVotes !== undefined;
+  return (
+    <div className="flex max-h-[60vh] flex-col gap-6 overflow-y-auto">
+      {rounds.map((pair) => (
+        <div key={pair.round} className="flex flex-col gap-4">
+          {rounds.length > 1 ? (
+            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500">
+              Round {pair.round}
+              {activeRound === pair.round ? " · in progress" : ""}
+            </p>
+          ) : null}
+          <article className="rounded-xl border border-gold/40 bg-zinc-900 px-5 py-5">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+              Candidate A
+            </p>
+            <h3 className="mt-2 text-sm font-medium text-parchment">
+              {pair.round === 1 ? "Stance" : "Rebuttal"}
+            </h3>
+            <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-zinc-400">
+              {pair.a ?? "Opening stance will appear here."}
+            </p>
+            {showVotes && pair.round === rounds.length ? (
+              <p className="mt-4 text-2xl font-semibold tabular-nums tracking-tight text-parchment">
+                {aVotes} <span className="text-xs font-normal text-zinc-400">{aVotes === 1 ? "vote" : "votes"}</span>
+              </p>
+            ) : null}
+          </article>
+          <article className="rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-5">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-400">
+              Candidate B
+            </p>
+            <h3 className="mt-2 text-sm font-medium text-parchment">
+              {pair.round === 1 ? "Counter-stance" : "Counter-rebuttal"}
+            </h3>
+            <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-zinc-400">
+              {pair.b ?? "Counter-stance will appear here."}
+            </p>
+            {showVotes && pair.round === rounds.length ? (
+              <p className="mt-4 text-2xl font-semibold tabular-nums tracking-tight text-parchment">
+                {bVotes} <span className="text-xs font-normal text-zinc-400">{bVotes === 1 ? "vote" : "votes"}</span>
+              </p>
+            ) : null}
+          </article>
+        </div>
+      ))}
+    </div>
   );
 }
