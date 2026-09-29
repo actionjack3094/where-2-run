@@ -241,6 +241,10 @@ export function StanceModal({
         },
         token,
       );
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
       setTopic("");
       setHtml("");
       setPlain("");

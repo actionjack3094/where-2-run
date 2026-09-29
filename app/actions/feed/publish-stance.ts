@@ -44,7 +44,12 @@ export type PublishStanceInput = {
   electionId?: string | null;
 };
 
-export type PublishStanceResult = {
+export type PublishStanceFailure = {
+  ok: false;
+  error: string;
+};
+
+export type PublishStanceSuccess = {
   ok: true;
   debateId: string | null;
   postId: string | null;
@@ -52,6 +57,14 @@ export type PublishStanceResult = {
   electionName: string | null;
   keywords: string[];
 };
+
+export type PublishStanceResult = PublishStanceSuccess | PublishStanceFailure;
+
+const CREDENTIAL_ERROR = /api[\s_-]?key|apiKey|OPENAI_API_KEY|ANTHROPIC_API_KEY|unauthorized|invalid x-api-key/i;
+
+function isCredentialError(error: unknown) {
+  return error instanceof Error && CREDENTIAL_ERROR.test(error.message);
+}
 
 function isSixAxisId(value: string | undefined): value is SixAxisId {
   return Boolean(value && (SIX_AXIS_IDS as readonly string[]).includes(value));
@@ -181,10 +194,37 @@ async function applyVectorEma(
   }
 }
 
+/**
+ * Validation and database errors keep their message so the composer can show
+ * them; AI credential failures are logged and replaced with a clean message.
+ */
 export async function publishStance(
   input: PublishStanceInput,
   accessToken?: string | null,
 ): Promise<PublishStanceResult> {
+  try {
+    return await publishStanceUnsafe(input, accessToken);
+  } catch (error) {
+    // Next.js control-flow errors (redirect/notFound) must propagate.
+    if (error instanceof Error && "digest" in error) throw error;
+    console.error("publishStance failed.", error);
+    if (isCredentialError(error)) {
+      return {
+        ok: false,
+        error: "We couldn't reach our AI service. Your stance was not published; please try again shortly.",
+      };
+    }
+    return {
+      ok: false,
+      error: error instanceof Error && error.message ? error.message : "Could not publish this stance.",
+    };
+  }
+}
+
+async function publishStanceUnsafe(
+  input: PublishStanceInput,
+  accessToken?: string | null,
+): Promise<PublishStanceSuccess> {
   const userId = await requireActionUserId(accessToken);
   if (!userId) throw new Error("Sign in to publish a stance.");
 

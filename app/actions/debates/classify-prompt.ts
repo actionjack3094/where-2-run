@@ -2,9 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { generateObject } from "ai";
-import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { updateVector } from "@/app/actions/vector";
+import { resolveTextModel } from "@/lib/ai/provider";
 import { requireActionUserId } from "@/lib/arena/auth";
 import { isUuid } from "@/lib/arena/display";
 import { normalizeOcdId } from "@/lib/civic-fencing";
@@ -42,10 +42,6 @@ export type IngestAuthoredPromptResult = {
   electionIds: string[];
   ideologyVector: number[];
 };
-
-function hasProviderKey() {
-  return Boolean(process.env.AI_GATEWAY_API_KEY || process.env.OPENAI_API_KEY);
-}
 
 function missingQuestionBankMessage() {
   return "election_questions is not in the database yet. Apply the question bank migration.";
@@ -128,11 +124,12 @@ export async function classifyPrompt(prompt: string): Promise<PromptClassificati
   const admin = createAdminClient();
   const catalog = await loadOcdCatalog(admin);
   const fallback = heuristicClassification(text, catalog);
-  if (!hasProviderKey() || catalog.length === 0) return fallback;
+  const resolved = resolveTextModel();
+  if (!resolved || catalog.length === 0) return fallback;
 
   try {
     const { object } = await generateObject({
-      model: openai("gpt-4o"),
+      model: resolved.model,
       schema: promptClassificationSchema,
       schemaName: "DebatePromptClassification",
       schemaDescription:

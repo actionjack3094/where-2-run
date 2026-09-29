@@ -1,5 +1,5 @@
 import { generateObject } from "ai";
-import { openai } from "@ai-sdk/openai";
+import { resolveTextModel } from "@/lib/ai/provider";
 import { z } from "zod";
 import { emptySixAxis, SIX_AXIS_IDS, type SixAxisVector } from "@/lib/ideology/six-axis";
 import { clamp01 } from "@/lib/ideology/vector";
@@ -209,10 +209,6 @@ function catalogPrompt(elections: ElectionCatalogRow[]) {
     .join("\n");
 }
 
-function hasProviderKey() {
-  return Boolean(process.env.AI_GATEWAY_API_KEY || process.env.OPENAI_API_KEY);
-}
-
 function heuristicAssignment(
   text: string,
   elections: ElectionCatalogRow[],
@@ -261,11 +257,12 @@ export async function assignStanceToElection(
   } = {},
 ): Promise<StanceAssignment> {
   const fallback = heuristicAssignment(text, elections, context);
-  if (!hasProviderKey() || elections.length === 0) return fallback;
+  const resolved = resolveTextModel();
+  if (!resolved || elections.length === 0) return fallback;
 
   try {
     const { object } = await generateObject({
-      model: openai("gpt-4o"),
+      model: resolved.model,
       schema: assignmentSchema,
       schemaName: "StanceElectionAssignment",
       schemaDescription:
