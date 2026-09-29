@@ -27,6 +27,29 @@ function challengeMessage(challengerName: string) {
   return `You have been challenged to a debate by ${name}. You have 24 hours to take the floor before forfeiting.`;
 }
 
+/** Arena sim bots are created as arena-sim+<slug>@where2run.dev. They have no inbox. */
+function isSimBotEmail(email: string) {
+  return email.trim().toLowerCase().startsWith("arena-sim+");
+}
+
+/**
+ * Resend's sandbox only delivers to the account owner, so any other recipient
+ * errors out locally. Send for real only in production, or when a developer
+ * opts in with RESEND_SEND_IN_DEV=true (for testing against their own address).
+ * Sim bot recipients are never sent to.
+ */
+function bypassResend(email: string, label: string) {
+  const simBot = isSimBotEmail(email);
+  const devBypass =
+    process.env.NODE_ENV !== "production" && process.env.RESEND_SEND_IN_DEV !== "true";
+  if (!simBot && !devBypass) return false;
+
+  console.log(
+    `[LOCAL DEV] Bypassed Resend ${label} to: ${email}${simBot ? " (sim bot)" : ""}`,
+  );
+  return true;
+}
+
 async function recipientEmail(
   admin: ReturnType<typeof createAdminClient>,
   targetUserId: string,
@@ -83,12 +106,14 @@ export async function sendChallengeEmail(
     throw new Error("You can only notify the opponent on your debate.");
   }
 
+  const email = await recipientEmail(admin, targetUserId);
+  if (bypassResend(email, "challenge email")) return;
+
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from = process.env.RESEND_FROM_EMAIL?.trim();
   if (!apiKey) throw new Error("Missing RESEND_API_KEY");
   if (!from) throw new Error("Missing RESEND_FROM_EMAIL");
 
-  const email = await recipientEmail(admin, targetUserId);
   const debateUrl = `${DEBATE_ORIGIN}/debates/${debateId}`;
   const message = challengeMessage(challengerName);
 
@@ -128,13 +153,15 @@ export async function sendDistrictDigest(
     throw new Error("A valid constituent and debate are required.");
   }
 
+  const admin = createAdminClient();
+  const email = await recipientEmail(admin, input.recipientId);
+  if (bypassResend(email, "district digest")) return;
+
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from = process.env.RESEND_FROM_EMAIL?.trim();
   if (!apiKey) throw new Error("Missing RESEND_API_KEY");
   if (!from) throw new Error("Missing RESEND_FROM_EMAIL");
 
-  const admin = createAdminClient();
-  const email = await recipientEmail(admin, input.recipientId);
   const text = digestCopy(input);
   const html = digestHtml(input);
 
