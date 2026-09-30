@@ -8,6 +8,7 @@ import { loadDebateComments } from "@/lib/comments";
 import { createServerSupabase } from "@/lib/db/supabase-server";
 import { roundPairs, turnFor, type ArgumentRow, type RoundPair } from "@/lib/debates/round-state";
 import { TOTAL_ROUNDS } from "@/lib/arena/time";
+import { displayTally } from "@/lib/vote-weight";
 import { submitArgument } from "./actions";
 import { DebateView } from "./debate-view";
 import { SpectatorBallot } from "./spectator-ballot";
@@ -29,6 +30,8 @@ type DebateRow = {
   winner_id: string | null;
   candidate_a_votes: number;
   candidate_b_votes: number;
+  candidate_a_weighted_votes?: number | null;
+  candidate_b_weighted_votes?: number | null;
   current_round?: number | null;
 };
 
@@ -58,7 +61,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
 
   const supabase = await createServerSupabase();
   const debateColumns =
-    "id, topic, status, expires_at, election_question_id, candidate_a_id, candidate_b_id, candidate_a_argument, candidate_b_argument, winner_id, candidate_a_votes, candidate_b_votes, current_round";
+    "id, topic, status, expires_at, election_question_id, candidate_a_id, candidate_b_id, candidate_a_argument, candidate_b_argument, winner_id, candidate_a_votes, candidate_b_votes, candidate_a_weighted_votes, candidate_b_weighted_votes, current_round";
   let { data, error } = await supabase
     .from("debates")
     .select(debateColumns)
@@ -86,6 +89,8 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
           winner_id: null,
           candidate_a_votes: 0,
           candidate_b_votes: 0,
+          candidate_a_weighted_votes: 0,
+          candidate_b_weighted_votes: 0,
         }
       : null;
     error = fallback.error;
@@ -156,6 +161,13 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
   const candidateAId = debate.candidate_a_id;
   const candidateBId = debate.candidate_b_id;
   const isCompleted = debate.status === "completed";
+  const finalTally = displayTally(
+    { a: debate.candidate_a_votes, b: debate.candidate_b_votes },
+    {
+      a: debate.candidate_a_weighted_votes ?? 0,
+      b: debate.candidate_b_weighted_votes ?? 0,
+    },
+  );
   const ballotOpen = debate.status === "voting" && Boolean(candidateAId && candidateBId);
 
   let aVotes = 0;
@@ -250,8 +262,9 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
               </div>
               <RoundCards
                 rounds={rounds}
-                aVotes={debate.candidate_a_votes}
-                bVotes={debate.candidate_b_votes}
+                aVotes={finalTally.primary.a}
+                bVotes={finalTally.primary.b}
+                weighted={finalTally.weighted}
               />
             </div>
           ) : debate.status === "voting" ? (
@@ -337,12 +350,16 @@ function RoundCards({
   activeRound,
   aVotes,
   bVotes,
+  weighted = false,
 }: {
   rounds: RoundPair[];
   activeRound?: number;
   aVotes?: number;
   bVotes?: number;
+  /** True when the vote counts are weighted totals rather than raw ballots. */
+  weighted?: boolean;
 }) {
+  const voteUnit = (count: number) => (weighted ? "weighted votes" : count === 1 ? "vote" : "votes");
   const showVotes = aVotes !== undefined && bVotes !== undefined;
   return (
     <div className="flex max-h-[60vh] flex-col gap-6 overflow-y-auto">
@@ -366,7 +383,7 @@ function RoundCards({
             </p>
             {showVotes && pair.round === rounds.length ? (
               <p className="mt-4 text-2xl font-semibold tabular-nums tracking-tight text-parchment">
-                {aVotes} <span className="text-xs font-normal text-zinc-400">{aVotes === 1 ? "vote" : "votes"}</span>
+                {aVotes} <span className="text-xs font-normal text-zinc-400">{voteUnit(aVotes ?? 0)}</span>
               </p>
             ) : null}
           </article>
@@ -382,7 +399,7 @@ function RoundCards({
             </p>
             {showVotes && pair.round === rounds.length ? (
               <p className="mt-4 text-2xl font-semibold tabular-nums tracking-tight text-parchment">
-                {bVotes} <span className="text-xs font-normal text-zinc-400">{bVotes === 1 ? "vote" : "votes"}</span>
+                {bVotes} <span className="text-xs font-normal text-zinc-400">{voteUnit(bVotes ?? 0)}</span>
               </p>
             ) : null}
           </article>

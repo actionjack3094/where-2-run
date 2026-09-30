@@ -28,6 +28,7 @@ import {
   type GraderToastState,
 } from "@/lib/arena/grader";
 import { ensureArenaUser, type ArenaUser } from "@/lib/arena/identity";
+import { displayTally, formatWeightedSubtitle } from "@/lib/vote-weight";
 import { getExpiryState, TOTAL_ROUNDS } from "@/lib/arena/time";
 import { supabase } from "@/lib/db/supabase";
 import { STORAGE_KEYS } from "@/lib/session";
@@ -276,8 +277,24 @@ export function DebateView({
     };
   }, [debateId, judgeEligible, myEvaluation]);
 
-  const aVotes = votes.filter((vote) => vote.candidate_id === debate?.candidate_a_id).length;
-  const bVotes = votes.filter((vote) => vote.candidate_id === debate?.candidate_b_id).length;
+  // Weighted totals are stored when the debate resolves; until then (and for
+  // debates resolved before weights existed) the live raw ballots lead.
+  const weightedTotals =
+    debate?.status === "completed"
+      ? { a: debate.candidate_a_weighted_votes ?? 0, b: debate.candidate_b_weighted_votes ?? 0 }
+      : null;
+  const liveRaw = {
+    a: votes.filter((vote) => vote.candidate_id === debate?.candidate_a_id).length,
+    b: votes.filter((vote) => vote.candidate_id === debate?.candidate_b_id).length,
+  };
+  const tally = displayTally(
+    weightedTotals && weightedTotals.a + weightedTotals.b > 0
+      ? { a: debate?.candidate_a_votes ?? 0, b: debate?.candidate_b_votes ?? 0 }
+      : liveRaw,
+    weightedTotals,
+  );
+  const aVotes = tally.primary.a;
+  const bVotes = tally.primary.b;
   const totalVotes = aVotes + bVotes;
   const aShare = totalVotes === 0 ? 0 : Math.round((aVotes / totalVotes) * 100);
   const bShare = totalVotes === 0 ? 0 : 100 - aShare;
@@ -613,6 +630,8 @@ export function DebateView({
         aShare={aShare}
         bShare={bShare}
         totalVotes={totalVotes}
+        weighted={tally.weighted}
+        raw={tally.raw}
       />
 
       <ArbitrationPanel
@@ -1027,15 +1046,22 @@ function TallyBar({
   aShare,
   bShare,
   totalVotes,
+  weighted,
+  raw,
 }: {
   candidateA: DebateCandidate | null;
   candidateB: DebateCandidate | null;
+  /** Weighted totals when `weighted`, else raw ballots. */
   aVotes: number;
   bVotes: number;
   aShare: number;
   bShare: number;
   totalVotes: number;
+  weighted: boolean;
+  raw: { a: number; b: number };
 }) {
+  const unit = (count: number) =>
+    weighted ? "weighted votes" : count === 1 ? "vote" : "votes";
   const aWidth = totalVotes === 0 ? 50 : aShare;
   const bWidth = totalVotes === 0 ? 50 : bShare;
 
@@ -1051,10 +1077,10 @@ function TallyBar({
             {candidateA ? <BackCandidateButton candidate={candidateA} /> : null}
           </div>
           <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">{aShare}%</p>
-          <p className="text-xs text-zinc-400">{aVotes} {aVotes === 1 ? "vote" : "votes"}</p>
+          <p className="text-xs text-zinc-400">{aVotes} {unit(aVotes)}</p>
         </div>
         <p className="pb-6 text-xs font-medium uppercase tracking-widest text-zinc-400">
-          {totalVotes === 0 ? "No votes yet" : `${totalVotes} total`}
+          {totalVotes === 0 ? "No votes yet" : `${totalVotes}${weighted ? "w" : ""} total`}
         </p>
         <div className="text-right">
           <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
@@ -1065,13 +1091,13 @@ function TallyBar({
             <p className="text-sm font-medium">{candidateB?.username ?? "Open seat"}</p>
           </div>
           <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">{bShare}%</p>
-          <p className="text-xs text-zinc-400">{bVotes} {bVotes === 1 ? "vote" : "votes"}</p>
+          <p className="text-xs text-zinc-400">{bVotes} {unit(bVotes)}</p>
         </div>
       </div>
       <div
         className="mt-4 flex h-3 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-900"
         role="img"
-        aria-label={`${candidateA?.username ?? "Candidate A"} ${aShare} percent, ${candidateB?.username ?? "Candidate B"} ${bShare} percent`}
+        aria-label={`${candidateA?.username ?? "Candidate A"} ${aShare} percent, ${candidateB?.username ?? "Candidate B"} ${bShare} percent${weighted ? " of weighted votes" : ""}`}
       >
         <div
           className="h-full bg-zinc-950 transition-all duration-500 dark:bg-zinc-50"
@@ -1082,6 +1108,12 @@ function TallyBar({
           style={{ width: `${bWidth}%` }}
         />
       </div>
+      {weighted ? (
+        <p className="mt-3 text-center text-xs tabular-nums text-zinc-400">
+          {formatWeightedSubtitle(raw, { a: aVotes, b: bVotes })}
+          <span className="sr-only">. Verified constituents count 3 votes each.</span>
+        </p>
+      ) : null}
       <PledgeError className="mt-3 text-xs text-rose-300" />
     </section>
   );

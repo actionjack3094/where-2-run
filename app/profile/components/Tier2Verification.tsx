@@ -146,13 +146,13 @@ export function Tier2Verification({
       className="rounded-xl border border-gold/40 bg-zinc-900 p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)]"
     >
       <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
-        Civic verification
+        Instant · automatic
       </p>
       <h2
         id="tier-2-constituent-heading"
         className="mt-2 font-display text-lg font-semibold tracking-tight text-parchment"
       >
-        Residential address
+        Tier 1: Instant Address Match
       </h2>
 
       {loading ? (
@@ -161,7 +161,7 @@ export function Tier2Verification({
         <div className="mt-4 flex flex-col items-start gap-3">
           <span className="inline-flex items-center gap-2 rounded-full border border-gold bg-gold/15 px-3 py-1.5 text-[11px] font-medium uppercase tracking-widest text-gold">
             <ShieldCheck aria-hidden className="h-3.5 w-3.5 fill-gold/15 stroke-[2.25]" />
-            Tier 2 Verified Constituent
+            Address Matched
           </span>
           {jurisdictions.length > 0 ? (
             <p className="text-sm leading-6 text-parchment">
@@ -172,8 +172,9 @@ export function Tier2Verification({
       ) : (
         <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-3">
           <p className="max-w-xl text-sm leading-6 text-zinc-400">
-            Confirm where you live. A successful lookup matches this profile to the
-            districts that can vote on local appeals.
+            Enter your address and we match it to your districts on the spot. No
+            documents and no waiting. A match makes you a verified constituent, and your
+            ballots in those districts count 3x.
           </p>
           <label className="flex flex-col gap-2">
             <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-400">

@@ -5,7 +5,8 @@
  * wait 24 hours, so this script runs the same pipeline immediately:
  *
  *   1. Cast 3-5 simulated jury ballots from sim-* personas (or other seed users).
- *   2. Tally the ballots and mark the debate `completed` with a winner
+ *   2. Tally the ballots (verified constituents of the debate's district count 3x,
+ *      everyone else 1) and mark the debate `completed` with a winner
  *      (lib/actions/debate-resolution.ts, the same code the debate page runs
  *      when the 24-hour timer lapses). That calls apply_debate_elo().
  *   3. Nudge each candidate's ideology vector with update_ideology_vector_ema(),
@@ -408,9 +409,9 @@ async function main() {
   }
 
   // 2. Resolve: completed status, winner, tallies, and apply_debate_elo().
-  const { resolveDebate } = await import("@/lib/actions/debate-resolution");
-  const resolvedId = await resolveDebate(debate.id);
-  if (!resolvedId) fail("The debate was not resolved. It may have left the voting stage while the script ran.");
+  const { resolveDebateWithTally } = await import("@/lib/actions/debate-resolution");
+  const resolution = await resolveDebateWithTally(debate.id);
+  if (!resolution) fail("The debate was not resolved. It may have left the voting stage while the script ran.");
 
   const after = must(
     await db.from("debates").select("*").eq("id", debate.id).maybeSingle(),
@@ -462,14 +463,18 @@ async function main() {
     }
   }
 
-  const tally = await tallyVotes(db, debate);
+  const { raw, weighted } = resolution;
   const winnerId = after.winner_id;
   const afterUsers = await loadUsers(db, candidateIds);
 
   log();
   log("[Tally] ------------------------------------------");
-  log(`[Tally] Candidate A  ${nameOf(debate.candidate_a_id).padEnd(24)} ${tally.a} vote(s)`);
-  log(`[Tally] Candidate B  ${nameOf(debate.candidate_b_id).padEnd(24)} ${tally.b} vote(s)`);
+  log(`[Tally] Candidate A  ${nameOf(debate.candidate_a_id).padEnd(24)} ${raw.a} raw, ${weighted.a}w weighted`);
+  log(`[Tally] Candidate B  ${nameOf(debate.candidate_b_id).padEnd(24)} ${raw.b} raw, ${weighted.b}w weighted`);
+  log(`[Tally] ${resolution.summary}`);
+  log(
+    `[Tally] ${resolution.verifiedBallots} verified constituent ballot(s) counted 3x in ${resolution.districtOcdId ?? "no district (all ballots weight 1)"}`,
+  );
   log(
     winnerId
       ? `[Winner] ${winnerId === debate.candidate_a_id ? "Candidate A" : "Candidate B"}: ${nameOf(winnerId)}`

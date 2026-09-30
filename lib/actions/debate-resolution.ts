@@ -1,4 +1,6 @@
+import { normalizeOcdId } from "@/lib/civic-fencing";
 import { createAdminClient } from "@/lib/db/supabase-admin";
+import { formatTally, voteWeight, type Tally } from "@/lib/vote-weight";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -8,22 +10,153 @@ type DebateRecord = {
   debates_played: number | null;
 };
 
-async function countVotes(
+const PAGE_SIZE = 1000;
+const LOOKUP_CHUNK = 150;
+
+/**
+ * The district a debate was filed in, as a normalized OCD-ID: the election's
+ * OCD-ID, else the OCD-ID on its district row. Mirrors debate_district_ocd_id().
+ */
+async function debateDistrictOcdId(
+  admin: AdminClient,
+  debate: {
+    election_id: string | null;
+    election_question_id: string | null;
+    district_id: string | null;
+  },
+) {
+  let electionId = debate.election_id;
+  if (!electionId && debate.election_question_id) {
+    const { data, error } = await admin
+      .from("election_questions")
+      .select("election_id")
+      .eq("id", debate.election_question_id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    electionId = (data as { election_id: string | null } | null)?.election_id ?? null;
+  }
+
+  let districtId = debate.district_id;
+  if (electionId) {
+    const { data, error } = await admin
+      .from("elections")
+      .select("ocd_id, district_id")
+      .eq("id", electionId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    const election = data as { ocd_id: string | null; district_id: string | null } | null;
+    const direct = normalizeOcdId(election?.ocd_id);
+    if (direct) return direct;
+    districtId = election?.district_id ?? districtId;
+  }
+
+  if (!districtId) return null;
+  const { data, error } = await admin
+    .from("districts")
+    .select("ocd_id")
+    .eq("id", districtId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return normalizeOcdId((data as { ocd_id: string | null } | null)?.ocd_id) || null;
+}
+
+/** Live ballots for the two seated candidates, paged past the 1000-row API cap. */
+async function loadBallots(
   admin: AdminClient,
   debateId: string,
-  candidateId: string | null,
+  candidateIds: string[],
 ) {
-  if (!candidateId) return 0;
+  const ballots: { voter_id: string; candidate_id: string }[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await admin
+      .from("votes")
+      .select("voter_id, candidate_id")
+      .eq("debate_id", debateId)
+      .in("candidate_id", candidateIds)
+      .is("voided_at", null)
+      .order("id", { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
 
-  const { count, error } = await admin
-    .from("votes")
-    .select("id", { count: "exact", head: true })
-    .eq("debate_id", debateId)
-    .eq("candidate_id", candidateId)
-    .is("voided_at", null);
+    if (error) throw new Error(error.message);
+    const page = (data ?? []) as { voter_id: string; candidate_id: string }[];
+    ballots.push(...page);
+    if (page.length < PAGE_SIZE) break;
+  }
+  return ballots;
+}
 
-  if (error) throw new Error(error.message);
-  return count ?? 0;
+/** Which of these voters hold the district in tier2_verifications.ocd_ids. */
+async function verifiedConstituents(
+  admin: AdminClient,
+  voterIds: string[],
+  districtOcdId: string | null,
+) {
+  const verified = new Set<string>();
+  if (!districtOcdId) return verified;
+
+  for (let start = 0; start < voterIds.length; start += LOOKUP_CHUNK) {
+    const { data, error } = await admin
+      .from("tier2_verifications")
+      .select("user_id, ocd_ids")
+      .in("user_id", voterIds.slice(start, start + LOOKUP_CHUNK));
+
+    if (error) throw new Error(error.message);
+    for (const row of (data ?? []) as { user_id: string; ocd_ids: string[] | null }[]) {
+      if ((row.ocd_ids ?? []).some((id) => normalizeOcdId(id) === districtOcdId)) {
+        verified.add(row.user_id);
+      }
+    }
+  }
+  return verified;
+}
+
+export type DebateResolution = {
+  id: string;
+  winnerId: string | null;
+  districtOcdId: string | null;
+  /** One ballot each. Saved to debates.candidate_*_votes. */
+  raw: Tally;
+  /** Verified constituents count 3, everyone else 1. Decides the winner. Saved to debates.candidate_*_weighted_votes. */
+  weighted: Tally;
+  verifiedBallots: number;
+  /** "Raw Votes: X–Y | Weighted Votes: Xw–Yw" */
+  summary: string;
+};
+
+async function tallyBallots(
+  admin: AdminClient,
+  debate: {
+    id: string;
+    candidate_a_id: string | null;
+    candidate_b_id: string | null;
+    election_id: string | null;
+    election_question_id: string | null;
+    district_id: string | null;
+  },
+) {
+  const seated = [debate.candidate_a_id, debate.candidate_b_id].filter(
+    (id): id is string => Boolean(id),
+  );
+  const districtOcdId = await debateDistrictOcdId(admin, debate);
+  const ballots = seated.length > 0 ? await loadBallots(admin, debate.id, seated) : [];
+  const verified = await verifiedConstituents(
+    admin,
+    [...new Set(ballots.map((ballot) => ballot.voter_id))],
+    districtOcdId,
+  );
+
+  const raw: Tally = { a: 0, b: 0 };
+  const weighted: Tally = { a: 0, b: 0 };
+  let verifiedBallots = 0;
+  for (const ballot of ballots) {
+    const side = ballot.candidate_id === debate.candidate_a_id ? "a" : "b";
+    const isVerified = verified.has(ballot.voter_id);
+    raw[side] += 1;
+    weighted[side] += voteWeight(isVerified);
+    if (isVerified) verifiedBallots += 1;
+  }
+
+  return { raw, weighted, verifiedBallots, districtOcdId };
 }
 
 function loserIdFor(
@@ -86,25 +219,33 @@ async function incrementMatchRecord(
   if (loserError) throw new Error(loserError.message);
 }
 
-/** Tallies the spectator ballot and marks an open debate completed. Returns the debate id when the row was updated. */
-export async function resolveDebate(debateId: string): Promise<string | null> {
+/**
+ * Tallies the ballot and marks an open debate completed. The winner is the side
+ * with more weighted votes (verified constituents of the debate's district
+ * count 3, everyone else 1). Returns null when the debate is not in voting or
+ * was resolved by someone else first.
+ */
+export async function resolveDebateWithTally(
+  debateId: string,
+): Promise<DebateResolution | null> {
   const admin = createAdminClient();
 
   const { data, error } = await admin
     .from("debates")
-    .select("id, candidate_a_id, candidate_b_id, status")
+    .select(
+      "id, candidate_a_id, candidate_b_id, status, election_id, election_question_id, district_id",
+    )
     .eq("id", debateId)
     .maybeSingle();
 
   if (error) throw new Error(error.message);
   if (!data || data.status !== "voting") return null;
 
-  const candidateAVotes = await countVotes(admin, debateId, data.candidate_a_id);
-  const candidateBVotes = await countVotes(admin, debateId, data.candidate_b_id);
+  const { raw, weighted, verifiedBallots, districtOcdId } = await tallyBallots(admin, data);
 
   let winnerId: string | null = null;
-  if (candidateAVotes > candidateBVotes) winnerId = data.candidate_a_id;
-  else if (candidateBVotes > candidateAVotes) winnerId = data.candidate_b_id;
+  if (weighted.a > weighted.b) winnerId = data.candidate_a_id;
+  else if (weighted.b > weighted.a) winnerId = data.candidate_b_id;
 
   const loserId = winnerId
     ? loserIdFor(winnerId, data.candidate_a_id, data.candidate_b_id)
@@ -116,8 +257,10 @@ export async function resolveDebate(debateId: string): Promise<string | null> {
     .from("debates")
     .update({
       status: "completed",
-      candidate_a_votes: candidateAVotes,
-      candidate_b_votes: candidateBVotes,
+      candidate_a_votes: raw.a,
+      candidate_b_votes: raw.b,
+      candidate_a_weighted_votes: weighted.a,
+      candidate_b_weighted_votes: weighted.b,
       winner_id: winnerId,
     })
     .eq("id", debateId)
@@ -137,5 +280,25 @@ export async function resolveDebate(debateId: string): Promise<string | null> {
     await incrementMatchRecord(admin, winnerId, loserId, priorRecords);
   }
 
-  return saved.id;
+  const summary = formatTally(raw, weighted);
+  console.info(
+    `[Resolve] Debate ${saved.id} ${summary} (${verifiedBallots} verified constituent ballot(s)${
+      districtOcdId ? ` in ${districtOcdId}` : ", no district resolved, all ballots weight 1"
+    })`,
+  );
+
+  return {
+    id: saved.id,
+    winnerId,
+    districtOcdId,
+    raw,
+    weighted,
+    verifiedBallots,
+    summary,
+  };
+}
+
+/** Same as `resolveDebateWithTally`, returning only the debate id. */
+export async function resolveDebate(debateId: string): Promise<string | null> {
+  return (await resolveDebateWithTally(debateId))?.id ?? null;
 }
