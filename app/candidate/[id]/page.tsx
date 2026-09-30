@@ -4,6 +4,7 @@ import { cache } from "react";
 import { CandidateProfile, type LockedCampaignTarget } from "@/app/components/CandidateProfile";
 import { DebateHistory, type MatchOutcome, type ProfileMatch } from "@/components/candidate/DebateHistory";
 import { EscrowTracker } from "@/components/candidate/EscrowTracker";
+import { CandidateCoalitionSummary } from "@/components/coalitions/CandidateCoalitionSummary";
 import { ProfileHeader } from "@/components/candidate/ProfileHeader";
 import {
   Card,
@@ -14,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { isUuid } from "@/lib/arena/display";
 import { DEFAULT_ELO, parseElo } from "@/lib/arena/elo";
+import { loadCandidateCoalitionSummary } from "@/lib/candidate-coalitions";
 import { loadPublicCandidate } from "@/lib/candidate-profile";
 import { isMissingRelation } from "@/lib/coalitions";
 import { createAdminClient } from "@/lib/db/supabase-admin";
@@ -331,11 +333,14 @@ async function ownStanceIsEmpty(userId: string) {
 
 export default async function CandidatePage({ params }: CandidatePageProps) {
   const { id: candidateId } = await params;
-  const [candidate, loaded, user, lockedTargets] = await Promise.all([
+  const [candidate, loaded, user, lockedTargets, coalitionSummary] = await Promise.all([
     loadCandidate(candidateId),
     loadPublicCandidate(candidateId),
     getServerUser(),
     loadLockedTargets(candidateId),
+    isUuid(candidateId)
+      ? loadCandidateCoalitionSummary(candidateId).catch(() => null)
+      : Promise.resolve(null),
   ]);
   const viewingOwnProfile = user != null && user.id === candidateId;
   const showStanceCta = viewingOwnProfile && (await ownStanceIsEmpty(user.id));
@@ -386,6 +391,12 @@ export default async function CandidatePage({ params }: CandidatePageProps) {
               lockedMatchCount={profile?.lockedMatchCount ?? 0}
               electionId={profile?.targetDistrictId ?? null}
             />
+            {coalitionSummary ? (
+              <CandidateCoalitionSummary
+                summary={coalitionSummary}
+                candidateName={candidate.found ? candidate.name : (profile?.username ?? "Candidate")}
+              />
+            ) : null}
             {profile ? (
               <EscrowTracker
                 total={profile.escrowTotal}

@@ -47,11 +47,6 @@ function missingQuestionBankMessage() {
   return "election_questions is not in the database yet. Apply the question bank migration.";
 }
 
-function asOcdIds(value: unknown) {
-  if (!Array.isArray(value)) return [];
-  return value.filter((entry): entry is string => typeof entry === "string" && entry.trim() !== "");
-}
-
 async function ensurePublicUser(admin: AdminClient, userId: string) {
   const { data: existing, error } = await admin
     .from("users")

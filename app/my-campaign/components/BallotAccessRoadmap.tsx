@@ -59,7 +59,7 @@ function RoadmapHeader() {
       </h2>
       <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
         Countdown to residency and filing for your strongest matched race, with
-        tokenized escrow plotted against the seat's goal.
+        tokenized escrow plotted against the seat&apos;s goal.
       </p>
     </header>
   );

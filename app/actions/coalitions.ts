@@ -10,7 +10,7 @@ import {
   isMissingRelation,
 } from "@/lib/coalitions";
 import { createAdminClient } from "@/lib/db/supabase-admin";
-import type { Coalition, CoalitionMember } from "@/types/database.types";
+import type { CoalitionMember } from "@/types/database.types";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 

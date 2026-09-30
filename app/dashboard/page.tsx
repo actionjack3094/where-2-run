@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Card,
   CardContent,
@@ -111,10 +111,7 @@ export default function TriageDashboardPage() {
 
   const active = FEEDS.find((entry) => entry.id === feed) ?? FEEDS[0];
 
-  async function loadDashboard(nextZip?: string) {
-    setError(null);
-    setStage("loading");
-
+  const loadDashboard = useCallback(async (nextZip?: string) => {
     try {
       const arenaUser = await ensureArenaUser();
       setUserId(arenaUser.id);
@@ -198,17 +195,25 @@ export default function TriageDashboardPage() {
         });
       }
 
+      setError(null);
       setMatches(nextMatches);
       setStage("ready");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not load electability.");
       setStage("error");
     }
-  }
+  }, []);
 
   useEffect(() => {
-    void loadDashboard();
-  }, []);
+    // Defer to a microtask: the loader's state updates land after the fetch, never synchronously in the effect.
+    void Promise.resolve().then(() => loadDashboard());
+  }, [loadDashboard]);
+
+  function reloadDashboard(nextZip?: string) {
+    setError(null);
+    setStage("loading");
+    return loadDashboard(nextZip);
+  }
 
   const columns = useMemo(() => {
     const ranked = rankMatches(matches);
@@ -240,7 +245,7 @@ export default function TriageDashboardPage() {
         const districts = matches.map((row) => row.district);
         await persistResidency(userId, nextZip, districts);
       }
-      await loadDashboard(nextZip);
+      await reloadDashboard(nextZip);
     } catch (caught) {
       setZipError(caught instanceof Error ? caught.message : "Could not save ZIP.");
     } finally {
@@ -287,7 +292,7 @@ export default function TriageDashboardPage() {
           </p>
           <button
             type="button"
-            onClick={() => void loadDashboard()}
+            onClick={() => void reloadDashboard()}
             className="text-[11px] font-medium uppercase tracking-widest text-zinc-950 underline-offset-4 hover:underline dark:text-zinc-50"
           >
             Try again

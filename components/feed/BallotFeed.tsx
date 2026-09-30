@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ChallengeButton } from "@/components/ChallengeButton";
 import { VoterPostActions } from "@/components/feed/VoterPostActions";
 import { CandidateIdentity } from "@/components/profile/CandidateAvatar";
@@ -83,9 +83,7 @@ export function BallotFeed() {
   const [error, setError] = useState<string | null>(null);
   const [viewerTier, setViewerTier] = useState<VerificationTier>("unverified");
 
-  async function loadFeed() {
-    setError(null);
-
+  const loadFeed = useCallback(async () => {
     try {
       const arenaUser = await ensureArenaUser();
       const { data: viewerRow, error: viewerError } = await supabase
@@ -244,13 +242,15 @@ export function BallotFeed() {
       (left, right) => createdAtValue(right.createdAt) - createdAtValue(left.createdAt),
     );
 
+    setError(null);
     setFeed(next);
     setStage("ready");
-  }
+  }, []);
 
   useEffect(() => {
-    void loadFeed();
-  }, []);
+    // Defer to a microtask: the loader's state updates land after the fetch, never synchronously in the effect.
+    void Promise.resolve().then(loadFeed);
+  }, [loadFeed]);
 
   if (stage === "loading") {
     return <p className="mt-16 text-sm leading-6 text-zinc-400">Loading the ballot…</p>;
@@ -263,6 +263,7 @@ export function BallotFeed() {
         <button
           type="button"
           onClick={() => {
+            setError(null);
             setStage("loading");
             void loadFeed();
           }}

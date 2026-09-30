@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Card,
   CardContent,
@@ -72,10 +72,7 @@ export function MatchedElections() {
   const [ideologyVector, setIdeologyVector] = useState<unknown>(null);
   const [mapNotice, setMapNotice] = useState(false);
 
-  async function loadMatches() {
-    setError(null);
-    setStage("loading");
-
+  const loadMatches = useCallback(async () => {
     try {
       const arenaUser = await ensureArenaUser();
       const storedZip = normalizeZip(
@@ -153,6 +150,7 @@ export function MatchedElections() {
         });
       }
 
+      setError(null);
       setMatches(nextMatches);
       setStage("ready");
     } catch (caught) {
@@ -161,11 +159,18 @@ export function MatchedElections() {
       );
       setStage("error");
     }
-  }
+  }, []);
 
   useEffect(() => {
+    // Defer to a microtask: the loader's state updates land after the fetch, never synchronously in the effect.
+    void Promise.resolve().then(loadMatches);
+  }, [loadMatches]);
+
+  function retry() {
+    setError(null);
+    setStage("loading");
     void loadMatches();
-  }, []);
+  }
 
   const columns = useMemo(() => {
     const ranked = rankMatches(matches);
@@ -241,7 +246,7 @@ export function MatchedElections() {
           </p>
           <button
             type="button"
-            onClick={() => void loadMatches()}
+            onClick={retry}
             className="text-[11px] font-medium uppercase tracking-widest text-gold underline-offset-4 hover:underline"
           >
             Try again

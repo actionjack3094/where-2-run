@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -24,15 +24,22 @@ export function CampaignStore({ candidateId }: { candidateId: string }) {
   const [orders, setOrders] = useState<Record<number, MockPrintfulOrder>>({});
   const [orderError, setOrderError] = useState<Record<number, string>>({});
 
-  async function loadStore() {
+  // Switching candidates restarts the load without a synchronous setState in an effect.
+  const [loadedFor, setLoadedFor] = useState(candidateId);
+  if (loadedFor !== candidateId) {
+    setLoadedFor(candidateId);
     setError(null);
     setStage("loading");
+  }
+
+  const loadStore = useCallback(async () => {
     try {
       const response = await fetch(`/api/merch?candidateId=${encodeURIComponent(candidateId)}`);
       const payload = (await response.json()) as MerchCatalog & { error?: string };
       if (!response.ok) {
         throw new Error(payload.error ?? "Could not load the campaign store.");
       }
+      setError(null);
       setCatalog(payload);
       setSelected(
         Object.fromEntries(
@@ -45,11 +52,17 @@ export function CampaignStore({ candidateId }: { candidateId: string }) {
       setError(cause instanceof Error ? cause.message : "Could not load the campaign store.");
       setStage("error");
     }
-  }
+  }, [candidateId]);
 
   useEffect(() => {
     void loadStore();
-  }, [candidateId]);
+  }, [loadStore]);
+
+  function retry() {
+    setError(null);
+    setStage("loading");
+    void loadStore();
+  }
 
   async function buyProduct(product: MerchProduct) {
     const variantId = selected[product.id];
@@ -109,7 +122,7 @@ export function CampaignStore({ candidateId }: { candidateId: string }) {
             <CardDescription>{error ?? "Could not load campaign merch."}</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button type="button" onClick={() => void loadStore()}>
+            <Button type="button" onClick={retry}>
               Try again
             </Button>
           </CardContent>
@@ -166,12 +179,13 @@ function ProductCard({
   onBuy: () => void;
 }) {
   const colors = useMemo(() => uniqueOptions(product.variants, "color"), [product.variants]);
+  const variantColor = variant?.color;
   const sizes = useMemo(() => {
     const matching = product.variants.filter((item) =>
-      variant?.color ? item.color === variant.color : true,
+      variantColor ? item.color === variantColor : true,
     );
     return uniqueOptions(matching, "size");
-  }, [product.variants, variant?.color]);
+  }, [product.variants, variantColor]);
 
   if (!variant) return null;
 

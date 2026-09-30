@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -20,15 +20,14 @@ type DistrictBoard = District & {
   topWins: number;
 };
 
+const subscribeNoop = () => () => {};
+
 export default function LeaderboardsIndexPage() {
   const [districts, setDistricts] = useState<DistrictBoard[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [stage, setStage] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
 
-  async function loadDistricts() {
-    setError(null);
-
+  const loadDistricts = useCallback(async () => {
     const [{ data: districtRows, error: districtError }, { data: statsRows, error: statsError }] =
       await Promise.all([
         supabase.from("districts").select("*").order("name"),
@@ -68,14 +67,28 @@ export default function LeaderboardsIndexPage() {
       };
     });
 
+    setError(null);
     setDistricts(boards);
     setStage("ready");
-  }
+  }, []);
 
   useEffect(() => {
-    setSelectedId(window.sessionStorage.getItem(STORAGE_KEYS.districtId));
+    // Defer to a microtask: the loader's state updates land after the fetch, never synchronously in the effect.
+    void Promise.resolve().then(loadDistricts);
+  }, [loadDistricts]);
+
+  // Read the remembered seat after hydration without a synchronous setState.
+  const selectedId = useSyncExternalStore(
+    subscribeNoop,
+    () => window.sessionStorage.getItem(STORAGE_KEYS.districtId),
+    () => null,
+  );
+
+  function retry() {
+    setError(null);
+    setStage("loading");
     void loadDistricts();
-  }, []);
+  }
 
   return (
     <main className="mx-auto flex min-h-full w-full max-w-2xl flex-1 flex-col px-6 py-10">
@@ -103,7 +116,7 @@ export default function LeaderboardsIndexPage() {
           <p className="text-sm text-zinc-600 dark:text-zinc-300">
             {error ?? "Could not load district leaderboards."}
           </p>
-          <Button type="button" onClick={() => void loadDistricts()}>
+          <Button type="button" onClick={retry}>
             Try again
           </Button>
         </section>

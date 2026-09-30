@@ -41,12 +41,11 @@ export function MatchmakerFeed() {
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    setError(null);
-    setStage("loading");
     try {
       await ensureArenaUser();
       const token = await accessToken();
       const result = await matchCandidateDistricts(token);
+      setError(null);
       setHasVector(result.hasVector);
       setMatches(result.matches.slice(0, 3));
       setStage("ready");
@@ -61,8 +60,15 @@ export function MatchmakerFeed() {
   }, []);
 
   useEffect(() => {
-    void refresh();
+    // Defer to a microtask: the loader's state updates land after the fetch, never synchronously in the effect.
+    void Promise.resolve().then(refresh);
   }, [refresh]);
+
+  function rerun() {
+    setError(null);
+    setStage("loading");
+    void refresh();
+  }
 
   return (
     <section aria-labelledby="matchmaker-feed-heading" className="mt-12">
@@ -84,7 +90,7 @@ export function MatchmakerFeed() {
         </header>
         <button
           type="button"
-          onClick={() => void refresh()}
+          onClick={rerun}
           disabled={stage === "loading"}
           className="inline-flex h-11 shrink-0 items-center justify-center rounded-md border border-gold/60 bg-zinc-950 px-4 font-display text-xs font-semibold uppercase tracking-[0.18em] text-parchment transition-colors hover:border-gold hover:bg-zinc-900 disabled:pointer-events-none disabled:opacity-50"
         >
@@ -103,7 +109,7 @@ export function MatchmakerFeed() {
           <p className="text-sm text-zinc-400">{error}</p>
           <button
             type="button"
-            onClick={() => void refresh()}
+            onClick={rerun}
             className="text-[11px] font-medium uppercase tracking-widest text-gold underline-offset-4 hover:underline"
           >
             Try again

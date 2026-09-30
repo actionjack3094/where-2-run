@@ -34,13 +34,12 @@ const UNLOCK_STREAK = 10;
 const EXCESS_WALLET = 400;
 const AXIS_IDS = ["climate", "healthcare", "immigration", "economy", "social", "safety"] as const;
 const REPORT_REASONS = ["bad_faith", "spam", "abandoned", "off_platform", "other"] as const;
-const BASE_IDEOLOGIES = ["progressive", "conservative", "centrist"] as const;
 
 type AxisId = (typeof AXIS_IDS)[number];
 type Lean = [number, number, number, number, number, number];
 type ReportReason = (typeof REPORT_REASONS)[number];
 type DistrictKey = keyof typeof DISTRICTS;
-type BaseIdeology = (typeof BASE_IDEOLOGIES)[number];
+type BaseIdeology = "progressive" | "conservative" | "centrist";
 type DecisionMode = "red" | "blue" | "pledge" | "floor";
 
 type Persona = {

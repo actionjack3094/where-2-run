@@ -1,4 +1,5 @@
 import { unwrapCandidate } from "@/lib/arena/display";
+import { loadEndorsementCounts } from "@/lib/candidate-endorsements";
 import { normalizeOcdId } from "@/lib/civic-fencing";
 import { isMissingRelation } from "@/lib/coalitions";
 import { createServerSupabase, getServerUser } from "@/lib/db/supabase-server";
@@ -15,7 +16,11 @@ import {
   type RedFeedQuestion,
 } from "@/lib/feed/types";
 import { parseVerificationTier } from "@/lib/verification";
-import type { DebateWithCandidates, VerificationTier } from "@/types/database.types";
+import type {
+  DebateCandidate,
+  DebateWithCandidates,
+  VerificationTier,
+} from "@/types/database.types";
 
 const JURY_DEBATE_STATUSES = ["active", "voting"] as const;
 const ELECTION_COLUMNS =
@@ -65,6 +70,37 @@ export type LoopQueryResult<T> = {
   hasMore: boolean;
   error: string | null;
 };
+
+async function attachEndorsements<
+  T extends {
+    candidateA: DebateCandidate | null;
+    candidateB: DebateCandidate | null;
+  },
+>(items: T[]): Promise<T[]> {
+  const ids = [
+    ...new Set(
+      items.flatMap((item) => [item.candidateA?.id, item.candidateB?.id]).filter(
+        (id): id is string => Boolean(id),
+      ),
+    ),
+  ];
+  if (ids.length === 0) return items;
+
+  try {
+    const counts = await loadEndorsementCounts(ids);
+    return items.map((item) => ({
+      ...item,
+      candidateA: item.candidateA
+        ? { ...item.candidateA, endorsements: counts.get(item.candidateA.id) ?? 0 }
+        : null,
+      candidateB: item.candidateB
+        ? { ...item.candidateB, endorsements: counts.get(item.candidateB.id) ?? 0 }
+        : null,
+    }));
+  } catch {
+    return items;
+  }
+}
 
 function asOcdArray(value: unknown): string[] {
   if (typeof value === "string") {
@@ -635,7 +671,11 @@ export async function loadJuryDebates(
     });
   }
 
-  return { items, hasMore: items.length === limit, error: null };
+  return {
+    items: await attachEndorsements(items),
+    hasMore: items.length === limit,
+    error: null,
+  };
 }
 
 const LIVE_DEBATE_STATUSES = ["waiting", "matching", "active", "voting"] as const;
@@ -752,7 +792,11 @@ async function loadDebatesForOcdIds(
     });
   }
 
-  return { items, hasMore: rows.length === limit, error: null };
+  return {
+    items: await attachEndorsements(items),
+    hasMore: rows.length === limit,
+    error: null,
+  };
 }
 
 /** Blue Cards. Debates on the user's permanent physical ballot. */

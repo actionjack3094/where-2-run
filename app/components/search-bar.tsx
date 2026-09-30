@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useEffectEvent, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 
@@ -11,43 +11,37 @@ function SearchBarField({ placeholder }: { placeholder: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
+  const urlQuery = searchParams.get("q") ?? "";
+  const [query, setQuery] = useState(urlQuery);
   const debouncedQuery = useDebounce(query);
-  const pathnameRef = useRef(pathname);
-  const searchParamsRef = useRef(searchParams);
-  const routerRef = useRef(router);
-  const writtenQuery = useRef(searchParams.get("q") ?? "");
 
-  pathnameRef.current = pathname;
-  searchParamsRef.current = searchParams;
-  routerRef.current = router;
+  // Adopt external URL changes (back/forward, links) during render. Ignore the
+  // echo of our own debounced write so it cannot clobber in-progress typing.
+  const [seenUrlQuery, setSeenUrlQuery] = useState(urlQuery);
+  if (seenUrlQuery !== urlQuery) {
+    setSeenUrlQuery(urlQuery);
+    if (urlQuery !== debouncedQuery) setQuery(urlQuery);
+  }
 
-  useEffect(() => {
-    const urlQuery = searchParams.get("q") ?? "";
-    if (urlQuery === writtenQuery.current) return;
-    writtenQuery.current = urlQuery;
-    setQuery(urlQuery);
-  }, [searchParams]);
+  // Effect Event: always reads the latest router/path/params without making the
+  // debounce effect re-run (and revert the URL) when they change.
+  const writeQuery = useEffectEvent((nextQuery: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if ((params.get("q") ?? "") === nextQuery) return;
 
-  useEffect(() => {
-    const params = new URLSearchParams(searchParamsRef.current.toString());
-    const current = params.get("q") ?? "";
-    if (debouncedQuery === current) {
-      writtenQuery.current = debouncedQuery;
-      return;
-    }
-
-    if (debouncedQuery) {
-      params.set("q", debouncedQuery);
+    if (nextQuery) {
+      params.set("q", nextQuery);
     } else {
       params.delete("q");
     }
     params.delete("page");
 
-    writtenQuery.current = debouncedQuery;
     const next = params.toString();
-    const path = pathnameRef.current;
-    routerRef.current.replace(next ? `${path}?${next}` : path, { scroll: false });
+    router.replace(next ? `${pathname}?${next}` : pathname, { scroll: false });
+  });
+
+  useEffect(() => {
+    writeQuery(debouncedQuery);
   }, [debouncedQuery]);
 
   return (

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toggleEndorsement } from "@/app/actions/coalition/toggle-endorsement";
+import { CoalitionManager } from "@/app/profile/components/CoalitionManager";
 import { Button } from "@/components/ui/button";
 import { CandidateIdentity } from "@/components/profile/CandidateAvatar";
 import { parseElo } from "@/lib/arena/elo";
@@ -43,9 +44,12 @@ function matchLabel(matchPercent: number | null) {
 export function CoalitionNetwork({
   candidateId,
   className,
+  manage = false,
 }: {
   candidateId: string;
   className?: string;
+  /** Show the owner's controls: affiliation, form a coalition, endorsement desk. */
+  manage?: boolean;
 }) {
   const [cards, setCards] = useState<NetworkCard[]>([]);
   const [viewerId, setViewerId] = useState<string | null>(null);
@@ -195,6 +199,11 @@ export function CoalitionNetwork({
     };
   }, [load]);
 
+  const reload = useCallback(() => {
+    setLoading(true);
+    void load();
+  }, [load]);
+
   async function onToggle(targetId: string) {
     setPendingId(targetId);
     setError(null);
@@ -215,6 +224,7 @@ export function CoalitionNetwork({
 
   return (
     <section aria-labelledby="coalition-network-heading" className={cn(className)}>
+      {manage ? <CoalitionManager onChanged={reload} /> : null}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">

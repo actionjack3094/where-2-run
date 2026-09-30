@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { LibertyBell } from "@/app/components/LibertyBell";
 import { LogOutButton } from "@/components/LogOutButton";
@@ -49,9 +49,12 @@ export function SiteNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
+  // Close the mobile menu whenever the route changes.
+  const [menuPathname, setMenuPathname] = useState(pathname);
+  if (menuPathname !== pathname) {
+    setMenuPathname(pathname);
     setOpen(false);
-  }, [pathname]);
+  }
 
   return (
     <header className="border-b-2 border-brass bg-parchment shadow-[inset_0_3px_0_0_var(--brass)]">

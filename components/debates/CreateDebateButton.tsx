@@ -51,14 +51,15 @@ function CreateDebateModal({
 }) {
   const router = useRouter();
   const [topic, setTopic] = useState("");
-  const [name, setName] = useState("");
+  // The modal only mounts after a click, so sessionStorage is safe to read here.
+  const [name, setName] = useState(
+    () => window.sessionStorage.getItem(STORAGE_KEYS.username) ?? "",
+  );
   const [district, setDistrict] = useState<District | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
-    setName(window.sessionStorage.getItem(STORAGE_KEYS.username) ?? "");
-
     async function loadDistrict() {
       const { data } = await supabase.from("districts").select("*").order("name");
       const districts = (data ?? []) as District[];

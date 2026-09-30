@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { STORAGE_KEYS } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +33,23 @@ const MILESTONES: Milestone[] = [
     detail: "Release pledged support once you are ballot-qualified and the race is live.",
   },
 ];
+
+const roadmapListeners = new Set<() => void>();
+
+function subscribeRoadmap(listener: () => void) {
+  roadmapListeners.add(listener);
+  return () => {
+    roadmapListeners.delete(listener);
+  };
+}
+
+function readRoadmap() {
+  return window.sessionStorage.getItem(STORAGE_KEYS.ballotRoadmap);
+}
+
+function readRoadmapOnServer() {
+  return null;
+}
 
 function parseCompleted(raw: string | null): MilestoneId[] {
   if (!raw) return [];
@@ -113,20 +130,20 @@ function ProgressRing({
 }
 
 export function BallotRoadmap() {
-  const [completed, setCompleted] = useState<MilestoneId[]>([]);
-
-  useEffect(() => {
-    setCompleted(
-      parseCompleted(window.sessionStorage.getItem(STORAGE_KEYS.ballotRoadmap)),
-    );
-  }, []);
+  // sessionStorage is the source of truth; the server snapshot renders an empty roadmap.
+  const raw = useSyncExternalStore(
+    subscribeRoadmap,
+    readRoadmap,
+    readRoadmapOnServer,
+  );
+  const completed = useMemo(() => parseCompleted(raw), [raw]);
 
   function persist(next: MilestoneId[]) {
-    setCompleted(next);
     window.sessionStorage.setItem(
       STORAGE_KEYS.ballotRoadmap,
       JSON.stringify(next),
     );
+    roadmapListeners.forEach((listener) => listener());
   }
 
   function toggle(id: MilestoneId) {

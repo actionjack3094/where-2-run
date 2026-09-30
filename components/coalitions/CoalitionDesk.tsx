@@ -86,6 +86,13 @@ export function CoalitionDesk({ directory }: { directory: CoalitionDirectory }) 
   const router = useRouter();
   const [stage, setStage] = useState<DeskStage>("booting");
   const [desk, setDesk] = useState(directory);
+  // A new server payload replaces the local copy. Adjusting state during render
+  // (not in an effect) avoids a wasted render with stale data.
+  const [seenDirectory, setSeenDirectory] = useState(directory);
+  if (seenDirectory !== directory) {
+    setSeenDirectory(directory);
+    setDesk(directory);
+  }
   const [error, setError] = useState<string | null>(directory.error);
   const [banner, setBanner] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -113,10 +120,6 @@ export function CoalitionDesk({ directory }: { directory: CoalitionDirectory }) 
     setDesk(next);
     if (next.error) setError(next.error);
   }, []);
-
-  useEffect(() => {
-    setDesk(directory);
-  }, [directory]);
 
   useEffect(() => {
     let cancelled = false;

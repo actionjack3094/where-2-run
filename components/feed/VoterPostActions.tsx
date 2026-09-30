@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { CivicFence, CivicFenceNote } from "@/components/verification/CivicFence";
 import { ensureArenaUser } from "@/lib/arena/identity";
 import { supabase } from "@/lib/db/supabase";
@@ -24,6 +24,17 @@ function readLikedIds() {
   }
 }
 
+const likeListeners = new Set<() => void>();
+
+function subscribeLikes(listener: () => void) {
+  likeListeners.add(listener);
+  window.addEventListener("storage", listener);
+  return () => {
+    likeListeners.delete(listener);
+    window.removeEventListener("storage", listener);
+  };
+}
+
 export function VoterPostActions({
   debateId,
   candidateA,
@@ -37,7 +48,6 @@ export function VoterPostActions({
   votingOpen: boolean;
   verificationTier?: string | null;
 }) {
-  const [liked, setLiked] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState<string[]>([]);
@@ -46,17 +56,20 @@ export function VoterPostActions({
   const [voteError, setVoteError] = useState<string | null>(null);
   const fenced = !meetsVerificationTier(verificationTier, "voter_verified");
 
-  useEffect(() => {
-    setLiked(readLikedIds().includes(debateId));
-  }, [debateId]);
+  // localStorage is the source of truth for likes; the server snapshot renders "not liked".
+  const liked = useSyncExternalStore(
+    subscribeLikes,
+    () => readLikedIds().includes(debateId),
+    () => false,
+  );
 
   function toggleLike() {
     const nextLiked = !liked;
-    setLiked(nextLiked);
     const ids = new Set(readLikedIds());
     if (nextLiked) ids.add(debateId);
     else ids.delete(debateId);
     window.localStorage.setItem(LIKES_KEY, JSON.stringify([...ids]));
+    likeListeners.forEach((listener) => listener());
   }
 
   function submitComment(event: React.FormEvent) {

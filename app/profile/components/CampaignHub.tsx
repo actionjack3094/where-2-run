@@ -311,7 +311,7 @@ export function CampaignHub({
         </div>
       </section>
 
-      <CoalitionNetwork key={profile.userId} candidateId={profile.userId} />
+      <CoalitionNetwork key={profile.userId} candidateId={profile.userId} manage />
     </div>
   );
 }

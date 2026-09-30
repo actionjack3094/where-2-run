@@ -38,7 +38,7 @@ export function EscrowTracker({
         Escrow tracker
       </h2>
       <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
-        Uncaptured Stripe SetupIntents sitting in {candidateName}'s vault. The
+        Uncaptured Stripe SetupIntents sitting in {candidateName}&apos;s vault. The
         carrot dangles until this campaign files — then the cards charge.
       </p>
 

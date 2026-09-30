@@ -27,19 +27,14 @@ function JuryAppealPanel({
   ocdIdentifiers?: readonly string[];
   className?: string;
 }) {
-  const [fetchedIds, setFetchedIds] = useState<readonly string[] | null>(
-    ocdIdentifiers ?? null,
-  );
+  const [fetchedIds, setFetchedIds] = useState<readonly string[] | null>(null);
   const [pending, startTransition] = useTransition();
   const [voted, setVoted] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (ocdIdentifiers) {
-      setFetchedIds(ocdIdentifiers);
-      return;
-    }
+    if (ocdIdentifiers) return;
 
     let cancelled = false;
     (async () => {
@@ -62,8 +57,10 @@ function JuryAppealPanel({
     };
   }, [ocdIdentifiers]);
 
-  const loaded = fetchedIds !== null;
-  const eligible = loaded && checkLocalEligibility(fetchedIds, electionId);
+  // Props win; otherwise fall back to the profile fetched above.
+  const resolvedIds = ocdIdentifiers ?? fetchedIds;
+  const loaded = resolvedIds !== null;
+  const eligible = loaded && checkLocalEligibility(resolvedIds, electionId);
   const confidence = parseScore(aiScore);
 
   function vote(voteDirection: boolean) {

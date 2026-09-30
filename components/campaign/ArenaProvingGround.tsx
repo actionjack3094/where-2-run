@@ -1,5 +1,6 @@
 "use client";
 
+import { EndorsementBadge } from "@/components/coalitions/EndorsementBadge";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -193,6 +194,7 @@ export function ArenaProvingGround() {
                   <span className="mx-2 text-zinc-600">·</span>
                   ELO {opponent.elo_rating}
                 </p>
+                <EndorsementBadge count={opponent.endorsements} className="mt-3" />
               </div>
               <ChallengeToDebateButton
                 opponentId={opponent.id}

@@ -1,4 +1,5 @@
 import { parseElo } from "@/lib/arena/elo";
+import { loadEndorsementCounts } from "@/lib/candidate-endorsements";
 import { createServerSupabase } from "@/lib/db/supabase-server";
 import { cosineDistanceToMatchPercent } from "@/lib/ideology/stance";
 import type { PrimaryOpponentRow } from "@/types/database.types";
@@ -11,6 +12,8 @@ export type IdeologicalMatch = {
   name: string;
   elo: number;
   alignmentScore: number;
+  /** Incoming coalition endorsements (0 when none). */
+  endorsements: number;
 };
 
 export async function getIdeologicalMatches(): Promise<IdeologicalMatch[]> {
@@ -30,7 +33,10 @@ export async function getIdeologicalMatches(): Promise<IdeologicalMatch[]> {
     throw new Error(error.message);
   }
 
-  return ((data ?? []) as PrimaryOpponentRow[])
+  const rows = (data ?? []) as PrimaryOpponentRow[];
+  const endorsementCounts = await loadEndorsementCounts(rows.map((row) => row.id));
+
+  return rows
     .slice()
     .sort(
       (a, b) => Number(a.cosine_distance) - Number(b.cosine_distance),
@@ -40,5 +46,6 @@ export async function getIdeologicalMatches(): Promise<IdeologicalMatch[]> {
       name: row.username?.trim() || "Unnamed candidate",
       elo: parseElo(row.elo_rating),
       alignmentScore: cosineDistanceToMatchPercent(Number(row.cosine_distance)),
+      endorsements: endorsementCounts.get(row.id) ?? 0,
     }));
 }

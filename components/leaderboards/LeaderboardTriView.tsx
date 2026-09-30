@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { MyContests } from "@/app/leaderboards/components/MyContests";
 import { BackCandidateButton } from "@/components/pledges/BackCandidateButton";
 import { CandidateIdentity } from "@/components/profile/CandidateAvatar";
@@ -89,10 +89,7 @@ export function LeaderboardTriView({
     homeDistrictName: null,
   });
 
-  async function loadBoards() {
-    setError(null);
-    setStage("loading");
-
+  const loadBoards = useCallback(async () => {
     try {
       const arenaUser = await ensureArenaUser();
       const storedDistrictId = window.sessionStorage.getItem(STORAGE_KEYS.districtId);
@@ -230,16 +227,24 @@ export function LeaderboardTriView({
         national: attachElectionLinks(national, elections),
         homeDistrictName: home?.name ?? null,
       });
+      setError(null);
       setStage("ready");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not load leaderboards.");
       setStage("error");
     }
-  }
+  }, []);
 
   useEffect(() => {
+    // Defer to a microtask: the loader's state updates land after the fetch, never synchronously in the effect.
+    void Promise.resolve().then(loadBoards);
+  }, [loadBoards]);
+
+  function retry() {
+    setError(null);
+    setStage("loading");
     void loadBoards();
-  }, []);
+  }
 
   const active = BOARDS.find((entry) => entry.id === board) ?? BOARDS[0];
 
@@ -295,7 +300,7 @@ export function LeaderboardTriView({
             </p>
             <button
               type="button"
-              onClick={() => void loadBoards()}
+              onClick={retry}
               className="inline-flex h-9 items-center justify-center rounded-md border border-gold/50 bg-zinc-800 px-3 text-xs font-medium uppercase tracking-widest text-parchment"
             >
               Try again

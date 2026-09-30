@@ -1,11 +1,14 @@
+import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export function CoalitionBadge({
   name,
+  icon,
   size = "md",
   className,
 }: {
   name: string;
+  icon?: ReactNode;
   size?: "sm" | "md";
   className?: string;
 }) {
@@ -17,6 +20,11 @@ export function CoalitionBadge({
         className,
       )}
     >
+      {icon ? (
+        <span aria-hidden className="mr-1.5 inline-flex">
+          {icon}
+        </span>
+      ) : null}
       {name}
     </span>
   );

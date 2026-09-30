@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { EndorsementBadge } from "@/components/coalitions/EndorsementBadge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   getIdeologicalMatches,
@@ -134,6 +135,7 @@ export default async function MatchmakerPage() {
                         <span className="mt-1 block text-[11px] font-medium uppercase tracking-widest text-zinc-500">
                           {candidate.elo} ELO
                         </span>
+                        <EndorsementBadge count={candidate.endorsements} className="mt-2" />
                       </span>
                       <span className="shrink-0 text-right">
                         <span className="block font-display text-lg tabular-nums text-gold">

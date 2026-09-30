@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireActionUserId } from "@/lib/arena/auth";
 import { isUuid } from "@/lib/arena/display";
 import { createAdminClient } from "@/lib/db/supabase-admin";
+import { loadEndorsementCounts } from "@/lib/candidate-endorsements";
 import { sendChallengeEmail } from "@/lib/actions/emails";
 import {
   cosineDistanceToMatchPercent,
@@ -18,6 +19,8 @@ type AdminClient = ReturnType<typeof createAdminClient>;
 
 export type PrimaryOpponent = PrimaryOpponentRow & {
   matchPercent: number;
+  /** Incoming coalition endorsements (0 when none). */
+  endorsements: number;
 };
 
 export type MatchmakerResult = {
@@ -73,7 +76,7 @@ function toNumber(value: number | string | null | undefined) {
   return Number.isFinite(numeric) ? numeric : 0;
 }
 
-function mapOpponent(row: PrimaryOpponentRow): PrimaryOpponent {
+function mapOpponent(row: PrimaryOpponentRow, endorsements = 0): PrimaryOpponent {
   const cosineDistance = toNumber(row.cosine_distance);
   return {
     ...row,
@@ -81,6 +84,7 @@ function mapOpponent(row: PrimaryOpponentRow): PrimaryOpponent {
     cosine_distance: cosineDistance,
     similarity: toNumber(row.similarity),
     matchPercent: cosineDistanceToMatchPercent(cosineDistance),
+    endorsements,
   };
 }
 
@@ -129,7 +133,9 @@ export async function findPrimaryOpponents(
     throw new Error(error.message);
   }
 
-  const matches = (data ?? []).slice(0, PRIMARY_OPPONENT_LIMIT).map(mapOpponent);
+  const rows = (data ?? []).slice(0, PRIMARY_OPPONENT_LIMIT);
+  const endorsementCounts = await loadEndorsementCounts(rows.map((row) => row.id));
+  const matches = rows.map((row) => mapOpponent(row, endorsementCounts.get(row.id) ?? 0));
   return { userId, hasStance: true, matches };
 }
 

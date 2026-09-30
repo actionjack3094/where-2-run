@@ -150,7 +150,7 @@ export function StanceModal({
   initialTopic?: string;
 }) {
   const router = useRouter();
-  const [topic, setTopic] = useState("");
+  const [topic, setTopic] = useState(initialTopic);
   const [html, setHtml] = useState("");
   const [plain, setPlain] = useState("");
   const [electionId, setElectionId] = useState(AUTO_ASSIGN);
@@ -160,16 +160,20 @@ export function StanceModal({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    setError(null);
-    setNotice(null);
-    setTopic(initialTopic);
-    setHtml("");
-    setPlain("");
-    setElectionId(AUTO_ASSIGN);
-    setEditorKey((value) => value + 1);
-  }, [open, initialTopic]);
+  // Reset the form whenever the modal opens (or its seed topic changes while open).
+  const [seen, setSeen] = useState({ open, initialTopic });
+  if (seen.open !== open || seen.initialTopic !== initialTopic) {
+    setSeen({ open, initialTopic });
+    if (open) {
+      setError(null);
+      setNotice(null);
+      setTopic(initialTopic);
+      setHtml("");
+      setPlain("");
+      setElectionId(AUTO_ASSIGN);
+      setEditorKey((value) => value + 1);
+    }
+  }
 
   useEffect(() => {
     if (!open) return;

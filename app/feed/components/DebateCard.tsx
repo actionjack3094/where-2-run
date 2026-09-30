@@ -7,10 +7,28 @@ import { explainPolicy } from "@/app/actions/explainPolicy";
 import { claimQuestionFloor } from "@/app/actions/feed/claim-floor";
 import { ensureArenaUser } from "@/lib/arena/identity";
 import { supabase } from "@/lib/db/supabase";
+import { EndorsementBadge } from "@/components/coalitions/EndorsementBadge";
 import { questionFloorMode } from "@/lib/feed/types";
 import { SIX_AXIS_LABELS } from "@/lib/ideology/six-axis";
 import { cn } from "@/lib/utils";
 import type { BlueFeedDebate, OcdTrackDebate, RedFeedQuestion, SocialFeedItem } from "@/lib/feed/types";
+import type { DebateCandidate } from "@/types/database.types";
+
+function SeatedCandidate({
+  candidate,
+  fallback,
+}: {
+  candidate: DebateCandidate | null;
+  fallback: string;
+}) {
+  if (!candidate) return <span>{fallback}</span>;
+  return (
+    <span className="inline-flex flex-wrap items-center gap-2">
+      <span>{candidate.username}</span>
+      <EndorsementBadge count={candidate.endorsements} />
+    </span>
+  );
+}
 
 function statusLabel(status: string) {
   if (status === "matching") return "Matching";
@@ -91,9 +109,9 @@ function TrackDebateCard({ item, viewerId }: { item: OcdTrackDebate; viewerId: s
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-zinc-300">
-        <span>{item.candidateA?.username ?? "Open seat"}</span>
+        <SeatedCandidate candidate={item.candidateA} fallback="Open seat" />
         <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">vs</span>
-        <span>{item.candidateB?.username ?? "Open seat"}</span>
+        <SeatedCandidate candidate={item.candidateB} fallback="Open seat" />
       </div>
 
       {canEnter ? (
@@ -327,9 +345,9 @@ function JuryDebateCard({ item }: { item: BlueFeedDebate }) {
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-zinc-300">
-        <span>{item.candidateA?.username ?? "Open seat"}</span>
+        <SeatedCandidate candidate={item.candidateA} fallback="Open seat" />
         <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">vs</span>
-        <span>{item.candidateB?.username ?? "Open seat"}</span>
+        <SeatedCandidate candidate={item.candidateB} fallback="Open seat" />
       </div>
 
       <div className="mt-5 flex flex-col gap-3">

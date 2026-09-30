@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { use, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -30,14 +30,11 @@ function DistrictLeaderboard({ districtId }: { districtId: string }) {
   const [stage, setStage] = useState<"loading" | "ready" | "missing" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
 
-  async function loadBoard() {
-    setError(null);
+  const validId = isUuid(districtId);
+  const view = validId ? stage : "missing";
 
-    if (!isUuid(districtId)) {
-      setDistrict(null);
-      setStage("missing");
-      return;
-    }
+  const loadBoard = useCallback(async () => {
+    if (!isUuid(districtId)) return;
 
     const [{ data: districtRow, error: districtError }, { data: rows, error: statsError }] =
       await Promise.all([
@@ -70,14 +67,22 @@ function DistrictLeaderboard({ districtId }: { districtId: string }) {
       return;
     }
 
+    setError(null);
     setDistrict(districtRow);
     setCandidates((rows ?? []) as CandidateStats[]);
     setStage("ready");
-  }
+  }, [districtId]);
 
   useEffect(() => {
+    // Defer to a microtask: the loader's state updates land after the fetch, never synchronously in the effect.
+    void Promise.resolve().then(loadBoard);
+  }, [loadBoard]);
+
+  function retry() {
+    setError(null);
+    setStage("loading");
     void loadBoard();
-  }, [districtId]);
+  }
 
   return (
     <main className="mx-auto flex min-h-full w-full max-w-2xl flex-1 flex-col px-6 py-10">
@@ -87,7 +92,7 @@ function DistrictLeaderboard({ districtId }: { districtId: string }) {
             Leaderboard
           </p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">
-            {district?.name ?? (stage === "loading" ? "Loading…" : "District")}
+            {district?.name ?? (view === "loading" ? "Loading…" : "District")}
           </h1>
           <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
             {district
@@ -102,22 +107,22 @@ function DistrictLeaderboard({ districtId }: { districtId: string }) {
         </Button>
       </div>
 
-      {stage === "loading" && (
+      {view === "loading" && (
         <p className="mt-16 text-sm text-zinc-500">Tallying the field…</p>
       )}
 
-      {stage === "error" && (
+      {view === "error" && (
         <section className="mt-16 space-y-4">
           <p className="text-sm text-zinc-600 dark:text-zinc-300">
             {error ?? "Could not load this leaderboard."}
           </p>
-          <Button type="button" onClick={() => void loadBoard()}>
+          <Button type="button" onClick={retry}>
             Try again
           </Button>
         </section>
       )}
 
-      {stage === "missing" && (
+      {view === "missing" && (
         <Card className="mt-12">
           <CardHeader>
             <CardTitle>District not found</CardTitle>
@@ -128,7 +133,7 @@ function DistrictLeaderboard({ districtId }: { districtId: string }) {
         </Card>
       )}
 
-      {stage === "ready" && candidates.length === 0 && (
+      {view === "ready" && candidates.length === 0 && (
         <Card className="mt-12">
           <CardHeader>
             <CardTitle>No candidates yet</CardTitle>
@@ -139,7 +144,7 @@ function DistrictLeaderboard({ districtId }: { districtId: string }) {
         </Card>
       )}
 
-      {stage === "ready" && candidates.length > 0 && (
+      {view === "ready" && candidates.length > 0 && (
         <section className="mt-10 flex flex-col gap-3">
           {candidates.map((candidate, index) => (
             <LeaderboardCard key={candidate.id} candidate={candidate} rank={index + 1} />
