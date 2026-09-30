@@ -258,7 +258,8 @@ export async function castJuryVote(input: {
   const { data: voteRows, error: voteError } = await admin
     .from("jury_appeals")
     .select("vote_direction")
-    .eq("debate_id", debate.id);
+    .eq("debate_id", debate.id)
+    .not("vote_direction", "is", null);
 
   if (voteError) {
     if (isMissingRelation(voteError)) throw new Error(missingTableMessage());

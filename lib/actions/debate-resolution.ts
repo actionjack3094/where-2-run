@@ -16,8 +16,9 @@ const LOOKUP_CHUNK = 150;
 /**
  * The district a debate was filed in, as a normalized OCD-ID: the election's
  * OCD-ID, else the OCD-ID on its district row. Mirrors debate_district_ocd_id().
+ * Used by tallying and by the jury-appeal eligibility check.
  */
-async function debateDistrictOcdId(
+export async function debateDistrictOcdId(
   admin: AdminClient,
   debate: {
     election_id: string | null;

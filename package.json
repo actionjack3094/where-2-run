@@ -13,7 +13,8 @@
     "debate:resolve": "tsx scripts/resolve-debate.ts",
     "verification:approve": "tsx scripts/approve-verification.ts",
     "sim:season": "tsx scripts/sim-season.ts",
-    "feed:patch": "tsx scripts/patch-feed-user.ts"
+    "feed:patch": "tsx scripts/patch-feed-user.ts",
+    "jury:test": "tsx scripts/test-jury-appeal.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.58",

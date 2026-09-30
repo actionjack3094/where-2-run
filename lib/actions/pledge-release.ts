@@ -122,3 +122,41 @@ export async function releaseEscrowPledges(
     capturable,
   };
 }
+
+export type RelockEscrowPledgesResult = {
+  /** Released pledges moved back to `pending` by this call. */
+  relocked: number;
+  /** Total dollars across those pledges. */
+  relockedAmount: number;
+};
+
+/**
+ * Put released `alignment_streak_10` pledges back to `pending` for a candidate
+ * in a race. Captured and disbursed rows stay put — those already left escrow.
+ * Idempotent: a second call matches no `released` rows.
+ */
+export async function relockEscrowPledges(
+  candidateId: string,
+  electionId: string,
+): Promise<RelockEscrowPledgesResult> {
+  const admin = createAdminClient();
+  const now = new Date().toISOString();
+
+  const { data, error } = await admin
+    .from("campaign_pledges")
+    .update({ status: "pending", updated_at: now })
+    .eq("candidate_id", candidateId)
+    .eq("election_id", electionId)
+    .eq("status", "released")
+    .eq("unlock_condition", ALIGNMENT_STREAK_UNLOCK_CONDITION)
+    .is("disbursed_at", null)
+    .select("id, amount");
+
+  if (error) throw new Error(`Could not relock escrow pledges: ${error.message}`);
+
+  const relocked = data ?? [];
+  return {
+    relocked: relocked.length,
+    relockedAmount: relocked.reduce((sum, pledge) => sum + Number(pledge.amount), 0),
+  };
+}
