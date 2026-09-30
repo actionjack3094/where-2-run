@@ -1,3 +1,5 @@
+import type { EscrowBalance } from "@/lib/queries/campaign-hub";
+
 export type DraftBounty = {
   id: string;
   amount: number;
@@ -25,8 +27,8 @@ export type MatchedRace = {
   status: string | null;
   alignmentStreak: number;
   isLocked: boolean;
-  /** Dollars in pledges released on this race (streak reached 10). */
-  releasedAmount: number;
+  /** Pledge totals on this race: released (available), pending (locked), disbursed. */
+  escrow: EscrowBalance;
 };
 
 export type CoalitionContact = {

@@ -10,6 +10,7 @@ import { normalizeOcdId } from "@/lib/civic-fencing";
 import { parseVector } from "@/lib/ideology/vector";
 import { recordFromStats } from "@/lib/leaderboard";
 import { parseAmount } from "@/lib/pledges";
+import { emptyEscrowBalance, getCandidateEscrowBalance } from "@/lib/queries/campaign-hub";
 import type {
   CoalitionContact,
   DraftBounty,
@@ -245,13 +246,13 @@ async function loadMatchedRaces(
   userId: string,
   elections: ElectionRow[],
 ): Promise<MatchedRace[]> {
-  const [profileQuery, targetsQuery, releasedByElection] = await Promise.all([
+  const [profileQuery, targetsQuery, escrow] = await Promise.all([
     supabase.from("users").select("matched_ocd_ids").eq("id", userId).maybeSingle(),
     supabase
       .from("campaign_targets")
       .select("id, election_id, status, alignment_streak, is_locked")
       .eq("user_id", userId),
-    loadReleasedByElection(userId),
+    getCandidateEscrowBalance(userId),
   ]);
 
   const matchedIds = new Set(
@@ -286,7 +287,7 @@ async function loadMatchedRaces(
         status: target?.status ?? null,
         alignmentStreak: target?.alignment_streak ?? 0,
         isLocked: Boolean(target?.is_locked),
-        releasedAmount: releasedByElection.get(row.id) ?? 0,
+        escrow: escrow.byElection[row.id] ?? emptyEscrowBalance(),
       };
     })
     .sort(
@@ -354,30 +355,6 @@ async function loadPeople(ids: string[]) {
     .in("id", ids);
   if (error || !data) return [] as PersonRow[];
   return data as PersonRow[];
-}
-
-/** Dollars of released pledges per election for a candidate. */
-async function loadReleasedByElection(userId: string) {
-  const totals = new Map<string, number>();
-  const admin = tryAdminClient();
-  if (!admin) return totals;
-
-  const { data, error } = await admin
-    .from("campaign_pledges")
-    .select("election_id, amount")
-    .eq("candidate_id", userId)
-    .eq("status", "released");
-  if (error) {
-    if (!isMissingRelation(error)) {
-      console.warn("Could not load released pledges.", error.message);
-    }
-    return totals;
-  }
-
-  for (const row of data ?? []) {
-    totals.set(row.election_id, (totals.get(row.election_id) ?? 0) + parseAmount(row.amount));
-  }
-  return totals;
 }
 
 async function loadUncapturedBounties(userId: string) {
