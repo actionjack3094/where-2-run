@@ -197,12 +197,27 @@ export interface DebateEvaluation {
   updated_at: string;
 }
 
+export type JuryAppealStatus = "pending" | "upheld" | "overturned" | "dismissed";
+
 export interface JuryAppeal {
   id: string;
   debate_id: string;
-  voter_id: string;
-  /** True validates the argument. False rejects it. */
-  vote_direction: boolean;
+  /** Legacy civic-gated vote. Null on outcome-contest filings. */
+  voter_id: string | null;
+  /** True validates the argument. False rejects it. Null on outcome-contest filings. */
+  vote_direction: boolean | null;
+  appellant_id: string | null;
+  reason: string | null;
+  status: JuryAppealStatus | string | null;
+  created_at: string;
+}
+
+export interface JuryVerdict {
+  id: string;
+  appeal_id: string;
+  juror_id: string;
+  /** True overturns the contested debate outcome. */
+  overturned: boolean;
   created_at: string;
 }
 
@@ -536,6 +551,8 @@ export type MatchedDistrictRow = {
 
 export type DebateCandidate = Pick<UserProfile, "id" | "username"> & {
   elo_rating?: number;
+  /** Incoming coalition endorsements. Omitted or 0 when none. */
+  endorsements?: number;
 };
 
 export type DebateWithCandidates = Debate & {
@@ -746,8 +763,7 @@ export interface Database {
       };
       jury_appeals: {
         Row: JuryAppeal;
-        Insert: Partial<JuryAppeal> &
-          Pick<JuryAppeal, "debate_id" | "voter_id" | "vote_direction">;
+        Insert: Partial<JuryAppeal> & Pick<JuryAppeal, "debate_id">;
         Update: Partial<JuryAppeal>;
         Relationships: [
           {
@@ -760,6 +776,35 @@ export interface Database {
           {
             foreignKeyName: "jury_appeals_voter_id_fkey";
             columns: ["voter_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "jury_appeals_appellant_id_fkey";
+            columns: ["appellant_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      jury_verdicts: {
+        Row: JuryVerdict;
+        Insert: Partial<JuryVerdict> &
+          Pick<JuryVerdict, "appeal_id" | "juror_id" | "overturned">;
+        Update: Partial<JuryVerdict>;
+        Relationships: [
+          {
+            foreignKeyName: "jury_verdicts_appeal_id_fkey";
+            columns: ["appeal_id"];
+            isOneToOne: false;
+            referencedRelation: "jury_appeals";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "jury_verdicts_juror_id_fkey";
+            columns: ["juror_id"];
             isOneToOne: false;
             referencedRelation: "users";
             referencedColumns: ["id"];
