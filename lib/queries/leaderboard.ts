@@ -74,10 +74,13 @@ export type DistrictRanking = GlobalRanking & {
 };
 
 /**
- * Top candidates by Elo who are actively targeting a district, matched by OCD
+ * Top `limit` candidates by Elo who are actively targeting a district, matched by OCD
  * division. A race counts when `elections.ocd_id` is the division or when its
  * district row carries that `ocd_id`. Candidates with no completed debates are
  * kept (they are still rivals for the seat) and rank by Elo like everyone else.
+ *
+ * If the viewer targets the district but ranks below `limit`, their row (with
+ * their true rank) is appended as an extra final item.
  *
  * `campaign_targets` is private to each user under RLS, so this reads with the
  * service-role client. Only public fields are returned.
@@ -135,14 +138,14 @@ export async function getDistrictLeaderboard(
       .limit(limit);
     if (statsQuery.error) return { rankings: [], error: statsQuery.error.message };
 
-    const rankings = ((statsQuery.data ?? []) as StatsRow[]).map((row, index) => {
+    const toRanking = (row: StatsRow, rank: number): DistrictRanking => {
       const record = recordFromStats({
         debates_won: row.debates_won ?? 0,
         debates_played: row.debates_played ?? 0,
       });
       return {
         id: row.id,
-        rank: index + 1,
+        rank,
         username: row.username?.trim() || "Unnamed candidate",
         elo: parseElo(row.elo_rating),
         wins: record.wins,
@@ -150,7 +153,48 @@ export async function getDistrictLeaderboard(
         isViewer: row.id === viewerId,
         alignmentStreak: streaks.get(row.id) ?? 0,
       };
-    });
+    };
+
+    const topRows = (statsQuery.data ?? []) as StatsRow[];
+    const rankings = topRows.map((row, index) => toRanking(row, index + 1));
+
+    // Pin the viewer below the top N when they target this district but fell
+    // outside the cutoff, so they never vanish from the board.
+    if (viewerId && streaks.has(viewerId) && !topRows.some((row) => row.id === viewerId)) {
+      const viewerQuery = await admin
+        .from("candidate_stats")
+        .select("id, username, elo_rating, debates_won, debates_played")
+        .eq("id", viewerId)
+        .maybeSingle();
+      if (viewerQuery.error) return { rankings, error: viewerQuery.error.message };
+
+      const viewerRow = viewerQuery.data as StatsRow | null;
+      if (viewerRow) {
+        // Only candidates with Elo at or above the viewer's can outrank them.
+        const viewerElo = Number(viewerRow.elo_rating);
+        const aheadQuery = await admin
+          .from("candidate_stats")
+          .select("id, username, elo_rating, debates_won")
+          .in("id", [...streaks.keys()])
+          .neq("id", viewerId)
+          .gte("elo_rating", viewerRow.elo_rating ?? 0);
+        if (aheadQuery.error) return { rankings, error: aheadQuery.error.message };
+
+        const viewerWins = viewerRow.debates_won ?? 0;
+        const viewerName = viewerRow.username?.trim() || "Unnamed candidate";
+        // Mirrors the ordering above: Elo desc, wins desc, username asc.
+        const ahead = (aheadQuery.data ?? []).filter((row) => {
+          const elo = Number(row.elo_rating);
+          if (elo !== viewerElo) return elo > viewerElo;
+          const wins = row.debates_won ?? 0;
+          if (wins !== viewerWins) return wins > viewerWins;
+          return (row.username?.trim() || "Unnamed candidate").localeCompare(viewerName) < 0;
+        }).length;
+
+        // The viewer sits outside the top `limit`, so never rank them inside it.
+        rankings.push(toRanking(viewerRow, Math.max(ahead + 1, topRows.length + 1)));
+      }
+    }
 
     return { rankings, error: null };
   } catch (caught) {

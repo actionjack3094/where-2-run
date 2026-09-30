@@ -294,8 +294,21 @@ function GlobalRankings({
 function RivalList({ rivals }: { rivals: DistrictRanking[] }) {
   return (
     <ol className="flex flex-col gap-2">
-      {rivals.map((rival) => (
+      {rivals.map((rival, index) => (
         <li key={rival.id}>
+          {index > 0 && rival.rank > rivals[index - 1].rank + 1 ? (
+            <div
+              role="separator"
+              aria-label="Ranks skipped"
+              className="mb-2 flex items-center gap-3 px-2 text-zinc-600"
+            >
+              <span className="h-px flex-1 bg-white/10" />
+              <span aria-hidden className="text-xs tracking-[0.3em]">
+                ···
+              </span>
+              <span className="h-px flex-1 bg-white/10" />
+            </div>
+          ) : null}
           <Link
             href={`/candidate/${rival.id}`}
             className={cn(

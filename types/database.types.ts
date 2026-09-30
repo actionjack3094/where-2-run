@@ -235,7 +235,12 @@ export interface Pledge {
   created_at: string;
 }
 
-export type CampaignPledgeStatus = "pending" | "captured" | "failed" | "canceled";
+export type CampaignPledgeStatus =
+  | "pending"
+  | "released"
+  | "captured"
+  | "failed"
+  | "canceled";
 
 export interface CampaignPledge {
   id: string;
@@ -245,7 +250,7 @@ export interface CampaignPledge {
   amount: number | string;
   unlock_condition: string | null;
   debate_id?: string | null;
-  stripe_customer_id: string;
+  stripe_customer_id: string | null;
   stripe_payment_method_id: string | null;
   stripe_setup_intent_id: string | null;
   status: CampaignPledgeStatus | string;
@@ -817,7 +822,7 @@ export interface Database {
         Insert: Partial<CampaignPledge> &
           Pick<
             CampaignPledge,
-            "donor_id" | "candidate_id" | "election_id" | "amount" | "stripe_customer_id"
+            "donor_id" | "candidate_id" | "election_id" | "amount"
           >;
         Update: Partial<CampaignPledge>;
         Relationships: [
@@ -1177,7 +1182,7 @@ export interface Database {
       };
       calibrate_district_alignment: {
         Args: { p_user_id: string; p_district_id: string };
-        Returns: undefined;
+        Returns: { target_election_id: string; new_streak: number }[];
       };
       complete_expired_debates: {
         Args: Record<PropertyKey, never>;

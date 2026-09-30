@@ -42,10 +42,6 @@ export type LeaderboardDashboard = {
     board: BoardPerson[];
     error: string | null;
   };
-  warRoom: {
-    people: BoardPerson[];
-    error: string | null;
-  };
   grassroots: {
     signedIn: boolean;
     policies: GrassrootsPolicy[];
@@ -119,7 +115,6 @@ export async function loadLeaderboardDashboard(
       board: [],
       error: null,
     },
-    warRoom: { people: [], error: null },
     grassroots: { signedIn: Boolean(userId), policies: [], error: null },
     arenas: { races: [], error: null },
   };
@@ -141,7 +136,6 @@ export async function loadLeaderboardDashboard(
       .select("id, topic, election_id, district_id, candidate_a_id, candidate_b_id"),
   ]);
 
-  if (usersQuery.error) empty.warRoom.error = usersQuery.error.message;
   if (electionsQuery.error) {
     empty.matched.error = electionsQuery.error.message;
     empty.arenas.error = electionsQuery.error.message;
@@ -164,9 +158,6 @@ export async function loadLeaderboardDashboard(
     home_ocd_ids?: unknown;
     elo_rating?: number | string | null;
   } | null;
-
-  const byElo = [...users].sort((left, right) => parseElo(right.elo_rating) - parseElo(left.elo_rating));
-  empty.warRoom.people = rankPeople(byElo.slice(0, 10), userId);
 
   const usersById = new Map(users.map((row) => [row.id, row]));
   const matchedWanted = new Set(asOcdArray(me?.matched_ocd_ids).map((id) => normalizeOcdId(id)));
