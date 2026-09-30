@@ -58,9 +58,9 @@ export function CoalitionNetwork({
   const load = useCallback(async () => {
     const current = ++requestId.current;
     const stillCurrent = () => current === requestId.current;
-    setLoading(true);
-    setError(null);
 
+    // No setState before the first await: the mount effect calls this, and the
+    // initial state is already loading. Callers that reload set loading first.
     const session = await supabase.auth.getSession();
     if (!stillCurrent()) return;
     const nextViewerId = session.data.session?.user.id ?? null;
@@ -187,7 +187,9 @@ export function CoalitionNetwork({
   }, [candidateId]);
 
   useEffect(() => {
-    void load();
+    // Deferred so the load starts after the effect returns; load() only sets
+    // state after its first await, and requestId drops stale results on cleanup.
+    void Promise.resolve().then(load);
     return () => {
       requestId.current += 1;
     };
@@ -196,6 +198,7 @@ export function CoalitionNetwork({
   async function onToggle(targetId: string) {
     setPendingId(targetId);
     setError(null);
+    setLoading(true);
     try {
       const { data } = await supabase.auth.getSession();
       await toggleEndorsement(targetId, data.session?.access_token ?? null);
