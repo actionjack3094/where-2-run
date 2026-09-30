@@ -25,6 +25,8 @@ export type MatchedRace = {
   status: string | null;
   alignmentStreak: number;
   isLocked: boolean;
+  /** Dollars in pledges released on this race (streak reached 10). */
+  releasedAmount: number;
 };
 
 export type CoalitionContact = {

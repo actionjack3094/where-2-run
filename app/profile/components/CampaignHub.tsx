@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Lock } from "lucide-react";
+import { Lock, LockKeyhole } from "lucide-react";
 import { declareCampaignTarget } from "@/lib/actions/campaign-targets";
 import { CoalitionNetwork } from "@/app/profile/components/CoalitionNetwork";
 import { EscrowVaultButton } from "@/app/profile/components/EscrowVaultModal";
@@ -380,6 +380,7 @@ function MatchedRaceCard({
   const [error, setError] = useState<string | null>(null);
   const targeting = race.targetId !== null;
   const streak = Math.min(race.alignmentStreak, UNLOCK_STREAK);
+  const lockedIn = targeting && race.alignmentStreak >= UNLOCK_STREAK;
 
   async function target() {
     if (busy) return;
@@ -417,7 +418,7 @@ function MatchedRaceCard({
             )}
           >
             {targeting
-              ? race.isLocked
+              ? lockedIn || race.isLocked
                 ? "Locked"
                 : (STATUS_LABEL[race.status ?? ""] ?? race.status)
               : (race.level ?? "Race")}
@@ -439,7 +440,27 @@ function MatchedRaceCard({
         )}
       </div>
 
-      {targeting ? (
+      {lockedIn ? (
+        <div
+          role="status"
+          className="mt-4 flex items-start gap-3 rounded-lg border border-gold bg-zinc-950 px-4 py-4"
+        >
+          <LockKeyhole className="mt-0.5 size-5 shrink-0 text-gold" aria-hidden />
+          <div className="min-w-0">
+            <p className="font-display text-lg font-semibold uppercase tracking-[0.18em] text-gold">
+              Locked In
+            </p>
+            <p className="mt-1 text-sm leading-6 text-parchment">
+              Funds Released
+              {race.releasedAmount > 0 ? ` · ${formatUsd(race.releasedAmount)}` : ""}
+            </p>
+            <p className="mt-1 text-sm leading-6 text-zinc-400">
+              {race.alignmentStreak} straight aligned debates. Pledges waiting on the{" "}
+              {UNLOCK_STREAK}-debate streak have been released.
+            </p>
+          </div>
+        </div>
+      ) : targeting ? (
         <div className="mt-4">
           <div className="flex items-baseline justify-between gap-4">
             <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">

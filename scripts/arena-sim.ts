@@ -1273,7 +1273,7 @@ async function streakFor(userId: string, ocdId: string) {
 
   const targets = await db()
     .from("campaign_targets")
-    .select("id, alignment_streak")
+    .select("id, election_id, alignment_streak")
     .eq("user_id", userId)
     .in("election_id", electionIds);
   if (targets.error) return { electionIds, streak: 0 };
@@ -1288,7 +1288,36 @@ async function writeStreak(userId: string, ocdId: string, streak: number) {
   }
 }
 
+/**
+ * Move the streak, then release the candidate's alignment_streak_10 pledges for
+ * any race whose streak is now 10 or more. Covers both the RPC path and the
+ * manual writeStreak fallback below. Releasing is idempotent.
+ */
 async function advanceAlignment(userId: string, ocdId: string) {
+  await moveAlignment(userId, ocdId);
+
+  const after = await streakFor(userId, ocdId);
+  const reached = (after.rows ?? [])
+    .filter((row) => Number(row.alignment_streak ?? 0) >= 10)
+    .map((row) => ({
+      target_election_id: String(row.election_id),
+      new_streak: Number(row.alignment_streak),
+    }));
+  if (reached.length === 0) return;
+
+  try {
+    const { releaseForReachedStreaks } = await import("@/lib/actions/pledge-release");
+    for (const release of await releaseForReachedStreaks(userId, reached)) {
+      if (release.released > 0) {
+        console.log(`[Escrow] streak ${release.newStreak} released ${release.released} pledge(s) ($${release.releasedAmount}) for ${userId.slice(0, 8)}`);
+      }
+    }
+  } catch (caught) {
+    console.warn(`[Escrow] release failed: ${caught instanceof Error ? caught.message : String(caught)}`);
+  }
+}
+
+async function moveAlignment(userId: string, ocdId: string) {
   const before = await streakFor(userId, ocdId);
   const calibrated = await db().rpc("calibrate_district_alignment", {
     p_user_id: userId,

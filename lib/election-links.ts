@@ -14,20 +14,20 @@ export function electionProfileHref(slug: string) {
 export function resolveElectionLink(
   elections: ElectionLinkRow[],
   keys: { electionId?: string | null; districtId?: string | null },
-): { slug: string; officeName: string } | null {
+): { id: string; slug: string; officeName: string } | null {
   const electionId = keys.electionId?.trim() || null;
   const districtId = keys.districtId?.trim() || null;
 
   if (electionId) {
     const match = elections.find((row) => row.id === electionId);
-    if (match) return { slug: match.slug, officeName: match.office_name };
+    if (match) return { id: match.id, slug: match.slug, officeName: match.office_name };
   }
 
   if (districtId) {
     const match = elections.find(
       (row) => row.district_id === districtId || row.id === districtId,
     );
-    if (match) return { slug: match.slug, officeName: match.office_name };
+    if (match) return { id: match.id, slug: match.slug, officeName: match.office_name };
   }
 
   return null;

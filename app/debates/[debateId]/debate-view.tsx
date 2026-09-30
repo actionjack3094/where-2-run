@@ -10,6 +10,7 @@ import { AppealModal } from "@/components/debates/AppealModal";
 import { CommentSection } from "@/components/comments/CommentSection";
 import { BackCandidateButton } from "@/components/pledges/BackCandidateButton";
 import { CandidateSeat } from "@/components/pledges/CandidateSeat";
+import { DebatePledgeProvider, PledgeError } from "@/components/pledges/DebatePledgeContext";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -94,6 +95,7 @@ export function DebateView({
   const [judgeError, setJudgeError] = useState<string | null>(null);
   const [appealOpen, setAppealOpen] = useState(false);
   const [electionSlug, setElectionSlug] = useState<string | null>(null);
+  const [electionId, setElectionId] = useState<string | null>(null);
   const voteLockRef = useRef(false);
   const graderWaitRef = useRef(0);
   const judgeRequestRef = useRef(0);
@@ -142,6 +144,7 @@ export function DebateView({
       districtId: (data as DebateWithCandidates).district_id,
     });
     setElectionSlug(race?.slug ?? null);
+    setElectionId(race?.id ?? null);
   }
 
   useEffect(() => {
@@ -483,6 +486,7 @@ export function DebateView({
   }
 
   return (
+    <DebatePledgeProvider electionId={electionId} donorId={user?.id ?? null}>
     <div className="mx-auto flex min-h-full w-full max-w-3xl flex-1 flex-col px-6 py-10">
       <div className="flex flex-wrap items-center gap-4">
         <Link
@@ -523,6 +527,7 @@ export function DebateView({
           simulateBusy={busy}
           onSimulate={() => void handleSimulateOpponentTurn()}
         />
+        <PledgeError />
       </div>
 
       {!debate.candidate_b_id && !isCandidateA && (
@@ -638,6 +643,7 @@ export function DebateView({
         />
       )}
     </div>
+    </DebatePledgeProvider>
   );
 }
 
@@ -1077,6 +1083,7 @@ function TallyBar({
           style={{ width: `${bWidth}%` }}
         />
       </div>
+      <PledgeError className="mt-3 text-xs text-rose-300" />
     </section>
   );
 }
