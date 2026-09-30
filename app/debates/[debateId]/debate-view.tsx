@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { gradeDebate } from "@/app/actions/arbitration/grade-debate";
 import { CIVIC_FENCE_BALLOT_NOTICE } from "@/lib/civic-fencing";
@@ -59,6 +59,18 @@ function unwrapCandidate(
   return Array.isArray(value) ? (value[0] ?? null) : value;
 }
 
+/** First seat without an argument, in round order; null once every round is filled. */
+function findNextTurn(args: Argument[], debate: DebateWithCandidates | null) {
+  if (!debate) return null;
+  for (let round = 1; round <= TOTAL_ROUNDS; round += 1) {
+    const aArg = findArgument(args, debate.candidate_a_id, round);
+    if (!aArg) return { side: "a" as const, round };
+    const bArg = findArgument(args, debate.candidate_b_id, round);
+    if (!bArg) return { side: "b" as const, round };
+  }
+  return null;
+}
+
 function findArgument(
   args: Argument[],
   authorId: string | null,
@@ -100,7 +112,7 @@ export function DebateView({
   const graderWaitRef = useRef(0);
   const judgeRequestRef = useRef(0);
 
-  async function loadDebate() {
+  const loadDebate = useCallback(async () => {
     const { data, error: debateError } = await supabase
       .from("debates")
       .select(
@@ -145,7 +157,7 @@ export function DebateView({
     });
     setElectionSlug(race?.slug ?? null);
     setElectionId(race?.id ?? null);
-  }
+  }, [debateId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -184,7 +196,7 @@ export function DebateView({
       graderWaitRef.current += 1;
       window.clearInterval(interval);
     };
-  }, [debateId]);
+  }, [debateId, loadDebate]);
 
   useEffect(() => {
     if (graderToast !== "done" && graderToast !== "timeout") return;
@@ -210,16 +222,7 @@ export function DebateView({
         ((ALLOW_CANDIDATE_DEBUG_VOTES || !isCandidate) && isVotableStatus)),
   );
 
-  const nextTurn = useMemo(() => {
-    if (!debate) return null;
-    for (let round = 1; round <= TOTAL_ROUNDS; round += 1) {
-      const aArg = findArgument(args, debate.candidate_a_id, round);
-      if (!aArg) return { side: "a" as const, round };
-      const bArg = findArgument(args, debate.candidate_b_id, round);
-      if (!bArg) return { side: "b" as const, round };
-    }
-    return null;
-  }, [args, debate]);
+  const nextTurn = findNextTurn(args, debate);
 
   const floorOpen =
     Boolean(nextTurn) &&
@@ -243,10 +246,6 @@ export function DebateView({
     isCandidate &&
     roundsComplete &&
     (debate?.status === "voting" || debate?.status === "completed");
-
-  useEffect(() => {
-    if (!appealUnlocked) setAppealOpen(false);
-  }, [appealUnlocked]);
 
   useEffect(() => {
     if (!judgeEligible || myEvaluation) return;
@@ -630,7 +629,7 @@ export function DebateView({
       <CommentSection debateId={debateId} comments={comments} />
 
       {graderToast && <GraderToast state={graderToast} />}
-      {appealOpen && myEvaluation && (
+      {appealOpen && appealUnlocked && myEvaluation && (
         <AppealModal
           evaluation={myEvaluation}
           onClose={() => setAppealOpen(false)}
