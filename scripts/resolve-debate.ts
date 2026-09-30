@@ -429,13 +429,36 @@ async function main() {
   const calibrateEnabled = !hasFlag("--no-calibrate");
   const districtRef = (await debateDistrictRef(db, debate)) ?? tx37?.id ?? TX37_OCD_ID;
   const calibrationNotes: string[] = [];
+  const releaseLines: string[] = [];
   if (calibrateEnabled) {
+    const { releaseForReachedStreaks } = await import("@/lib/actions/pledge-release");
     for (const id of tracked) {
-      const { error } = await db.rpc("calibrate_district_alignment", {
+      // Returns one { target_election_id, new_streak } row per target it incremented.
+      const { data, error } = await db.rpc("calibrate_district_alignment", {
         p_user_id: id,
         p_district_id: districtRef,
       });
-      if (error) calibrationNotes.push(`${nameOf(id)}: ${error.message}`);
+      if (error) {
+        calibrationNotes.push(`${nameOf(id)}: ${error.message}`);
+        continue;
+      }
+
+      // new_streak >= 10: release this candidate's alignment_streak_10 pledges.
+      try {
+        const releases = await releaseForReachedStreaks(
+          id,
+          data as { target_election_id: string; new_streak: number }[] | null,
+        );
+        for (const release of releases) {
+          releaseLines.push(
+            `${nameOf(id)}: streak ${release.newStreak} on election ${release.electionId.slice(0, 8)}, released ${release.released} pledge(s) ($${release.releasedAmount})`,
+          );
+        }
+      } catch (caught) {
+        calibrationNotes.push(
+          `${nameOf(id)} escrow release: ${caught instanceof Error ? caught.message : String(caught)}`,
+        );
+      }
     }
   }
 
@@ -494,6 +517,7 @@ async function main() {
     if (ejected.length > 0) log(`[Alignment]   matched_ocd_ids ejected: ${ejected.join(", ")}`);
   }
   if (!calibrateEnabled) log("[Alignment] Calibration skipped (--no-calibrate).");
+  for (const line of releaseLines) log(`[Escrow] ${line}`);
 
   for (const note of calibrationNotes) console.warn(`[Warn] calibrate_district_alignment ${note}`);
   for (const note of emaWarnings) console.warn(`[Warn] update_ideology_vector_ema ${note}`);
