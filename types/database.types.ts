@@ -238,6 +238,7 @@ export interface Pledge {
 export type CampaignPledgeStatus =
   | "pending"
   | "released"
+  | "disbursed"
   | "captured"
   | "failed"
   | "canceled";
@@ -254,6 +255,7 @@ export interface CampaignPledge {
   stripe_payment_method_id: string | null;
   stripe_setup_intent_id: string | null;
   status: CampaignPledgeStatus | string;
+  disbursed_at?: string | null;
   created_at: string;
   updated_at: string;
 }
