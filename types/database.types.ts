@@ -284,6 +284,19 @@ export interface Tier2Verification {
   verified_at: string;
 }
 
+export type Tier2RequestStatus = "pending" | "approved" | "rejected";
+
+/** A document-based residency claim awaiting review (not a verification). */
+export interface Tier2VerificationRequest {
+  id: string;
+  user_id: string;
+  ocd_id: string;
+  document_type: string;
+  status: Tier2RequestStatus | string;
+  created_at: string;
+  reviewed_at: string | null;
+}
+
 export type CivicDataSource = "google_civic" | "democracy_works";
 export type CivicCycleLevel = "federal" | "state" | "municipal";
 export type Tier3ClaimStatus = "pending" | "submitted" | "matched" | "rejected";
@@ -890,6 +903,21 @@ export interface Database {
             foreignKeyName: "tier2_verifications_user_id_fkey";
             columns: ["user_id"];
             isOneToOne: true;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      tier2_verification_requests: {
+        Row: Tier2VerificationRequest;
+        Insert: Partial<Tier2VerificationRequest> &
+          Pick<Tier2VerificationRequest, "user_id" | "ocd_id" | "document_type">;
+        Update: Partial<Tier2VerificationRequest>;
+        Relationships: [
+          {
+            foreignKeyName: "tier2_verification_requests_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
             referencedRelation: "users";
             referencedColumns: ["id"];
           },
