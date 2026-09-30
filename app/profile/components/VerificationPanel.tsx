@@ -16,7 +16,7 @@ async function accessToken() {
 }
 
 /**
- * Manual Tier 2 residency claim for the user's primary home district. The
+ * Manual (Tier 2) residency claim for the user's primary home district. The
  * address-lookup verification above it can already cover a district; this is
  * for claims that need a document reviewed.
  */
@@ -68,15 +68,17 @@ export function VerificationPanel() {
       aria-labelledby="tier2-claim-heading"
       className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-5"
     >
-      <p className="text-[11px] font-medium uppercase tracking-widest text-gold">Civic fencing</p>
+      <p className="text-[11px] font-medium uppercase tracking-widest text-gold">Document review · by hand</p>
       <h2
         id="tier2-claim-heading"
         className="mt-2 font-display text-xl font-semibold tracking-tight text-parchment"
       >
-        Constituent Verification (Tier 2)
+        Tier 2: Manual Constituent Verification
       </h2>
       <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
-        Verify you live in your district so your votes there carry more weight.
+        Can&apos;t get an instant address match, or it got your district wrong? Submit a
+        document and a reviewer will confirm your residency. Once approved, your ballots
+        in that district count 3x. Approval is not instant.
       </p>
 
       {!state ? (
@@ -87,7 +89,7 @@ export function VerificationPanel() {
         </p>
       ) : !state.ocdId ? (
         <p className="mt-4 text-sm leading-6 text-zinc-400">
-          No home district on file yet. Verify your address above to add one.
+          No home district on file yet. Use the Tier 1 address match above to add one.
         </p>
       ) : state.verified ? (
         <p
@@ -95,7 +97,7 @@ export function VerificationPanel() {
           className="mt-4 inline-flex items-center gap-2 rounded-full border border-gold bg-zinc-950 px-4 py-2 text-[11px] font-semibold uppercase tracking-widest text-gold"
         >
           <BadgeCheck className="size-4" aria-hidden />
-          Verified constituent · {state.districtName}
+          Verified · {state.districtName}
         </p>
       ) : isPending ? (
         <div className="mt-4">
@@ -107,7 +109,8 @@ export function VerificationPanel() {
             Verification Pending Review
           </p>
           <p className="mt-3 text-sm leading-6 text-zinc-400">
-            Your residency claim for {state.districtName} is in the queue.
+            Your document claim for {state.districtName} is waiting for a reviewer. Your
+            ballots count 3x there once it is approved.
           </p>
         </div>
       ) : (

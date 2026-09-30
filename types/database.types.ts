@@ -84,8 +84,12 @@ export interface Debate {
   candidate_a_argument: string | null;
   candidate_b_argument: string | null;
   winner_id: string | null;
+  /** Raw ballots, one each. */
   candidate_a_votes: number;
   candidate_b_votes: number;
+  /** Weighted totals (verified constituents count 3). 0 and 0 means not tallied. */
+  candidate_a_weighted_votes?: number;
+  candidate_b_weighted_votes?: number;
   status: DebateStatus | string;
   current_round: number;
   expires_at: string;
