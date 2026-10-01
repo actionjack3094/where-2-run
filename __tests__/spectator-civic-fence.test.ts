@@ -5,43 +5,39 @@ const DISTRICT = "d1570001-0009-4000-8000-000000000009";
 const OCD = "ocd-division/country:us/state:tx/place:austin/council_district:9";
 
 describe("spectatorMayVote", () => {
-  it("allows a tier-2 voter whose district matches the election", () => {
+  it("allows a spectator whose physical district matches the election", () => {
     expect(
       spectatorMayVote({
         electionDistrictId: DISTRICT,
         profileDistrictId: DISTRICT,
-        verificationTier: "voter_verified",
       }),
     ).toBe(true);
   });
 
-  it("allows a verified constituent matched by OCD division", () => {
+  it("allows a spectator whose home OCD matches the election", () => {
     expect(
       spectatorMayVote({
         electionDistrictId: DISTRICT,
         profileDistrictId: null,
         electionOcdId: OCD,
-        ocdIdentifiers: [OCD],
-        districtVerified: true,
-        verificationTier: "unverified",
+        homeOcdIds: [OCD],
       }),
     ).toBe(true);
   });
 
-  it("rejects an out-of-district voter", () => {
+  it("rejects an out-of-district spectator", () => {
     expect(
       spectatorMayVote({
         electionDistrictId: DISTRICT,
         profileDistrictId: "d1570001-0037-4000-8000-000000000037",
         electionOcdId: OCD,
         ocdIdentifiers: ["ocd-division/country:us/state:tx/cd:37"],
-        verificationTier: "candidate_verified",
-        districtVerified: true,
+        homeOcdIds: ["ocd-division/country:us/state:tx/cd:37"],
       }),
     ).toBe(false);
   });
 
-  it("rejects an in-district voter who is not locally verified", () => {
+  it("does not require Tier 2 jury verification to vote in-district", () => {
     expect(
       spectatorMayVote({
         electionDistrictId: DISTRICT,
@@ -49,12 +45,10 @@ describe("spectatorMayVote", () => {
         verificationTier: "phone_verified",
         districtVerified: false,
       }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("uses the spectator ballot error copy", () => {
-    expect(CIVIC_FENCE_BALLOT_ERROR).toBe(
-      "Civic Fencing Active: You must be a verified constituent of this district to cast a ballot.",
-    );
+    expect(CIVIC_FENCE_BALLOT_ERROR).toMatch(/physical ballot/i);
   });
 });

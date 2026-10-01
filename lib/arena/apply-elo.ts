@@ -1,9 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { parseElo, ratingsAfterResult } from "@/lib/arena/elo";
-import { isMarginalConfidence } from "@/lib/arena/evaluations";
+import {
+  K_EARLY,
+  parseElo,
+  ratingsAfterVoteMargin,
+  type TournamentStage,
+} from "@/lib/actions/elo";
 import { pickDebateWinnerId } from "@/lib/arena/winner";
 import { isMissingRelation } from "@/lib/coalitions";
-import type { AppDatabase, Debate, DebateEvaluation, Vote } from "@/types/database.types";
+import type { AppDatabase, Debate, Vote } from "@/types/database.types";
 
 type AdminClient = SupabaseClient<AppDatabase>;
 
@@ -14,11 +18,14 @@ type DebateRow = Pick<
   | "expires_at"
   | "candidate_a_id"
   | "candidate_b_id"
+  | "election_id"
 > & {
   elo_applied_at?: string | null;
 };
 
-async function writeEloRating(admin: AdminClient, userId: string, eloRating: number) {
+type SpectatorBallot = { voteForUserId: string };
+
+async function writeGlobalElo(admin: AdminClient, userId: string, eloRating: number) {
   const viewUpdate = await admin
     .from("candidate_stats")
     .update({ elo_rating: eloRating })
@@ -36,22 +43,112 @@ async function writeEloRating(admin: AdminClient, userId: string, eloRating: num
   if (error) throw error;
 }
 
-async function resolveWinnerId(admin: AdminClient, debate: DebateRow) {
+async function loadTournamentElo(
+  admin: AdminClient,
+  userId: string,
+  electionId: string | null,
+) {
+  if (electionId) {
+    await admin.from("tournament_participants").upsert(
+      { user_id: userId, election_id: electionId },
+      { onConflict: "user_id,election_id", ignoreDuplicates: true },
+    );
+    const { data } = await admin
+      .from("tournament_participants")
+      .select("elo_rating")
+      .eq("user_id", userId)
+      .eq("election_id", electionId)
+      .maybeSingle();
+    if (data?.elo_rating != null) return parseElo(data.elo_rating);
+  }
+
+  const { data } = await admin
+    .from("users")
+    .select("elo_rating")
+    .eq("id", userId)
+    .maybeSingle();
+  return parseElo(data?.elo_rating);
+}
+
+async function writeTournamentElo(
+  admin: AdminClient,
+  userId: string,
+  electionId: string | null,
+  eloRating: number,
+) {
+  await writeGlobalElo(admin, userId, eloRating);
+  if (!electionId) return;
+
+  const { data: existing } = await admin
+    .from("tournament_participants")
+    .select("matches_played")
+    .eq("user_id", userId)
+    .eq("election_id", electionId)
+    .maybeSingle();
+
+  const played = Math.max(0, Number(existing?.matches_played) || 0);
+  const { error } = await admin.from("tournament_participants").upsert(
+    {
+      user_id: userId,
+      election_id: electionId,
+      elo_rating: eloRating,
+      matches_played: played + 1,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id,election_id" },
+  );
+  if (error && !isMissingRelation(error)) throw error;
+}
+
+async function loadSpectatorBallots(
+  admin: AdminClient,
+  debateId: string,
+): Promise<SpectatorBallot[]> {
+  const { data, error } = await admin
+    .from("debate_votes")
+    .select("vote_for_user_id")
+    .eq("match_id", debateId);
+
+  if (!error) {
+    return ((data ?? []) as { vote_for_user_id: string }[]).map((row) => ({
+      voteForUserId: row.vote_for_user_id,
+    }));
+  }
+
+  if (!isMissingRelation(error)) throw error;
+
+  const { data: votes } = await admin
+    .from("votes")
+    .select("candidate_id")
+    .eq("debate_id", debateId)
+    .is("voided_at", null);
+
+  return ((votes ?? []) as Pick<Vote, "candidate_id">[]).map((row) => ({
+    voteForUserId: row.candidate_id,
+  }));
+}
+
+async function resolveWinnerId(
+  admin: AdminClient,
+  debate: DebateRow,
+  ballots: SpectatorBallot[],
+) {
   const { data, error } = await admin.rpc("calculate_debate_winner", {
     debate_uuid: debate.id,
   });
   if (!error) return data ?? null;
 
-  const { data: votes } = await admin
-    .from("votes")
-    .select("candidate_id")
-    .eq("debate_id", debate.id)
-    .is("voided_at", null);
-
-  return pickDebateWinnerId(debate, (votes ?? []) as Pick<Vote, "candidate_id">[]);
+  return pickDebateWinnerId(
+    debate,
+    ballots.map((ballot) => ({ candidate_id: ballot.voteForUserId })),
+  );
 }
 
-export async function applyDebateElo(admin: AdminClient, debateId: string) {
+export async function applyDebateElo(
+  admin: AdminClient,
+  debateId: string,
+  k: number | TournamentStage = K_EARLY,
+) {
   const { data: debateRow, error: debateError } = await admin
     .from("debates")
     .select("*")
@@ -70,31 +167,6 @@ export async function applyDebateElo(admin: AdminClient, debateId: string) {
     Number.isFinite(Date.parse(debate.expires_at)) &&
     Date.parse(debate.expires_at) <= Date.now();
 
-  if (!expired) {
-    const { data: evaluationRows, error: evaluationError } = await admin
-      .from("debate_evaluations")
-      .select("candidate_id, confidence_score, status, ensemble_result")
-      .eq("debate_id", debate.id);
-
-    if (evaluationError && !isMissingRelation(evaluationError)) {
-      throw evaluationError;
-    }
-
-    const pendingAppeal = (
-      (evaluationRows ?? []) as Pick<
-        DebateEvaluation,
-        "candidate_id" | "confidence_score" | "status" | "ensemble_result"
-      >[]
-    ).some(
-      (row) =>
-        isMarginalConfidence(row.confidence_score) &&
-        row.status !== "locked" &&
-        row.ensemble_result == null,
-    );
-
-    if (pendingAppeal) return { skipped: "pending_appeal" as const };
-  }
-
   if (debate.status !== "completed") {
     if (
       !expired ||
@@ -112,7 +184,8 @@ export async function applyDebateElo(admin: AdminClient, debateId: string) {
     if (closeError) throw closeError;
   }
 
-  const winnerId = await resolveWinnerId(admin, debate);
+  const ballots = await loadSpectatorBallots(admin, debate.id);
+  const winnerId = await resolveWinnerId(admin, debate, ballots);
   const loserId =
     winnerId === debate.candidate_a_id
       ? debate.candidate_b_id
@@ -129,26 +202,26 @@ export async function applyDebateElo(admin: AdminClient, debateId: string) {
     return { skipped: "no_winner" as const };
   }
 
-  const { data: statsRows, error: statsError } = await admin
-    .from("candidate_stats")
-    .select("id, elo_rating")
-    .in("id", [winnerId, loserId]);
+  const winnerVotes = ballots.filter((ballot) => ballot.voteForUserId === winnerId).length;
+  const loserVotes = ballots.filter((ballot) => ballot.voteForUserId === loserId).length;
 
-  if (statsError) throw statsError;
+  const [winnerRating, loserRating] = await Promise.all([
+    loadTournamentElo(admin, winnerId, debate.election_id),
+    loadTournamentElo(admin, loserId, debate.election_id),
+  ]);
 
-  const eloById = new Map(
-    ((statsRows ?? []) as { id: string; elo_rating: number | string | null }[]).map(
-      (row) => [row.id, parseElo(row.elo_rating)],
-    ),
-  );
+  const next = ratingsAfterVoteMargin({
+    winnerId,
+    loserId,
+    winnerRating,
+    loserRating,
+    winnerVotes,
+    loserVotes,
+    k,
+  });
 
-  const next = ratingsAfterResult(
-    eloById.get(winnerId) ?? parseElo(null),
-    eloById.get(loserId) ?? parseElo(null),
-  );
-
-  await writeEloRating(admin, winnerId, next.winnerElo);
-  await writeEloRating(admin, loserId, next.loserElo);
+  await writeTournamentElo(admin, winnerId, debate.election_id, next.winner.nextRating);
+  await writeTournamentElo(admin, loserId, debate.election_id, next.loser.nextRating);
 
   const { error: stampError } = await admin
     .from("debates")
@@ -162,29 +235,20 @@ export async function applyDebateElo(admin: AdminClient, debateId: string) {
     skipped: null,
     winnerId,
     loserId,
-    winnerElo: next.winnerElo,
-    loserElo: next.loserElo,
-    expectedWinner: next.expectedWinner,
-    expectedLoser: next.expectedLoser,
+    winnerElo: next.winner.nextRating,
+    loserElo: next.loser.nextRating,
+    expectedWinner: next.winner.expected,
+    expectedLoser: next.loser.expected,
+    margin: next.winner.margin,
+    k: next.winner.k,
   };
 }
 
 export async function lockDebateEloAfterArbitration(
   admin: AdminClient,
   debate: Debate,
-  evaluations: DebateEvaluation[],
+  _evaluations: unknown[],
 ) {
-  const candidateIds = [debate.candidate_a_id, debate.candidate_b_id].filter(
-    (id): id is string => Boolean(id),
-  );
-  const ready = candidateIds.every((candidateId) => {
-    const evaluation = evaluations.find((row) => row.candidate_id === candidateId);
-    if (!evaluation) return false;
-    if (evaluation.status === "locked") return true;
-    return !isMarginalConfidence(evaluation.confidence_score);
-  });
-  if (!ready) return { skipped: "pending_appeal" as const };
-
   if (debate.status === "active" || debate.status === "voting") {
     const { error } = await admin
       .from("debates")
@@ -200,6 +264,7 @@ export async function lockDebateEloAfterArbitration(
 export async function settleExpiredDebateElo(
   admin: AdminClient,
   debateId?: string,
+  k: number | TournamentStage = K_EARLY,
 ) {
   try {
     await admin.rpc("complete_expired_debates");
@@ -210,7 +275,7 @@ export async function settleExpiredDebateElo(
   if (!debateId) return { skipped: "no_debate" as const };
 
   try {
-    return await applyDebateElo(admin, debateId);
+    return await applyDebateElo(admin, debateId, k);
   } catch (error) {
     console.error("applyDebateElo failed", error);
     return { skipped: "elo_error" as const };

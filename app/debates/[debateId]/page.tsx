@@ -3,14 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CountdownTimer } from "@/app/components/countdown-timer";
 import { RealtimeDebateListener } from "@/app/components/realtime-debate-listener";
-import { FileDebateAppeal } from "@/components/debates/FileDebateAppeal";
 import { RoundTranscript } from "@/components/debates/RoundTranscript";
 import { resolveDebate } from "@/lib/actions/debate-resolution";
 import { isUuid } from "@/lib/arena/display";
 import { loadDebateComments } from "@/lib/comments";
 import { createServerSupabase } from "@/lib/db/supabase-server";
 import { roundPairs, turnFor, type ArgumentRow } from "@/lib/debates/round-state";
-import { loadDebateAppealDesk } from "@/lib/jury-desk";
 import { TOTAL_ROUNDS } from "@/lib/arena/time";
 import { displayTally } from "@/lib/vote-weight";
 import { submitArgument } from "./actions";
@@ -159,7 +157,6 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const appealDesk = await loadDebateAppealDesk(debate, user?.id ?? null);
 
   const isCandidateA = user?.id != null && user.id === debate.candidate_a_id;
   const isCandidateB = user?.id != null && user.id === debate.candidate_b_id;
@@ -270,26 +267,6 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
                 <p className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment">
                   {concludedOutcome(debate)}
                 </p>
-                {appealDesk.eligible && appealDesk.withinWindow && !appealDesk.ownAppealId ? (
-                  <FileDebateAppeal
-                    debateId={debate.id}
-                    pendingAppealId={appealDesk.pendingAppealId}
-                  />
-                ) : appealDesk.ownAppealId ? (
-                  <Link
-                    href={`/spectator/jury/${appealDesk.ownAppealId}`}
-                    className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-widest text-gold hover:text-parchment"
-                  >
-                    Open jury dashboard
-                  </Link>
-                ) : appealDesk.eligible && appealDesk.pendingAppealId ? (
-                  <Link
-                    href={`/spectator/jury/${appealDesk.pendingAppealId}`}
-                    className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-widest text-gold hover:text-parchment"
-                  >
-                    Serve on the jury
-                  </Link>
-                ) : null}
               </div>
               <RoundTranscript
                 rounds={rounds}

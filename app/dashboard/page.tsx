@@ -31,6 +31,14 @@ type FeedView = "district" | "campaigns";
 type LevelId = "local" | "state" | "federal";
 type LoadStage = "loading" | "ready" | "error";
 
+type BlueDebate = {
+  id: string;
+  topic: string;
+  status: string;
+  electionId: string | null;
+  officeName: string;
+};
+
 const FEEDS: { id: FeedView; label: string; hint: string }[] = [
   {
     id: "district",
@@ -102,6 +110,7 @@ export default function TriageDashboardPage() {
   const [stage, setStage] = useState<LoadStage>("loading");
   const [error, setError] = useState<string | null>(null);
   const [matches, setMatches] = useState<ElectabilityMatch[]>([]);
+  const [blueDebates, setBlueDebates] = useState<BlueDebate[]>([]);
   const [zip, setZip] = useState("");
   const [zipDraft, setZipDraft] = useState("");
   const [zipBusy, setZipBusy] = useState(false);
@@ -155,6 +164,66 @@ export default function TriageDashboardPage() {
 
       if (residencyZip && residencyZip !== normalizeZip(user?.residency_zip)) {
         await persistResidency(arenaUser.id, residencyZip, districts);
+      }
+
+      const homeOcdIds = Array.isArray(user?.home_ocd_ids)
+        ? user.home_ocd_ids.filter((id): id is string => typeof id === "string")
+        : [];
+      const ocdIdentifiers = Array.isArray(user?.ocd_identifiers)
+        ? user.ocd_identifiers.filter((id): id is string => typeof id === "string")
+        : [];
+      const physicalOcds = new Set(
+        [...homeOcdIds, ...ocdIdentifiers].map((id) => id.trim().toLowerCase()).filter(Boolean),
+      );
+      const zipDistrictIds = districts
+        .filter((district) => zipMatches(residencyZip, district.zip_code))
+        .map((district) => district.id);
+      const { data: electionRows } = await supabase
+        .from("elections")
+        .select("id, slug, office_name, ocd_id, district_id");
+      const physicalElections = (
+        (electionRows ?? []) as {
+          id: string;
+          office_name: string;
+          ocd_id?: string | null;
+          district_id?: string | null;
+        }[]
+      ).filter((election) => {
+        const ocd = election.ocd_id?.trim().toLowerCase() ?? "";
+        if (ocd && physicalOcds.has(ocd)) return true;
+        if (user?.target_district_id && election.district_id === user.target_district_id) {
+          return true;
+        }
+        return Boolean(election.district_id && zipDistrictIds.includes(election.district_id));
+      });
+      const physicalElectionIds = physicalElections.map((election) => election.id);
+      if (physicalElectionIds.length > 0) {
+        const { data: debateRows } = await supabase
+          .from("debates")
+          .select("id, topic, status, election_id")
+          .in("election_id", physicalElectionIds)
+          .in("status", ["waiting", "matching", "active", "voting"])
+          .order("created_at", { ascending: false })
+          .limit(20);
+        const officeById = new Map(
+          physicalElections.map((election) => [election.id, election.office_name]),
+        );
+        setBlueDebates(
+          ((debateRows ?? []) as {
+            id: string;
+            topic: string;
+            status: string;
+            election_id: string | null;
+          }[]).map((debate) => ({
+            id: debate.id,
+            topic: debate.topic,
+            status: debate.status,
+            electionId: debate.election_id,
+            officeName: (debate.election_id && officeById.get(debate.election_id)) || "Your district",
+          })),
+        );
+      } else {
+        setBlueDebates([]);
       }
 
       for (const district of districts) {
@@ -301,6 +370,47 @@ export default function TriageDashboardPage() {
       )}
 
       {stage === "ready" && (
+        <>
+        {feed === "district" ? (
+          <section className="mt-10">
+            <Card className="dark:bg-zinc-950">
+              <CardHeader className="border-b border-zinc-200 dark:border-zinc-800">
+                <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+                  Spectator ballot
+                </p>
+                <CardTitle className="text-lg">Blue Debates</CardTitle>
+                <CardDescription>
+                  Matches in your physical geographic district. Ideology does not enlarge this feed.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-4">
+                {blueDebates.length === 0 ? (
+                  <p className="text-sm leading-6 text-zinc-500 dark:text-zinc-400">
+                    No live debates on your physical ballot yet. Save a ZIP or verify your home
+                    district to see races you can vote on.
+                  </p>
+                ) : (
+                  <ul className="flex flex-col gap-3">
+                    {blueDebates.map((debate) => (
+                      <li key={debate.id}>
+                        <Link href={`/debates/${debate.id}`} className="block">
+                          <div className="rounded-xl border border-zinc-200 p-4 transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-500">
+                            <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-400">
+                              {debate.officeName} · {debate.status}
+                            </p>
+                            <p className="mt-1 text-sm font-semibold leading-snug tracking-tight">
+                              {debate.topic}
+                            </p>
+                          </div>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          </section>
+        ) : null}
         <section className="mt-10 grid min-h-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-3">
           {LEVELS.map((level) => {
             const rows = columns[level.id];
@@ -363,6 +473,7 @@ export default function TriageDashboardPage() {
             );
           })}
         </section>
+        </>
       )}
     </main>
   );

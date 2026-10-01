@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { recordSpectatorVote } from "@/lib/actions/debate-votes";
 import { CIVIC_FENCE_BALLOT_ERROR } from "@/lib/civic-fencing";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 import { assertSpectatorCivicFence } from "@/lib/spectator-civic-fence";
@@ -50,10 +51,10 @@ export async function POST(request: Request) {
     }
 
     const { data: existingVote } = await admin
-      .from("votes")
+      .from("debate_votes")
       .select("id")
-      .eq("debate_id", body.debateId)
-      .eq("voter_id", body.voterId)
+      .eq("match_id", body.debateId)
+      .eq("spectator_id", body.voterId)
       .maybeSingle();
 
     if (existingVote) {
@@ -69,24 +70,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: message }, { status });
     }
 
-    const { data, error } = await admin
-      .from("votes")
-      .insert({
-        debate_id: body.debateId,
-        voter_id: body.voterId,
-        candidate_id: body.candidateId,
-      })
-      .select("*")
-      .single();
+    const recorded = await recordSpectatorVote(admin, {
+      matchId: body.debateId,
+      spectatorId: body.voterId,
+      voteForUserId: body.candidateId,
+    });
 
-    if (error) {
-      if (error.code === "23505") {
-        return NextResponse.json({ error: "You already voted in this debate." }, { status: 409 });
-      }
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (recorded.duplicate) {
+      return NextResponse.json({ error: "You already voted in this debate." }, { status: 409 });
+    }
+    if (recorded.error) {
+      return NextResponse.json({ error: recorded.error.message }, { status: 500 });
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json({ ok: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not record the vote.";
     return NextResponse.json({ error: message }, { status: 500 });

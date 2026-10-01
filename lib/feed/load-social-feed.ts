@@ -11,7 +11,6 @@ import { calculateDraftViability } from "@/lib/math/viability";
 import {
   applyWaitingFloors,
   passesViabilityGate,
-  type BlueFeedDebate,
   type OcdTrackDebate,
   type RedFeedQuestion,
 } from "@/lib/feed/types";
@@ -22,7 +21,6 @@ import type {
   VerificationTier,
 } from "@/types/database.types";
 
-const JURY_DEBATE_STATUSES = ["active", "voting"] as const;
 const ELECTION_COLUMNS =
   "id, slug, office_name, district_id, ocd_id, pvi_score, primary_rep_vector, primary_dem_vector, general_vector, median_voter_vector";
 const ELECTION_COLUMNS_BASIC = "id, slug, office_name, ocd_id";
@@ -36,7 +34,6 @@ export type FeedViewer = {
   /** Ideological matches. Red Cards. */
   matchedOcdIds: string[];
   ideologyVector: unknown;
-  tier2OcdIds: string[];
   targetDistrictId: string | null;
   districtId: string | null;
   districtName: string | null;
@@ -152,7 +149,6 @@ export async function loadFeedViewer(): Promise<FeedViewer> {
     homeOcdIds: [],
     matchedOcdIds: [],
     ideologyVector: null,
-    tier2OcdIds: [],
     targetDistrictId: null,
     districtId: null,
     districtName: null,
@@ -164,11 +160,11 @@ export async function loadFeedViewer(): Promise<FeedViewer> {
 
   const profileSelect =
     "verification_tier, ocd_identifiers, home_ocd_ids, matched_ocd_ids, ideology_vector, target_district_id";
-  const [{ data: profile, error: profileError }, { data: tier2, error: tier2Error }] =
-    await Promise.all([
-      supabase.from("users").select(profileSelect).eq("id", user.id).maybeSingle(),
-      supabase.from("tier2_verifications").select("ocd_ids").eq("user_id", user.id).maybeSingle(),
-    ]);
+  const { data: profile, error: profileError } = await supabase
+    .from("users")
+    .select(profileSelect)
+    .eq("id", user.id)
+    .maybeSingle();
 
   const profileRow =
     profileError && /home_ocd_ids|matched_ocd_ids/i.test(profileError.message)
@@ -209,7 +205,6 @@ export async function loadFeedViewer(): Promise<FeedViewer> {
     homeOcdIds: asOcdArray(row?.home_ocd_ids),
     matchedOcdIds: asOcdArray(row?.matched_ocd_ids),
     ideologyVector: row?.ideology_vector ?? null,
-    tier2OcdIds: tier2Error ? [] : asOcdArray(tier2?.ocd_ids),
     targetDistrictId: districtId,
     districtId,
     districtName,
@@ -592,23 +587,41 @@ async function attachWaitingFloors(
 }
 
 /**
- * Blue loop, jury mode.
- * Active debates between other users whose election OCD-ID is in the
- * viewer's tier-2 verification set.
+ * Blue Cards. Spectator feed for the viewer's physical geographic district.
+ * Debates are included only when `election_id` belongs to a race on that ballot.
  */
-export async function loadJuryDebates(
+export async function loadHomeDebates(
   viewer: FeedViewer,
   limit: number,
   queryText?: string,
-): Promise<LoopQueryResult<BlueFeedDebate>> {
-  const empty: LoopQueryResult<BlueFeedDebate> = { items: [], hasMore: false, error: null };
-  if (!viewer.userId || viewer.tier2OcdIds.length === 0) return empty;
+): Promise<LoopQueryResult<OcdTrackDebate>> {
+  const empty: LoopQueryResult<OcdTrackDebate> = { items: [], hasMore: false, error: null };
+  if (!viewer.userId) return empty;
 
   const supabase = await createServerSupabase();
-  const elections = await loadElections(viewer.districtId);
-  const wanted = new Set(viewer.tier2OcdIds.map((id) => normalizeOcdId(id)));
-  const matched = elections.filter((row) => wanted.has(normalizeOcdId(row.ocd_id)));
-  if (matched.length === 0) return empty;
+  const { data: electionRows, error: electionError } = await supabase
+    .from("elections")
+    .select("id, slug, office_name, ocd_id, district_id");
+
+  if (electionError) {
+    if (isMissingRelation(electionError)) return empty;
+    return { ...empty, error: electionError.message };
+  }
+
+  const wanted = new Set(
+    [...viewer.homeOcdIds, ...viewer.ocdIdentifiers]
+      .map((id) => normalizeOcdId(id))
+      .filter(Boolean),
+  );
+
+  const physical = ((electionRows ?? []) as ElectionRow[]).filter((row) => {
+    if (wanted.has(normalizeOcdId(row.ocd_id))) return true;
+    if (viewer.districtId && row.district_id === viewer.districtId) return true;
+    return false;
+  });
+
+  const electionIds = physical.map((row) => row.id);
+  if (electionIds.length === 0) return empty;
 
   let debates = supabase
     .from("debates")
@@ -619,49 +632,36 @@ export async function loadJuryDebates(
       candidate_b:users!debates_candidate_b_id_fkey ( id, username )
     `,
     )
-    .in(
-      "election_id",
-      matched.map((row) => row.id),
-    )
-    .in("status", [...JURY_DEBATE_STATUSES])
-    .not("candidate_a_id", "is", null)
-    .not("candidate_b_id", "is", null)
-    .neq("candidate_a_id", viewer.userId)
-    .neq("candidate_b_id", viewer.userId)
+    .in("election_id", electionIds)
+    .in("status", [...LIVE_DEBATE_STATUSES])
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (viewer.districtId) {
-    debates = debates.eq("district_id", viewer.districtId);
-  }
-
   const pattern = queryText ? ilikeContains(queryText) : null;
-  if (pattern) {
-    debates = debates.ilike("topic", pattern);
-  }
+  if (pattern) debates = debates.ilike("topic", pattern);
 
   const { data, error } = await debates;
-
   if (error) {
     if (isMissingRelation(error)) return empty;
     return { ...empty, error: error.message };
   }
 
-  const byId = new Map(matched.map((row) => [row.id, row]));
-  const items: BlueFeedDebate[] = [];
-  for (const debate of (data ?? []) as DebateWithCandidates[]) {
-    if (!debate.candidate_a_id || !debate.candidate_b_id) continue;
-    if (debate.candidate_a_id === viewer.userId || debate.candidate_b_id === viewer.userId) {
-      continue;
-    }
+  const electionById = new Map(physical.map((row) => [row.id, row]));
+  const items: OcdTrackDebate[] = [];
+  const rows = (data ?? []) as DebateWithCandidates[];
+
+  for (const debate of rows) {
+    if (!debate.election_id || !electionById.has(debate.election_id)) continue;
+    const election = electionById.get(debate.election_id);
     const candidateA = unwrapCandidate(debate.candidate_a);
     const candidateB = unwrapCandidate(debate.candidate_b);
-    const election = debate.election_id ? byId.get(debate.election_id) : undefined;
     items.push({
       loop: "blue",
+      track: "backyard",
       id: debate.id,
       createdAt: debate.created_at,
       title: debate.topic,
+      policyText: policyTextOf(debate),
       status: debate.status,
       districtName: election?.office_name ?? "Open race",
       electionSlug: election?.slug ?? null,
@@ -673,7 +673,7 @@ export async function loadJuryDebates(
 
   return {
     items: await attachEndorsements(items),
-    hasMore: items.length === limit,
+    hasMore: rows.length === limit,
     error: null,
   };
 }
@@ -797,11 +797,6 @@ async function loadDebatesForOcdIds(
     hasMore: rows.length === limit,
     error: null,
   };
-}
-
-/** Blue Cards. Debates on the user's permanent physical ballot. */
-export function loadHomeDebates(viewer: FeedViewer, limit: number, queryText?: string) {
-  return loadDebatesForOcdIds(viewer, viewer.homeOcdIds, "blue", limit, queryText);
 }
 
 /** Red Cards. Debates in districts the ideological sort has matched. */

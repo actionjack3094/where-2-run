@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { TOTAL_ROUNDS } from "@/lib/arena/time";
+import { recordSpectatorVote } from "@/lib/actions/debate-votes";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 import { createServerSupabase } from "@/lib/db/supabase-server";
 import { argumentFor, isSimUsername, turnFor, type ArgumentRow } from "@/lib/debates/round-state";
@@ -190,17 +191,18 @@ export async function castVote(debateId: string, candidateId: string) {
 
   await assertSpectatorCivicFence(supabase, user.id, debateId);
 
-  const { error } = await supabase.from("votes").insert({
-    debate_id: debateId,
-    voter_id: user.id,
-    candidate_id: candidateId,
+  const admin = createAdminClient();
+  const recorded = await recordSpectatorVote(admin, {
+    matchId: debateId,
+    spectatorId: user.id,
+    voteForUserId: candidateId,
   });
 
-  if (error) {
-    if (error.code === "23505") {
-      throw new Error("You already cast a vote in this debate.");
-    }
-    throw new Error(error.message);
+  if (recorded.duplicate) {
+    throw new Error("You already cast a vote in this debate.");
+  }
+  if (recorded.error) {
+    throw new Error(recorded.error.message);
   }
 
   revalidatePath("/debates/[debateId]", "page");

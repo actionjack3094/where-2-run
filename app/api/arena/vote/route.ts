@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUserId } from "@/lib/arena/auth";
 import { settleExpiredDebateElo } from "@/lib/arena/apply-elo";
+import { recordSpectatorVote } from "@/lib/actions/debate-votes";
 import { CIVIC_FENCE_BALLOT_ERROR } from "@/lib/civic-fencing";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 import { assertSpectatorCivicFence } from "@/lib/spectator-civic-fence";
@@ -56,13 +57,23 @@ export async function POST(request: Request) {
       votedFor === "a" ? debate.candidate_a_id : debate.candidate_b_id;
 
     const { data: existingVote } = await admin
-      .from("votes")
+      .from("debate_votes")
       .select("id")
-      .eq("debate_id", matchId)
-      .eq("voter_id", userId)
+      .eq("match_id", matchId)
+      .eq("spectator_id", userId)
       .maybeSingle();
 
-    if (existingVote) {
+    if (!existingVote) {
+      const { data: legacyVote } = await admin
+        .from("votes")
+        .select("id")
+        .eq("debate_id", matchId)
+        .eq("voter_id", userId)
+        .maybeSingle();
+      if (legacyVote) {
+        return NextResponse.json({ error: "You already voted in this debate." }, { status: 409 });
+      }
+    } else {
       return NextResponse.json({ error: "You already voted in this debate." }, { status: 409 });
     }
 
@@ -75,17 +86,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: message }, { status });
     }
 
-    const { error } = await admin.from("votes").insert({
-      debate_id: matchId,
-      voter_id: userId,
-      candidate_id: candidateId,
+    const recorded = await recordSpectatorVote(admin, {
+      matchId,
+      spectatorId: userId,
+      voteForUserId: candidateId,
     });
 
-    if (error) {
-      if (error.code === "23505") {
-        return NextResponse.json({ error: "You already voted in this debate." }, { status: 409 });
-      }
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (recorded.duplicate) {
+      return NextResponse.json({ error: "You already voted in this debate." }, { status: 409 });
+    }
+    if (recorded.error) {
+      return NextResponse.json({ error: recorded.error.message }, { status: 500 });
     }
 
     try {

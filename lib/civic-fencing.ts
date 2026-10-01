@@ -1,10 +1,8 @@
-import { meetsVerificationTier } from "@/lib/verification";
-
 export const CIVIC_FENCE_BALLOT_ERROR =
-  "Civic Fencing Active: You must be a verified constituent of this district to cast a ballot.";
+  "This debate is not on your physical ballot. Spectators can only vote in races in their home district.";
 
 export const CIVIC_FENCE_BALLOT_NOTICE =
-  "Civic Fencing is active. Only verified local constituents may vote.";
+  "Only constituents of this district may vote here.";
 
 export function isMissingCivicColumn(
   error: { message?: string; code?: string } | null,
@@ -401,24 +399,22 @@ export function jurisdictionLabels(
 }
 
 /**
- * A spectator ballot clears civic fencing when the voter is in the election
- * district and holds local-voting verification (tier 2).
- * District match is the filed district id, or a verified OCD division for that seat.
+ * A spectator ballot clears when the voter lives in the election's physical
+ * district. Ideological matchmaking never grants a vote here.
  */
 export function spectatorMayVote(input: {
   electionDistrictId: string | null;
   profileDistrictId: string | null;
   electionOcdId?: string | null;
   ocdIdentifiers?: readonly string[] | null;
+  homeOcdIds?: readonly string[] | null;
   verificationTier?: unknown;
   districtVerified?: boolean | null;
 }) {
   const sameDistrict =
     Boolean(input.electionDistrictId) &&
     input.profileDistrictId === input.electionDistrictId;
-  const constituent = checkLocalEligibility(input.ocdIdentifiers, input.electionOcdId);
-  const verified =
-    Boolean(input.districtVerified) ||
-    meetsVerificationTier(input.verificationTier, "voter_verified");
-  return (sameDistrict || constituent) && verified;
+  const held = [...(input.homeOcdIds ?? []), ...(input.ocdIdentifiers ?? [])];
+  const constituent = checkLocalEligibility(held, input.electionOcdId);
+  return sameDistrict || constituent;
 }

@@ -1,6 +1,6 @@
 import { normalizeOcdId } from "@/lib/civic-fencing";
 import { createAdminClient } from "@/lib/db/supabase-admin";
-import { formatTally, voteWeight, type Tally } from "@/lib/vote-weight";
+import { formatTally, type Tally } from "@/lib/vote-weight";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -11,12 +11,10 @@ type DebateRecord = {
 };
 
 const PAGE_SIZE = 1000;
-const LOOKUP_CHUNK = 150;
 
 /**
  * The district a debate was filed in, as a normalized OCD-ID: the election's
  * OCD-ID, else the OCD-ID on its district row. Mirrors debate_district_ocd_id().
- * Used by tallying and by the jury-appeal eligibility check.
  */
 export async function debateDistrictOcdId(
   admin: AdminClient,
@@ -70,6 +68,23 @@ async function loadBallots(
   const ballots: { voter_id: string; candidate_id: string }[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
     const { data, error } = await admin
+      .from("debate_votes")
+      .select("spectator_id, vote_for_user_id")
+      .eq("match_id", debateId)
+      .in("vote_for_user_id", candidateIds)
+      .order("id", { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (!error) {
+      const page = (data ?? []) as { spectator_id: string; vote_for_user_id: string }[];
+      ballots.push(
+        ...page.map((row) => ({ voter_id: row.spectator_id, candidate_id: row.vote_for_user_id })),
+      );
+      if (page.length < PAGE_SIZE) break;
+      continue;
+    }
+
+    const legacy = await admin
       .from("votes")
       .select("voter_id, candidate_id")
       .eq("debate_id", debateId)
@@ -78,37 +93,12 @@ async function loadBallots(
       .order("id", { ascending: true })
       .range(from, from + PAGE_SIZE - 1);
 
-    if (error) throw new Error(error.message);
-    const page = (data ?? []) as { voter_id: string; candidate_id: string }[];
+    if (legacy.error) throw new Error(legacy.error.message);
+    const page = (legacy.data ?? []) as { voter_id: string; candidate_id: string }[];
     ballots.push(...page);
     if (page.length < PAGE_SIZE) break;
   }
   return ballots;
-}
-
-/** Which of these voters hold the district in tier2_verifications.ocd_ids. */
-async function verifiedConstituents(
-  admin: AdminClient,
-  voterIds: string[],
-  districtOcdId: string | null,
-) {
-  const verified = new Set<string>();
-  if (!districtOcdId) return verified;
-
-  for (let start = 0; start < voterIds.length; start += LOOKUP_CHUNK) {
-    const { data, error } = await admin
-      .from("tier2_verifications")
-      .select("user_id, ocd_ids")
-      .in("user_id", voterIds.slice(start, start + LOOKUP_CHUNK));
-
-    if (error) throw new Error(error.message);
-    for (const row of (data ?? []) as { user_id: string; ocd_ids: string[] | null }[]) {
-      if ((row.ocd_ids ?? []).some((id) => normalizeOcdId(id) === districtOcdId)) {
-        verified.add(row.user_id);
-      }
-    }
-  }
-  return verified;
 }
 
 export type DebateResolution = {
@@ -117,7 +107,7 @@ export type DebateResolution = {
   districtOcdId: string | null;
   /** One ballot each. Saved to debates.candidate_*_votes. */
   raw: Tally;
-  /** Verified constituents count 3, everyone else 1. Decides the winner. Saved to debates.candidate_*_weighted_votes. */
+  /** Equal-weight spectator totals. Same as raw now that jury weighting is gone. */
   weighted: Tally;
   verifiedBallots: number;
   /** "Raw Votes: X–Y | Weighted Votes: Xw–Yw" */
@@ -140,24 +130,14 @@ async function tallyBallots(
   );
   const districtOcdId = await debateDistrictOcdId(admin, debate);
   const ballots = seated.length > 0 ? await loadBallots(admin, debate.id, seated) : [];
-  const verified = await verifiedConstituents(
-    admin,
-    [...new Set(ballots.map((ballot) => ballot.voter_id))],
-    districtOcdId,
-  );
 
   const raw: Tally = { a: 0, b: 0 };
-  const weighted: Tally = { a: 0, b: 0 };
-  let verifiedBallots = 0;
   for (const ballot of ballots) {
     const side = ballot.candidate_id === debate.candidate_a_id ? "a" : "b";
-    const isVerified = verified.has(ballot.voter_id);
     raw[side] += 1;
-    weighted[side] += voteWeight(isVerified);
-    if (isVerified) verifiedBallots += 1;
   }
 
-  return { raw, weighted, verifiedBallots, districtOcdId };
+  return { raw, weighted: { ...raw }, verifiedBallots: 0, districtOcdId };
 }
 
 function loserIdFor(
@@ -222,8 +202,7 @@ async function incrementMatchRecord(
 
 /**
  * Tallies the ballot and marks an open debate completed. The winner is the side
- * with more weighted votes (verified constituents of the debate's district
- * count 3, everyone else 1). Returns null when the debate is not in voting or
+ * with more spectator votes. Returns null when the debate is not in voting or
  * was resolved by someone else first.
  */
 export async function resolveDebateWithTally(

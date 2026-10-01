@@ -15,8 +15,7 @@ type DebateFenceRow = {
 
 type ProfileFenceRow = {
   target_district_id: string | null;
-  verification_tier: string | null;
-  tier_2_verified: boolean | null;
+  home_ocd_ids?: string[] | null;
   ocd_identifiers: string[] | null;
 };
 
@@ -76,7 +75,7 @@ export async function assertSpectatorCivicFence(
 
   const { data: profileRow, error: profileError } = await supabase
     .from("users")
-    .select("target_district_id, verification_tier, tier_2_verified, ocd_identifiers")
+    .select("target_district_id, home_ocd_ids, ocd_identifiers")
     .eq("id", userId)
     .maybeSingle();
 
@@ -88,8 +87,7 @@ export async function assertSpectatorCivicFence(
     profileDistrictId: profile?.target_district_id ?? null,
     electionOcdId: election.ocdId,
     ocdIdentifiers: asOcdIds(profile?.ocd_identifiers),
-    verificationTier: profile?.verification_tier,
-    districtVerified: profile?.tier_2_verified,
+    homeOcdIds: asOcdIds(profile?.home_ocd_ids),
   });
 
   if (!allowed) {

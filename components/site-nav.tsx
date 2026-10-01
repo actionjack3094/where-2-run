@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { InboxMenu } from "@/app/components/InboxMenu";
 import { LogOutButton } from "@/components/LogOutButton";
-import { countPendingJuryDuty } from "@/lib/actions/jury-feed";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -27,12 +26,6 @@ const links = [
       path.startsWith("/leaderboards") || path.startsWith("/district"),
   },
   {
-    href: "/spectator/jury",
-    label: "Jury Duty",
-    match: (path: string) =>
-      path === "/spectator/jury" || path.startsWith("/spectator/jury/"),
-  },
-  {
     href: "/profile",
     label: "My Profile",
     match: (path: string) =>
@@ -47,36 +40,9 @@ const links = [
   },
 ] as const;
 
-function JuryDutyCount({ count }: { count: number }) {
-  if (count <= 0) return null;
-  return (
-    <span
-      aria-label={`${count} pending ${count === 1 ? "case" : "cases"}`}
-      className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-brass px-1 text-[9px] font-semibold tabular-nums text-charcoal"
-    >
-      {count > 9 ? "9+" : count}
-    </span>
-  );
-}
-
 export function SiteNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [juryDutyCount, setJuryDutyCount] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    countPendingJuryDuty()
-      .then((next) => {
-        if (!cancelled) setJuryDutyCount(next);
-      })
-      .catch(() => {
-        if (!cancelled) setJuryDutyCount(0);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [pathname]);
 
   // Close the mobile menu whenever the route changes.
   const [menuPathname, setMenuPathname] = useState(pathname);
@@ -99,19 +65,16 @@ export function SiteNav() {
           <div className="flex min-w-0 items-center gap-4 overflow-x-auto text-nowrap [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {links.map((link) => {
               const active = link.match(pathname);
-              const juryDuty = link.href === "/spectator/jury";
               return (
                 <Link
                   key={link.href}
                   href={link.href}
                   className={cn(
                     "text-[11px] font-medium uppercase tracking-widest transition-colors",
-                    juryDuty ? "inline-flex items-center" : null,
                     active ? "text-brass" : "text-charcoal-muted hover:text-charcoal",
                   )}
                 >
                   {link.label}
-                  {juryDuty ? <JuryDutyCount count={juryDutyCount} /> : null}
                 </Link>
               );
             })}
@@ -137,19 +100,16 @@ export function SiteNav() {
         >
           {links.map((link) => {
             const active = link.match(pathname);
-            const juryDuty = link.href === "/spectator/jury";
             return (
               <Link
                 key={link.href}
                 href={link.href}
                 className={cn(
                   "rounded-md px-2 py-2 text-[11px] font-medium uppercase tracking-widest transition-colors duration-200 hover:bg-parchment-light",
-                  juryDuty ? "inline-flex w-fit items-center" : null,
                   active ? "text-brass" : "text-charcoal-muted",
                 )}
               >
                 {link.label}
-                {juryDuty ? <JuryDutyCount count={juryDutyCount} /> : null}
               </Link>
             );
           })}

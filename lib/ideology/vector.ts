@@ -34,6 +34,11 @@ export function normalizeVector(values: number[]): IdeologyVector {
   return padded.map(clamp01);
 }
 
+/** Cosine distance in [0, 2]. 0 is identical direction. */
+export function cosineDistance(a: number[], b: number[]): number {
+  return 1 - cosineSimilarity(a, b);
+}
+
 export function cosineSimilarity(a: number[], b: number[]): number {
   const length = Math.min(a.length, b.length);
   if (length === 0) return 0;
