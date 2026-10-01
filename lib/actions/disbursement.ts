@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireActionUserId } from "@/lib/arena/auth";
 import { isUuid } from "@/lib/arena/display";
+import { isMissingSchema } from "@/lib/db/schema-errors";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 
 export type RequestDisbursementResult =
@@ -37,6 +38,21 @@ export async function requestDisbursement(
     }
 
     const admin = createAdminClient();
+    const { data: connect, error: connectError } = await admin
+      .from("profiles")
+      .select("stripe_onboarding_complete")
+      .eq("id", candidateId)
+      .maybeSingle();
+    if (connectError && !isMissingSchema(connectError)) {
+      throw connectError;
+    }
+    if (!connect?.stripe_onboarding_complete) {
+      return {
+        ok: false,
+        error: "Connect a bank account in the vault before requesting a payout.",
+      };
+    }
+
     const { data, error } = await admin
       .from("campaign_pledges")
       .update({

@@ -51,6 +51,8 @@ export type ProfileHubData = {
   election: MatchedElection | null;
   matchedRaces: MatchedRace[];
   network: CoalitionContact[];
+  /** Stripe Connect Express onboarding finished for escrow payouts. */
+  stripeOnboardingComplete: boolean;
   error: string | null;
 };
 

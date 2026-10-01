@@ -10,6 +10,7 @@ import { normalizeOcdId } from "@/lib/civic-fencing";
 import { parseVector } from "@/lib/ideology/vector";
 import { recordFromStats } from "@/lib/leaderboard";
 import { parseAmount } from "@/lib/pledges";
+import { loadStripeConnectStatus } from "@/lib/actions/stripe";
 import { emptyEscrowBalance, getCandidateEscrowBalance } from "@/lib/queries/campaign-hub";
 import type {
   CoalitionContact,
@@ -213,6 +214,7 @@ export async function loadProfileHub(): Promise<ProfileHub> {
   ];
 
   const bio = candidate?.bio?.trim() || null;
+  const connect = await loadStripeConnectStatus(user.id);
 
   return {
     signedIn: true,
@@ -231,6 +233,7 @@ export async function loadProfileHub(): Promise<ProfileHub> {
     election,
     matchedRaces,
     network,
+    stripeOnboardingComplete: connect.complete,
     error: fatal,
   };
 }

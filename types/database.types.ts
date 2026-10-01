@@ -44,6 +44,8 @@ export type AccountProfile = {
   email: string | null;
   full_name: string | null;
   verification_tier: string | null;
+  stripe_account_id: string | null;
+  stripe_onboarding_complete: boolean;
   created_at: string | null;
   updated_at: string | null;
 };

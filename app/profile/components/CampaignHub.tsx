@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import { Lock, LockKeyhole } from "lucide-react";
 import { declareCampaignTarget } from "@/lib/actions/campaign-targets";
-import { requestDisbursement } from "@/lib/actions/disbursement";
 import { CoalitionNetwork } from "@/app/profile/components/CoalitionNetwork";
 import { DeclareCandidacy } from "@/app/profile/components/DeclareCandidacy";
 import { EscrowVaultButton } from "@/app/profile/components/EscrowVaultModal";
+import { VaultPanel } from "@/app/profile/components/VaultPanel";
 import {
   formatStatutoryDate,
   relocationDeadlineIso,
@@ -58,6 +58,18 @@ export function CampaignHub({
   const [targetsLoading, setTargetsLoading] = useState(true);
   const [targetsError, setTargetsError] = useState<string | null>(null);
   const [targetsVersion, setTargetsVersion] = useState(0);
+  const [stripeNotice, setStripeNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    const status = new URLSearchParams(window.location.search).get("stripe");
+    if (status === "connected") {
+      setStripeNotice("Bank account linked. Released escrow can pay out through Stripe.");
+    } else if (status === "refresh") {
+      setStripeNotice("Finish Stripe onboarding to enable payouts.");
+    } else if (status === "error") {
+      setStripeNotice("We couldn't finish Stripe onboarding. Try Connect Bank Account again.");
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -139,9 +151,15 @@ export function CampaignHub({
 
   return (
     <div className="mt-10 flex flex-col gap-14">
+      {stripeNotice ? (
+        <p className="rounded-lg border border-gold/50 bg-zinc-900 px-4 py-3 text-sm leading-6 text-gold" role="status">
+          {stripeNotice}
+        </p>
+      ) : null}
       <MatchedRaces
         races={profile.matchedRaces}
         candidateId={profile.userId}
+        stripeOnboardingComplete={profile.stripeOnboardingComplete}
         onTargeted={handleTargeted}
       />
 
@@ -359,10 +377,12 @@ function EligibilityRoadmapCard({ race }: { race: TargetedRace }) {
 function MatchedRaces({
   races,
   candidateId,
+  stripeOnboardingComplete,
   onTargeted,
 }: {
   races: MatchedRace[];
   candidateId: string;
+  stripeOnboardingComplete: boolean;
   onTargeted: () => void | Promise<void>;
 }) {
   return (
@@ -388,7 +408,12 @@ function MatchedRaces({
         <ul className="mt-6 flex flex-col gap-4">
           {races.map((race) => (
             <li key={race.electionId}>
-              <MatchedRaceCard race={race} candidateId={candidateId} onTargeted={onTargeted} />
+              <MatchedRaceCard
+                race={race}
+                candidateId={candidateId}
+                stripeOnboardingComplete={stripeOnboardingComplete}
+                onTargeted={onTargeted}
+              />
             </li>
           ))}
         </ul>
@@ -400,10 +425,12 @@ function MatchedRaces({
 function MatchedRaceCard({
   race,
   candidateId,
+  stripeOnboardingComplete,
   onTargeted,
 }: {
   race: MatchedRace;
   candidateId: string;
+  stripeOnboardingComplete: boolean;
   onTargeted: () => void | Promise<void>;
 }) {
   const [busy, setBusy] = useState(false);
@@ -519,12 +546,13 @@ function MatchedRaceCard({
         </div>
       ) : null}
 
-      {lockedIn ? (
-        <CampaignVaultPanel
+      {targeting ? (
+        <VaultPanel
           candidateId={candidateId}
           electionId={race.electionId}
           officeName={race.officeName}
           escrow={race.escrow}
+          stripeOnboardingComplete={stripeOnboardingComplete}
           onChanged={onTargeted}
         />
       ) : null}
@@ -538,118 +566,3 @@ function MatchedRaceCard({
   );
 }
 
-function CampaignVaultPanel({
-  candidateId,
-  electionId,
-  officeName,
-  escrow,
-  onChanged,
-}: {
-  candidateId: string;
-  electionId: string;
-  officeName: string;
-  escrow: MatchedRace["escrow"];
-  onChanged: () => void | Promise<void>;
-}) {
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
-  const canRequest = escrow.available > 0;
-
-  useEffect(() => {
-    if (!toast) return;
-    const timeout = window.setTimeout(() => setToast(null), 4000);
-    return () => window.clearTimeout(timeout);
-  }, [toast]);
-
-  function requestPayout() {
-    if (pending || !canRequest) return;
-    setError(null);
-
-    startTransition(async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        const result = await requestDisbursement(
-          candidateId,
-          electionId,
-          data.session?.access_token,
-        );
-        if (!result.ok) {
-          setError(result.error);
-          return;
-        }
-        setToast(`Payout requested: ${usd(result.amount)} for ${officeName}.`);
-        await onChanged();
-      } catch {
-        setError("We couldn't request that payout. Please try again.");
-      }
-    });
-  }
-
-  return (
-    <section
-      aria-label={`Campaign vault for ${officeName}`}
-      className="mt-4 rounded-lg border border-zinc-800 bg-zinc-950 px-4 py-4"
-    >
-      <h4 className="font-display text-base font-semibold tracking-tight text-parchment">
-        Campaign Vault &amp; Disbursements
-      </h4>
-
-      <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-          <dt className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
-            Available balance
-          </dt>
-          <dd className="mt-1 font-display text-3xl font-semibold tabular-nums tracking-tight text-gold">
-            {usd(escrow.available)}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
-            Locked in escrow
-          </dt>
-          <dd className="mt-1 font-display text-3xl font-semibold tabular-nums tracking-tight text-parchment">
-            {usd(escrow.locked)}
-          </dd>
-        </div>
-      </dl>
-
-      {escrow.disbursed > 0 ? (
-        <p className="mt-3 text-sm leading-6 text-zinc-400">
-          {usd(escrow.disbursed)} already paid out.
-        </p>
-      ) : null}
-
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          disabled={!canRequest || pending}
-          onClick={requestPayout}
-          className="inline-flex h-10 items-center justify-center rounded-md bg-gold-strong px-4 text-[11px] font-semibold uppercase tracking-widest text-zinc-950 transition-colors hover:bg-gold disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {pending ? "Requesting…" : canRequest ? "Request Payout" : "No funds to pay out"}
-        </button>
-        <p className="text-xs leading-5 text-zinc-500">
-          Mock payout. Connecting a payout account comes later; no money moves yet.
-        </p>
-      </div>
-
-      {error ? (
-        <p className="mt-3 text-sm leading-6 text-rose-300" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {toast ? (
-        <div
-          role="status"
-          className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-6"
-        >
-          <p className="rounded-full border border-gold bg-zinc-950 px-4 py-2 text-sm text-gold shadow-lg">
-            {toast}
-          </p>
-        </div>
-      ) : null}
-    </section>
-  );
-}
