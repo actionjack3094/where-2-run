@@ -3,6 +3,7 @@ import { isMissingSchema } from "@/lib/db/schema-errors";
 import type { createAdminClient } from "@/lib/db/supabase-admin";
 import {
   campaignRaceLabel,
+  pledgeFundedMessage,
   pledgeReceivedMessage,
 } from "@/lib/notifications/inbox-shared";
 import type { UserNotificationType } from "@/types/database.types";
@@ -81,6 +82,47 @@ export async function notifyPledgeReceived(
       ),
     },
   ]);
+}
+
+/**
+ * Tell the candidate a Checkout payment landed and the pledge is now funded.
+ * Throws on insert failure so the Stripe webhook can retry.
+ */
+export async function notifyPledgeFunded(
+  admin: AdminClient,
+  input: {
+    candidateId: string;
+    electionId: string;
+    amount: number;
+    pledgeId: string;
+  },
+) {
+  const { data: election, error: electionError } = await admin
+    .from("elections")
+    .select("office_name, ocd_id")
+    .eq("id", input.electionId)
+    .maybeSingle();
+  if (electionError && !isMissingSchema(electionError)) throw electionError;
+
+  const { error } = await admin.from("user_notifications").insert({
+    user_id: input.candidateId,
+    type: "pledge_received",
+    reference_id: input.pledgeId,
+    message: pledgeFundedMessage(
+      input.amount,
+      campaignRaceLabel({
+        officeName: election?.office_name,
+        ocdId: election?.ocd_id,
+      }),
+    ),
+  });
+  if (error) {
+    if (isMissingSchema(error)) {
+      throw new Error("user_notifications is not available yet.");
+    }
+    throw error;
+  }
+  revalidateInbox();
 }
 
 export async function notifyAppealFiled(

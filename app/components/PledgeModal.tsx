@@ -3,7 +3,7 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { submitPledge } from "@/lib/actions/pledges";
+import { createPledgeCheckout } from "@/lib/actions/checkout";
 import { formatUsd, MAX_PLEDGE_AMOUNT } from "@/lib/pledges";
 
 export const PLEDGE_AMOUNTS = [10, 25, 50] as const;
@@ -15,8 +15,6 @@ export type PledgeRaceOption = {
 
 const DISCLAIMER =
   "Funds are held in escrow and only released if the candidate maintains a 10-debate ideological alignment streak.";
-
-const TOAST_KEY = "pledge-support-toast";
 
 export function PledgeSupportButton({
   candidateId,
@@ -33,11 +31,13 @@ export function PledgeSupportButton({
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
-    const saved = window.sessionStorage.getItem(TOAST_KEY);
-    if (!saved) return;
-    window.sessionStorage.removeItem(TOAST_KEY);
-    setToast(saved);
-  }, []);
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("pledge") !== "success") return;
+    setToast(`Your pledge to ${candidateName} is funded and held until the alignment streak clears.`);
+    url.searchParams.delete("pledge");
+    const next = `${url.pathname}${url.search}${url.hash}`;
+    window.history.replaceState(null, "", next);
+  }, [candidateName]);
 
   useEffect(() => {
     if (!toast) return;
@@ -63,11 +63,6 @@ export function PledgeSupportButton({
           races={races}
           signedIn={signedIn}
           onClose={() => setOpen(false)}
-          onSuccess={(message) => {
-            window.sessionStorage.setItem(TOAST_KEY, message);
-            setOpen(false);
-            setToast(message);
-          }}
         />
       ) : null}
       {toast ? (
@@ -87,14 +82,12 @@ export function PledgeModal({
   races,
   signedIn,
   onClose,
-  onSuccess,
 }: {
   candidateId: string;
   candidateName: string;
   races: PledgeRaceOption[];
   signedIn: boolean;
   onClose: () => void;
-  onSuccess: (message: string) => void;
 }) {
   const titleId = useId();
   const selectId = useId();
@@ -143,15 +136,15 @@ export function PledgeModal({
     setBusy(true);
     setError(null);
     try {
-      const result = await submitPledge(candidateId, electionId, amount);
+      const result = await createPledgeCheckout(candidateId, electionId, amount);
       if (!result.ok) {
         setError(result.error);
+        setBusy(false);
         return;
       }
-      onSuccess(`Pledged ${formatUsd(result.amount)} to ${candidateName}.`);
+      window.location.href = result.url;
     } catch {
-      setError("We couldn't lock in that pledge. Please try again.");
-    } finally {
+      setError("We couldn't start checkout. Please try again.");
       setBusy(false);
     }
   }
@@ -258,7 +251,7 @@ export function PledgeModal({
           <div className="flex gap-2">
             <Button type="submit" variant="gold" className="flex-1" disabled={busy}>
               {busy
-                ? "Pledging…"
+                ? "Redirecting…"
                 : `Pledge ${Number.isFinite(amount) ? formatUsd(amount) : ""}`}
             </Button>
             <Button type="button" variant="outline" disabled={busy} onClick={onClose}>

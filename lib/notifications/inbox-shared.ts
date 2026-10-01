@@ -46,6 +46,13 @@ export function pledgeReceivedMessage(amount: number, raceLabel: string | null) 
     : `Someone pledged ${dollars} to your campaign!`;
 }
 
+export function pledgeFundedMessage(amount: number, raceLabel: string | null) {
+  const dollars = formatUsd(amount);
+  return raceLabel
+    ? `A supporter officially funded a ${dollars} pledge to your ${raceLabel} campaign.`
+    : `A supporter officially funded a ${dollars} pledge to your campaign.`;
+}
+
 export function notificationHref(
   type: string,
   referenceId: string | null | undefined,

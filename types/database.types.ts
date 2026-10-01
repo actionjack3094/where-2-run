@@ -275,6 +275,8 @@ export interface CampaignPledge {
   stripe_customer_id: string | null;
   stripe_payment_method_id: string | null;
   stripe_setup_intent_id: string | null;
+  /** Checkout Session that collected the funds. Null for cardless or vaulted pledges. */
+  stripe_session_id?: string | null;
   status: CampaignPledgeStatus | string;
   disbursed_at?: string | null;
   created_at: string;
