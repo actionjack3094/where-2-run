@@ -101,49 +101,47 @@ export function VaultPanel({
         Campaign Vault &amp; Disbursements
       </h4>
 
-      {stripeOnboardingComplete ? (
-        <>
-          <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div>
-              <dt className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
-                Available balance
-              </dt>
-              <dd className="mt-1 font-display text-3xl font-semibold tabular-nums tracking-tight text-gold">
-                {usd(balance.available)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
-                Locked in escrow
-              </dt>
-              <dd className="mt-1 font-display text-3xl font-semibold tabular-nums tracking-tight text-parchment">
-                {usd(balance.locked)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
-                Lifetime Disbursed
-              </dt>
-              <dd className="mt-1 font-display text-3xl font-semibold tabular-nums tracking-tight text-parchment">
-                {usd(balance.disbursed)}
-              </dd>
-            </div>
-          </dl>
+      <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div>
+          <dt className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+            Available balance
+          </dt>
+          <dd className="mt-1 font-display text-3xl font-semibold tabular-nums tracking-tight text-gold">
+            {usd(balance.available)}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+            Locked in escrow
+          </dt>
+          <dd className="mt-1 font-display text-3xl font-semibold tabular-nums tracking-tight text-parchment">
+            {usd(balance.locked)}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+            Lifetime Disbursed
+          </dt>
+          <dd className="mt-1 font-display text-3xl font-semibold tabular-nums tracking-tight text-parchment">
+            {usd(balance.disbursed)}
+          </dd>
+        </div>
+      </dl>
 
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              disabled={!canRequest || pending}
-              onClick={requestPayout}
-              className="inline-flex h-10 items-center justify-center rounded-md bg-gold-strong px-4 text-[11px] font-semibold uppercase tracking-widest text-zinc-950 transition-colors hover:bg-gold disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {pending ? "Requesting…" : canRequest ? "Request Payout" : "No funds to pay out"}
-            </button>
-            <p className="text-xs leading-5 text-zinc-500">
-              Payouts transfer to the bank account linked on Stripe.
-            </p>
-          </div>
-        </>
+      {stripeOnboardingComplete ? (
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            disabled={!canRequest || pending}
+            onClick={requestPayout}
+            className="inline-flex h-10 items-center justify-center rounded-md bg-gold-strong px-4 text-[11px] font-semibold uppercase tracking-widest text-zinc-950 transition-colors hover:bg-gold disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {pending ? "Requesting…" : canRequest ? "Request Payout" : "No funds to pay out"}
+          </button>
+          <p className="text-xs leading-5 text-zinc-500">
+            Payouts transfer to the bank account linked on Stripe.
+          </p>
+        </div>
       ) : (
         <div className="mt-4">
           <p className="text-sm leading-6 text-zinc-400">
