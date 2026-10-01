@@ -46,6 +46,13 @@ export function pledgeReceivedMessage(amount: number, raceLabel: string | null) 
     : `Someone pledged ${dollars} to your campaign!`;
 }
 
+export function payoutDisbursedMessage(amount: number, raceLabel: string | null) {
+  const dollars = formatUsd(amount);
+  return raceLabel
+    ? `${dollars} was transferred to your bank for the ${raceLabel} campaign.`
+    : `${dollars} was transferred to your bank.`;
+}
+
 export function pledgeFundedMessage(amount: number, raceLabel: string | null) {
   const dollars = formatUsd(amount);
   return raceLabel
@@ -60,6 +67,7 @@ export function notificationHref(
   const id = referenceId?.trim() || null;
   switch (type) {
     case "pledge_received":
+    case "payout_disbursed":
       return "/profile";
     case "appeal_filed":
     case "verdict_overturned":

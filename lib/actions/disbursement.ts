@@ -1,89 +1,162 @@
 "use server";
 
+import { createHash } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import Stripe from "stripe";
 import { requireActionUserId } from "@/lib/arena/auth";
 import { isUuid } from "@/lib/arena/display";
 import { isMissingSchema } from "@/lib/db/schema-errors";
 import { createAdminClient } from "@/lib/db/supabase-admin";
+import { notifyPayoutDisbursed } from "@/lib/notifications/inbox";
+import { dollarsToCents, getStripe } from "@/lib/stripe";
 
-export type RequestDisbursementResult =
+export type RequestPayoutResult =
   | { ok: true; disbursed: number; amount: number }
   | { ok: false; error: string };
 
+export type RequestDisbursementResult = RequestPayoutResult;
+
+const GENERIC_ERROR = "We couldn't send that payout. Please try again.";
+const NO_FUNDS = "There are no released funds to pay out for this race.";
+const CONNECT_FIRST = "Connect a bank account in the vault before requesting a payout.";
+
+function stripeMessage(error: unknown) {
+  if (error instanceof Stripe.errors.StripeError) {
+    const message = error.message ?? "";
+    if (/insufficient funds|balance/i.test(message)) {
+      return "The platform balance can't cover this payout yet. Try again after the Checkout funds settle.";
+    }
+    return message;
+  }
+  if (error instanceof Error && /STRIPE_SECRET_KEY/i.test(error.message)) {
+    return "Stripe is not configured. Add STRIPE_SECRET_KEY to send payouts.";
+  }
+  return GENERIC_ERROR;
+}
+
+function payoutIdempotencyKey(pledgeIds: string[]) {
+  const digest = createHash("sha256").update(pledgeIds.join(",")).digest("hex");
+  return `escrow-payout-${digest.slice(0, 32)}`;
+}
+
 /**
- * Pay out a candidate's released pledges for one race: `released` ->
- * `disbursed`. Only the candidate themselves can request it.
+ * Move a candidate's released escrow for one race from the platform balance
+ * to their Stripe Express account, then mark those pledges `disbursed`.
+ * Only the candidate themselves can request it.
  *
- * MOCK PAYOUT: this records the request only. No money moves. The real
- * transfer (Stripe Connect to the committee's bank account, gated on the
- * verified treasurer filing) belongs where the marked comment is below.
- *
- * Claim-once: the update only matches `released` rows, so a double click or a
- * retry disburses nothing extra. Database errors are logged, never returned.
+ * The transfer uses an idempotency key over the released pledge ids, so a
+ * retry after a ledger failure does not send the money twice.
  */
-export async function requestDisbursement(
+export async function requestPayout(
   candidateId: string,
   electionId: string,
   accessToken?: string | null,
-): Promise<RequestDisbursementResult> {
+): Promise<RequestPayoutResult> {
   try {
-    if (!isUuid(candidateId?.trim() ?? "") || !isUuid(electionId?.trim() ?? "")) {
+    const candidate = candidateId?.trim() ?? "";
+    const race = electionId?.trim() ?? "";
+    if (!isUuid(candidate) || !isUuid(race)) {
       return { ok: false, error: "Choose a valid race to pay out." };
     }
 
     const userId = await requireActionUserId(accessToken);
     if (!userId) return { ok: false, error: "Sign in to request a payout." };
-    if (userId !== candidateId) {
+    if (userId !== candidate) {
       return { ok: false, error: "You can only request payouts for your own campaign." };
     }
 
     const admin = createAdminClient();
     const { data: connect, error: connectError } = await admin
       .from("profiles")
-      .select("stripe_onboarding_complete")
-      .eq("id", candidateId)
+      .select("stripe_account_id, stripe_onboarding_complete")
+      .eq("id", candidate)
       .maybeSingle();
-    if (connectError && !isMissingSchema(connectError)) {
-      throw connectError;
-    }
-    if (!connect?.stripe_onboarding_complete) {
-      return {
-        ok: false,
-        error: "Connect a bank account in the vault before requesting a payout.",
-      };
+    if (connectError && !isMissingSchema(connectError)) throw connectError;
+
+    const stripeAccountId = connect?.stripe_account_id?.trim() ?? "";
+    if (!connect?.stripe_onboarding_complete || !/^acct_[A-Za-z0-9]+$/.test(stripeAccountId)) {
+      return { ok: false, error: CONNECT_FIRST };
     }
 
-    const { data, error } = await admin
+    const { data: pledges, error: pledgeError } = await admin
+      .from("campaign_pledges")
+      .select("id, amount")
+      .eq("candidate_id", candidate)
+      .eq("election_id", race)
+      .eq("status", "released");
+    if (pledgeError) throw pledgeError;
+
+    const rows = pledges ?? [];
+    const totalCents = rows.reduce((sum, row) => sum + dollarsToCents(Number(row.amount)), 0);
+    if (rows.length === 0 || totalCents <= 0) {
+      return { ok: false, error: NO_FUNDS };
+    }
+
+    const pledgeIds = rows.map((row) => row.id).sort();
+    const transfer = await getStripe().transfers.create(
+      {
+        amount: totalCents,
+        currency: "usd",
+        destination: stripeAccountId,
+        description: "Escrow Payout",
+        metadata: {
+          candidateId: candidate,
+          electionId: race,
+        },
+      },
+      { idempotencyKey: payoutIdempotencyKey(pledgeIds) },
+    );
+
+    const now = new Date().toISOString();
+    const { data: updated, error: updateError } = await admin
       .from("campaign_pledges")
       .update({
         status: "disbursed",
-        disbursed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        disbursed_at: now,
+        updated_at: now,
       })
-      .eq("candidate_id", candidateId)
-      .eq("election_id", electionId)
+      .in("id", pledgeIds)
       .eq("status", "released")
-      .select("id, amount");
-    if (error) throw error;
-
-    const rows = data ?? [];
-    if (rows.length === 0) {
-      return { ok: false, error: "There are no released funds to pay out for this race." };
+      .eq("candidate_id", candidate)
+      .eq("election_id", race)
+      .select("id");
+    if (updateError) {
+      console.error("Stripe transfer succeeded but the vault ledger did not update.", {
+        transferId: transfer.id,
+        pledgeIds,
+        updateError,
+      });
+      return {
+        ok: false,
+        error:
+          "The transfer was sent, but the vault could not be updated. Request the payout again to finish recording it.",
+      };
     }
 
-    // -------------------------------------------------------------------------
-    // REAL TRANSFER GOES HERE. `rows` is exactly what this call just moved to
-    // `disbursed`. Sum the amounts and create a Stripe Connect transfer to the
-    // campaign committee's connected account (idempotency key per pledge id),
-    // and only after the treasurer filing has been verified. If the transfer
-    // fails, set these rows back to `released` so the candidate can retry.
-    // -------------------------------------------------------------------------
-    const amount = rows.reduce((sum, row) => sum + Number(row.amount), 0);
+    const amount = totalCents / 100;
+    try {
+      await notifyPayoutDisbursed(admin, {
+        candidateId: candidate,
+        electionId: race,
+        amount,
+      });
+    } catch (notifyError) {
+      console.error("Payout notification failed.", notifyError);
+    }
 
     revalidatePath("/profile");
-    return { ok: true, disbursed: rows.length, amount };
+    return { ok: true, disbursed: updated?.length ?? pledgeIds.length, amount };
   } catch (caught) {
-    console.error("requestDisbursement failed.", caught);
-    return { ok: false, error: "We couldn't request that payout. Please try again." };
+    console.error("requestPayout failed.", caught);
+    return { ok: false, error: stripeMessage(caught) };
   }
+}
+
+/** @deprecated Use requestPayout. */
+export async function requestDisbursement(
+  candidateId: string,
+  electionId: string,
+  accessToken?: string | null,
+): Promise<RequestDisbursementResult> {
+  return requestPayout(candidateId, electionId, accessToken);
 }

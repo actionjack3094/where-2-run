@@ -336,7 +336,8 @@ export type UserNotificationType =
   | "appeal_filed"
   | "verdict_overturned"
   | "coalition_invite"
-  | "challenge_received";
+  | "challenge_received"
+  | "payout_disbursed";
 
 export interface UserNotification {
   id: string;

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { requestPayout as requestPayoutAction } from "@/lib/actions/disbursement";
 import { createStripeConnectAccount } from "@/lib/actions/stripe";
-import { requestDisbursement } from "@/lib/actions/disbursement";
 import { supabase } from "@/lib/db/supabase";
 import type { EscrowBalance } from "@/lib/queries/campaign-hub";
 
@@ -28,7 +28,16 @@ export function VaultPanel({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const canRequest = stripeOnboardingComplete && escrow.available > 0;
+  const [balance, setBalance] = useState(escrow);
+  const canRequest = stripeOnboardingComplete && balance.available > 0;
+
+  useEffect(() => {
+    setBalance({
+      available: escrow.available,
+      locked: escrow.locked,
+      disbursed: escrow.disbursed,
+    });
+  }, [escrow.available, escrow.locked, escrow.disbursed]);
 
   useEffect(() => {
     if (!toast) return;
@@ -61,7 +70,7 @@ export function VaultPanel({
     startTransition(async () => {
       try {
         const { data } = await supabase.auth.getSession();
-        const result = await requestDisbursement(
+        const result = await requestPayoutAction(
           candidateId,
           electionId,
           data.session?.access_token,
@@ -70,7 +79,12 @@ export function VaultPanel({
           setError(result.error);
           return;
         }
-        setToast(`Payout requested: ${usd(result.amount)} for ${officeName}.`);
+        setBalance((current) => ({
+          available: 0,
+          locked: current.locked,
+          disbursed: current.disbursed + result.amount,
+        }));
+        setToast(`Transferred ${usd(result.amount)} to your bank for ${officeName}.`);
         await onChanged();
       } catch {
         setError("We couldn't request that payout. Please try again.");
@@ -89,13 +103,13 @@ export function VaultPanel({
 
       {stripeOnboardingComplete ? (
         <>
-          <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
               <dt className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
                 Available balance
               </dt>
               <dd className="mt-1 font-display text-3xl font-semibold tabular-nums tracking-tight text-gold">
-                {usd(escrow.available)}
+                {usd(balance.available)}
               </dd>
             </div>
             <div>
@@ -103,16 +117,18 @@ export function VaultPanel({
                 Locked in escrow
               </dt>
               <dd className="mt-1 font-display text-3xl font-semibold tabular-nums tracking-tight text-parchment">
-                {usd(escrow.locked)}
+                {usd(balance.locked)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                Lifetime Disbursed
+              </dt>
+              <dd className="mt-1 font-display text-3xl font-semibold tabular-nums tracking-tight text-parchment">
+                {usd(balance.disbursed)}
               </dd>
             </div>
           </dl>
-
-          {escrow.disbursed > 0 ? (
-            <p className="mt-3 text-sm leading-6 text-zinc-400">
-              {usd(escrow.disbursed)} already paid out.
-            </p>
-          ) : null}
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <button
