@@ -5,6 +5,7 @@ import { requireActionUserId } from "@/lib/arena/auth";
 import { isUuid } from "@/lib/arena/display";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 import { ALIGNMENT_STREAK_UNLOCK_CONDITION } from "@/lib/escrow";
+import { notifyPledgeReceived } from "@/lib/notifications/inbox";
 import { formatUsd, MAX_PLEDGE_AMOUNT } from "@/lib/pledges";
 
 export type SubmitPledgeResult =
@@ -120,6 +121,13 @@ export async function submitPledge(
       }
       throw insertError ?? new Error("Pledge insert returned no row.");
     }
+
+    await notifyPledgeReceived(admin, {
+      candidateId: candidate,
+      electionId: election.id,
+      amount,
+      pledgeId: pledge.id,
+    });
 
     revalidatePath(`/candidate/${candidate}`);
     revalidatePath(`/profile/${candidate}`);

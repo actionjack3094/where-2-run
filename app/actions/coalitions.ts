@@ -10,6 +10,7 @@ import {
   isMissingRelation,
 } from "@/lib/coalitions";
 import { createAdminClient } from "@/lib/db/supabase-admin";
+import { notifyCoalitionInvite } from "@/lib/notifications/inbox";
 import type { CoalitionMember } from "@/types/database.types";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
@@ -167,6 +168,12 @@ export async function inviteToCoalition(
   });
 
   if (insertError) throw new Error(insertError.message);
+
+  await notifyCoalitionInvite(admin, {
+    candidateId: trimmedCandidateId,
+    coalitionId: trimmedCoalitionId,
+    coalitionName: coalition.name,
+  });
 
   revalidateCoalitionPaths([userId, trimmedCandidateId]);
   return { ok: true as const };

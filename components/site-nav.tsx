@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
-import { LibertyBell } from "@/app/components/LibertyBell";
+import { InboxMenu } from "@/app/components/InboxMenu";
 import { LogOutButton } from "@/components/LogOutButton";
 import { countPendingJuryDuty } from "@/lib/actions/jury-feed";
 import { cn } from "@/lib/utils";
@@ -39,11 +39,6 @@ const links = [
       path.startsWith("/profile") ||
       path.startsWith("/my-campaign") ||
       path.startsWith("/dashboard"),
-  },
-  {
-    href: "/notifications",
-    label: "Notifications",
-    match: (path: string) => path.startsWith("/notifications"),
   },
   {
     href: "/verify",
@@ -100,41 +95,28 @@ export function SiteNav() {
         >
           Where 2 Run
         </Link>
-        <nav className="ml-auto hidden min-w-0 items-center gap-4 overflow-x-auto text-nowrap [-ms-overflow-style:none] [scrollbar-width:none] sm:flex [&::-webkit-scrollbar]:hidden">
-          {links.map((link) => {
-            const active = link.match(pathname);
-            const notifications = link.href === "/notifications";
-            const juryDuty = link.href === "/spectator/jury";
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                aria-label={notifications ? "Notifications" : undefined}
-                className={cn(
-                  "text-[11px] font-medium uppercase tracking-widest transition-colors",
-                  notifications
-                    ? "inline-flex items-center"
-                    : juryDuty
-                      ? cn(
-                          "inline-flex items-center",
-                          active ? "text-brass" : "text-charcoal-muted hover:text-charcoal",
-                        )
-                      : active
-                        ? "text-brass"
-                        : "text-charcoal-muted hover:text-charcoal",
-                )}
-              >
-                {notifications ? (
-                  <LibertyBell className="text-brass-dark hover:text-brass transition-colors" />
-                ) : (
-                  <>
-                    {link.label}
-                    {juryDuty ? <JuryDutyCount count={juryDutyCount} /> : null}
-                  </>
-                )}
-              </Link>
-            );
-          })}
+        <nav className="ml-auto hidden min-w-0 items-center gap-4 sm:flex">
+          <div className="flex min-w-0 items-center gap-4 overflow-x-auto text-nowrap [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {links.map((link) => {
+              const active = link.match(pathname);
+              const juryDuty = link.href === "/spectator/jury";
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn(
+                    "text-[11px] font-medium uppercase tracking-widest transition-colors",
+                    juryDuty ? "inline-flex items-center" : null,
+                    active ? "text-brass" : "text-charcoal-muted hover:text-charcoal",
+                  )}
+                >
+                  {link.label}
+                  {juryDuty ? <JuryDutyCount count={juryDutyCount} /> : null}
+                </Link>
+              );
+            })}
+          </div>
+          <InboxMenu />
           <LogOutButton />
         </nav>
         <button
@@ -155,38 +137,25 @@ export function SiteNav() {
         >
           {links.map((link) => {
             const active = link.match(pathname);
-            const notifications = link.href === "/notifications";
             const juryDuty = link.href === "/spectator/jury";
             return (
               <Link
                 key={link.href}
                 href={link.href}
-                aria-label={notifications ? "Notifications" : undefined}
                 className={cn(
                   "rounded-md px-2 py-2 text-[11px] font-medium uppercase tracking-widest transition-colors duration-200 hover:bg-parchment-light",
-                  notifications
-                    ? "inline-flex w-fit items-center"
-                    : juryDuty
-                      ? cn(
-                          "inline-flex w-fit items-center",
-                          active ? "text-brass" : "text-charcoal-muted",
-                        )
-                      : active
-                        ? "text-brass"
-                        : "text-charcoal-muted",
+                  juryDuty ? "inline-flex w-fit items-center" : null,
+                  active ? "text-brass" : "text-charcoal-muted",
                 )}
               >
-                {notifications ? (
-                  <LibertyBell className="text-brass-dark hover:text-brass transition-colors" />
-                ) : (
-                  <>
-                    {link.label}
-                    {juryDuty ? <JuryDutyCount count={juryDutyCount} /> : null}
-                  </>
-                )}
+                {link.label}
+                {juryDuty ? <JuryDutyCount count={juryDutyCount} /> : null}
               </Link>
             );
           })}
+          <div className="px-2 py-2">
+            <InboxMenu />
+          </div>
           <div className="px-2 py-2">
             <LogOutButton />
           </div>

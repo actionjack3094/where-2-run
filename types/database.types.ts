@@ -327,6 +327,23 @@ export type ArbitrationKind = "flagged_vote" | "bad_faith_argument" | "abandoned
 export type ArbitrationStatus = "open" | "upheld" | "dismissed";
 export type NotificationKind = "debate_countdown" | "local_challenge" | "digest";
 
+export type UserNotificationType =
+  | "pledge_received"
+  | "appeal_filed"
+  | "verdict_overturned"
+  | "coalition_invite"
+  | "challenge_received";
+
+export interface UserNotification {
+  id: string;
+  user_id: string;
+  type: UserNotificationType | string;
+  reference_id: string | null;
+  message: string;
+  read_at: string | null;
+  created_at: string;
+}
+
 export interface ElectionCycle {
   id: string;
   source: CivicDataSource | string;
@@ -1057,6 +1074,21 @@ export interface Database {
           {
             foreignKeyName: "notification_dispatches_recipient_id_fkey";
             columns: ["recipient_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      user_notifications: {
+        Row: UserNotification;
+        Insert: Partial<UserNotification> &
+          Pick<UserNotification, "user_id" | "type" | "message">;
+        Update: Partial<UserNotification>;
+        Relationships: [
+          {
+            foreignKeyName: "user_notifications_user_id_fkey";
+            columns: ["user_id"];
             isOneToOne: false;
             referencedRelation: "users";
             referencedColumns: ["id"];

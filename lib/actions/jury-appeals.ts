@@ -14,6 +14,7 @@ import {
   withinAppealWindow,
   type DebateResolutionClock,
 } from "@/lib/jury-window";
+import { notifyAppealFiled } from "@/lib/notifications/inbox";
 import type { Debate, JuryAppeal } from "@/types/database.types";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
@@ -160,6 +161,11 @@ export async function fileDebateAppeal(
       }
       throw insertError ?? new Error("Appeal insert returned no row.");
     }
+
+    await notifyAppealFiled(admin, {
+      appealId: created.id,
+      candidateIds: [debate.candidate_a_id, debate.candidate_b_id],
+    });
 
     revalidateAppeal(debate.id, created.id);
     return { ok: true, appealId: created.id };

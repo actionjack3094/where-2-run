@@ -7,6 +7,7 @@ import { isUuid } from "@/lib/arena/display";
 import { parseElo, ratingsAfterResult } from "@/lib/arena/elo";
 import { isMissingRelation } from "@/lib/coalitions";
 import { createAdminClient } from "@/lib/db/supabase-admin";
+import { notifyVerdictOverturned } from "@/lib/notifications/inbox";
 import type { Debate, JuryAppeal } from "@/types/database.types";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
@@ -391,6 +392,10 @@ export async function resolveJuryAppeal(appealId: string): Promise<JuryResolutio
   if (!debate) return { ok: false, error: "Debate not found." };
 
   const rollback = await overturnDebate(admin, debate);
+  await notifyVerdictOverturned(admin, {
+    appealId: appeal.id,
+    winnerId: rollback.previousWinnerId,
+  });
 
   return {
     ok: true,

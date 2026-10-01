@@ -10,6 +10,7 @@ import {
   digestSubject,
   type DigestKind,
 } from "@/lib/notifications/digests";
+import { notifyChallengeReceived } from "@/lib/notifications/inbox";
 import { siteOrigin } from "@/lib/site";
 
 const DEBATE_ORIGIN = siteOrigin();
@@ -107,15 +108,21 @@ export async function sendChallengeEmail(
   }
 
   const email = await recipientEmail(admin, targetUserId);
+  const debateUrl = `${DEBATE_ORIGIN}/debates/${debateId}`;
+  const message = challengeMessage(challengerName);
+
+  await notifyChallengeReceived(admin, {
+    targetUserId,
+    debateId,
+    message,
+  });
+
   if (bypassResend(email, "challenge email")) return;
 
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from = process.env.RESEND_FROM_EMAIL?.trim();
   if (!apiKey) throw new Error("Missing RESEND_API_KEY");
   if (!from) throw new Error("Missing RESEND_FROM_EMAIL");
-
-  const debateUrl = `${DEBATE_ORIGIN}/debates/${debateId}`;
-  const message = challengeMessage(challengerName);
 
   const resend = new Resend(apiKey);
   const { data, error } = await resend.emails.send({
