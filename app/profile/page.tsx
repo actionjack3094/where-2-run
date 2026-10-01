@@ -75,15 +75,21 @@ export default function MyProfilePage() {
         </header>
 
         {hub ? (
-          <div className="mt-8">
+          <section aria-labelledby="constituent-hub-heading" className="mt-8 flex flex-col gap-6">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+                Constituent Hub
+              </p>
+              <h2
+                id="constituent-hub-heading"
+                className="mt-2 font-display text-xl font-semibold tracking-tight text-parchment"
+              >
+                Civic standing
+              </h2>
+            </div>
             <Tier2Verification />
-          </div>
-        ) : null}
-
-        {hub ? (
-          <div className="mt-6">
             <VerificationPanel />
-          </div>
+          </section>
         ) : null}
 
         <div

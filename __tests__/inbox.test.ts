@@ -27,5 +27,6 @@ describe("inbox copy", () => {
     expect(notificationHref("coalition_invite", "coal-1")).toBe("/my-campaign/coalitions");
     expect(notificationHref("challenge_received", "debate-1")).toBe("/debates/debate-1");
     expect(notificationHref("payout_disbursed", "election-1")).toBe("/profile");
+    expect(notificationHref("jury_unlocked", null)).toBe("/spectator/jury");
   });
 });

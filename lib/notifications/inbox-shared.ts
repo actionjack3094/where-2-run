@@ -68,10 +68,8 @@ export function notificationHref(
   switch (type) {
     case "pledge_received":
     case "payout_disbursed":
+    case "pledge_funded":
       return "/profile";
-    case "appeal_filed":
-    case "verdict_overturned":
-      return id ? `/spectator/jury/${id}` : "/spectator/jury";
     case "coalition_invite":
       return "/my-campaign/coalitions";
     case "challenge_received":

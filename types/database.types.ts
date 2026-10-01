@@ -46,6 +46,10 @@ export type AccountProfile = {
   verification_tier: string | null;
   stripe_account_id: string | null;
   stripe_onboarding_complete: boolean;
+  /** Stripe Identity status. verified unlocks Tier 2 jury rights. */
+  tier2_status: "unverified" | "pending" | "verified" | string;
+  stripe_identity_session_id: string | null;
+  identity_verified_at: string | null;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -228,8 +232,33 @@ export interface Vote {
   debate_id: string;
   voter_id: string;
   candidate_id: string;
-  /** Set when the jury upholds a report against this ballot. */
+  /** Set when a ballot is later withdrawn. */
   voided_at?: string | null;
+  created_at: string;
+}
+
+export interface UserIdeology {
+  user_id: string;
+  vector_data: IdeologyVector | string | null;
+  scores: Record<string, number> | number[] | Record<string, unknown>;
+  updated_at: string;
+}
+
+export interface TournamentParticipant {
+  id: string;
+  user_id: string;
+  election_id: string;
+  elo_rating: number;
+  matches_played: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DebateVote {
+  id: string;
+  match_id: string;
+  spectator_id: string;
+  vote_for_user_id: string;
   created_at: string;
 }
 
@@ -333,11 +362,10 @@ export type NotificationKind = "debate_countdown" | "local_challenge" | "digest"
 
 export type UserNotificationType =
   | "pledge_received"
-  | "appeal_filed"
-  | "verdict_overturned"
   | "coalition_invite"
   | "challenge_received"
-  | "payout_disbursed";
+  | "payout_disbursed"
+  | "pledge_funded";
 
 export interface UserNotification {
   id: string;
@@ -783,56 +811,6 @@ export interface Database {
           },
         ];
       };
-      jury_appeals: {
-        Row: JuryAppeal;
-        Insert: Partial<JuryAppeal> & Pick<JuryAppeal, "debate_id">;
-        Update: Partial<JuryAppeal>;
-        Relationships: [
-          {
-            foreignKeyName: "jury_appeals_debate_id_fkey";
-            columns: ["debate_id"];
-            isOneToOne: false;
-            referencedRelation: "debates";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "jury_appeals_voter_id_fkey";
-            columns: ["voter_id"];
-            isOneToOne: false;
-            referencedRelation: "users";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "jury_appeals_appellant_id_fkey";
-            columns: ["appellant_id"];
-            isOneToOne: false;
-            referencedRelation: "users";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      jury_verdicts: {
-        Row: JuryVerdict;
-        Insert: Partial<JuryVerdict> &
-          Pick<JuryVerdict, "appeal_id" | "juror_id" | "overturned">;
-        Update: Partial<JuryVerdict>;
-        Relationships: [
-          {
-            foreignKeyName: "jury_verdicts_appeal_id_fkey";
-            columns: ["appeal_id"];
-            isOneToOne: false;
-            referencedRelation: "jury_appeals";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "jury_verdicts_juror_id_fkey";
-            columns: ["juror_id"];
-            isOneToOne: false;
-            referencedRelation: "users";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       votes: {
         Row: Vote;
         Insert: Partial<Vote> & Pick<Vote, "debate_id" | "voter_id" | "candidate_id">;
@@ -855,6 +833,71 @@ export interface Database {
           {
             foreignKeyName: "votes_candidate_id_fkey";
             columns: ["candidate_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      user_ideologies: {
+        Row: UserIdeology;
+        Insert: Partial<UserIdeology> & Pick<UserIdeology, "user_id">;
+        Update: Partial<UserIdeology>;
+        Relationships: [
+          {
+            foreignKeyName: "user_ideologies_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      tournament_participants: {
+        Row: TournamentParticipant;
+        Insert: Partial<TournamentParticipant> &
+          Pick<TournamentParticipant, "user_id" | "election_id">;
+        Update: Partial<TournamentParticipant>;
+        Relationships: [
+          {
+            foreignKeyName: "tournament_participants_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tournament_participants_election_id_fkey";
+            columns: ["election_id"];
+            isOneToOne: false;
+            referencedRelation: "elections";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      debate_votes: {
+        Row: DebateVote;
+        Insert: Partial<DebateVote> &
+          Pick<DebateVote, "match_id" | "spectator_id" | "vote_for_user_id">;
+        Update: Partial<DebateVote>;
+        Relationships: [
+          {
+            foreignKeyName: "debate_votes_match_id_fkey";
+            columns: ["match_id"];
+            isOneToOne: false;
+            referencedRelation: "debates";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "debate_votes_spectator_id_fkey";
+            columns: ["spectator_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "debate_votes_vote_for_user_id_fkey";
+            columns: ["vote_for_user_id"];
             isOneToOne: false;
             referencedRelation: "users";
             referencedColumns: ["id"];
@@ -960,21 +1003,6 @@ export interface Database {
             columns: ["election_id"];
             isOneToOne: false;
             referencedRelation: "elections";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      tier2_verifications: {
-        Row: Tier2Verification;
-        Insert: Partial<Tier2Verification> &
-          Pick<Tier2Verification, "user_id" | "verified_address" | "ocd_ids">;
-        Update: Partial<Tier2Verification>;
-        Relationships: [
-          {
-            foreignKeyName: "tier2_verifications_user_id_fkey";
-            columns: ["user_id"];
-            isOneToOne: true;
-            referencedRelation: "users";
             referencedColumns: ["id"];
           },
         ];
@@ -1305,7 +1333,7 @@ export interface Database {
         Returns: { debate_id: string; winner_id: string | null }[];
       };
       apply_debate_elo: {
-        Args: { debate_uuid: string };
+        Args: { debate_uuid: string; p_k?: number };
         Returns: undefined;
       };
       lock_arbitration_elo: {
@@ -1330,6 +1358,20 @@ export interface Database {
           match_count?: number;
         };
         Returns: PrimaryOpponentRow[];
+      };
+      find_ideological_matches: {
+        Args: {
+          p_user_id: string;
+          match_count?: number;
+        };
+        Returns: {
+          id: string;
+          username: string;
+          elo_rating: number;
+          vector_data: string | number[] | null;
+          cosine_distance: number;
+          similarity: number;
+        }[];
       };
       match_districts: {
         Args: {

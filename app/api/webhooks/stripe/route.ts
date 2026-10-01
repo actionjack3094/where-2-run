@@ -1,11 +1,13 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
+import { lookupUserEmail, sendJuryUnlockedEmail, sendPledgeFundedEmail } from "@/lib/actions/email";
 import { isUuid } from "@/lib/arena/display";
 import { isMissingRelation } from "@/lib/coalitions";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 import { ALIGNMENT_STREAK_UNLOCK_CONDITION } from "@/lib/escrow";
-import { notifyPledgeFunded } from "@/lib/notifications/inbox";
+import { applyVerifiedIdentitySession } from "@/lib/identity/tier2";
+import { notifyJuryUnlocked, notifyPledgeFunded } from "@/lib/notifications/inbox";
 import {
   customerIdOf,
   getStripe,
@@ -55,6 +57,35 @@ async function applySetupIntent(intent: Stripe.SetupIntent) {
 
 function metadataValue(metadata: Stripe.Metadata | null | undefined, key: string) {
   return metadata?.[key]?.trim() ?? "";
+}
+
+function checkoutDonorEmail(session: Stripe.Checkout.Session) {
+  return session.customer_details?.email?.trim() || session.customer_email?.trim() || "";
+}
+
+async function dispatchPledgeFundedEmail(
+  admin: ReturnType<typeof createAdminClient>,
+  session: Stripe.Checkout.Session,
+  input: { candidateId: string; electionId: string; donorId: string; amount: number },
+) {
+  try {
+    const [{ data: candidate }, { data: election }] = await Promise.all([
+      admin.from("users").select("username").eq("id", input.candidateId).maybeSingle(),
+      admin.from("elections").select("office_name").eq("id", input.electionId).maybeSingle(),
+    ]);
+    const to = checkoutDonorEmail(session) || (await lookupUserEmail(input.donorId));
+    if (!to) {
+      console.error("Funded pledge has no donor email to notify.", session.id);
+      return;
+    }
+    await sendPledgeFundedEmail(to, {
+      candidateName: candidate?.username?.trim() || "this campaign",
+      amount: input.amount,
+      electionId: election?.office_name?.trim() || input.electionId,
+    });
+  } catch (caught) {
+    console.error("sendPledgeFundedEmail failed after pledge insert.", caught);
+  }
 }
 
 /**
@@ -129,6 +160,12 @@ async function recordFundedPledge(session: Stripe.Checkout.Session) {
       throw new Error(error?.message ?? "Pledge insert returned no row.");
     } else {
       pledgeId = data.id;
+      await dispatchPledgeFundedEmail(admin, session, {
+        candidateId,
+        electionId,
+        donorId,
+        amount: dollars,
+      });
     }
   }
 
@@ -160,6 +197,38 @@ async function recordFundedPledge(session: Stripe.Checkout.Session) {
   } catch {
     // The pledge and alert are already saved. A cache refresh failure must
     // not make Stripe retry the webhook.
+  }
+}
+
+async function applyIdentityVerified(session: Stripe.Identity.VerificationSession) {
+  const admin = createAdminClient();
+  const result = await applyVerifiedIdentitySession(admin, session);
+  if (!result) return;
+
+  if (!result.alreadyVerified) {
+    await notifyJuryUnlocked(admin, result.userId);
+    try {
+      const [to, user] = await Promise.all([
+        lookupUserEmail(result.userId),
+        admin.from("users").select("username").eq("id", result.userId).maybeSingle(),
+      ]);
+      if (to) {
+        await sendJuryUnlockedEmail(to, {
+          username: user.data?.username?.trim() || "Constituent",
+        });
+      }
+    } catch (caught) {
+      console.error("sendJuryUnlockedEmail failed after identity verification.", caught);
+    }
+  }
+
+  try {
+    revalidatePath("/profile");
+    revalidatePath("/spectator/jury");
+    revalidatePath("/inbox");
+  } catch {
+    // The upgrade is already saved. A cache refresh failure must not make
+    // Stripe retry the webhook.
   }
 }
 
@@ -202,6 +271,8 @@ export async function POST(request: Request) {
       await applySetupIntent(event.data.object as Stripe.SetupIntent);
     } else if (event.type === "checkout.session.completed") {
       await recordFundedPledge(event.data.object as Stripe.Checkout.Session);
+    } else if (event.type === "identity.verification_session.verified") {
+      await applyIdentityVerified(event.data.object as Stripe.Identity.VerificationSession);
     }
   } catch (error) {
     const message =

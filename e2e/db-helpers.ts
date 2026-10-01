@@ -92,6 +92,15 @@ async function createAccount(
       ocd_ids: ocdIds,
     });
     if (verifyError) fail(`Could not verify ${role}: ${verifyError.message}`);
+
+    const { error: identityError } = await db
+      .from("profiles")
+      .update({
+        tier2_status: "verified",
+        identity_verified_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+    if (identityError) fail(`Could not mark ${role} identity verified: ${identityError.message}`);
   }
 
   return { id, email, password, username };

@@ -210,6 +210,16 @@ export async function notifyCoalitionInvite(
   ]);
 }
 
+export async function notifyJuryUnlocked(admin: AdminClient, userId: string) {
+  await insertUserNotifications(admin, [
+    {
+      userId,
+      type: "jury_unlocked",
+      message: "Your identity is verified. You can file and vote on jury appeals in your districts.",
+    },
+  ]);
+}
+
 export async function notifyChallengeReceived(
   admin: AdminClient,
   input: { targetUserId: string; debateId: string; message: string },
