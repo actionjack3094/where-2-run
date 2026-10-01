@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { cache } from "react";
 import { CandidateProfile, type LockedCampaignTarget } from "@/app/components/CandidateProfile";
+import { type PledgeRaceOption } from "@/app/components/PledgeModal";
 import { DebateHistory, type MatchOutcome, type ProfileMatch } from "@/components/candidate/DebateHistory";
 import { EscrowTracker } from "@/components/candidate/EscrowTracker";
 import { CandidateCoalitionSummary } from "@/components/coalitions/CandidateCoalitionSummary";
@@ -17,6 +18,7 @@ import { isUuid } from "@/lib/arena/display";
 import { DEFAULT_ELO, parseElo } from "@/lib/arena/elo";
 import { loadCandidateCoalitionSummary } from "@/lib/candidate-coalitions";
 import { loadPublicCandidate } from "@/lib/candidate-profile";
+import { formatCandidacyLabel } from "@/lib/campaign/targets";
 import { isMissingRelation } from "@/lib/coalitions";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 import { isMissingSchema } from "@/lib/db/schema-errors";
@@ -318,6 +320,80 @@ async function loadLockedTargets(candidateId: string): Promise<LockedCampaignTar
   }
 }
 
+async function loadPledgeRaces(candidateId: string): Promise<PledgeRaceOption[]> {
+  try {
+    const admin = createAdminClient();
+    const { data: targets, error: targetError } = await admin
+      .from("campaign_targets")
+      .select("election_id")
+      .eq("user_id", candidateId);
+
+    if (targetError && !isMissingRelation(targetError) && !isMissingSchema(targetError)) {
+      return [];
+    }
+
+    const fromTargets = [
+      ...new Set(
+        ((targets ?? []) as { election_id: string }[])
+          .map((row) => row.election_id)
+          .filter(Boolean),
+      ),
+    ];
+
+    const electionIds = fromTargets;
+    if (electionIds.length === 0) {
+      const { data: profile } = await admin
+        .from("users")
+        .select("target_district_id, home_ocd_ids")
+        .eq("id", candidateId)
+        .maybeSingle();
+      const districtId = (profile as { target_district_id?: string | null } | null)?.target_district_id;
+      const homeIds = Array.isArray((profile as { home_ocd_ids?: unknown } | null)?.home_ocd_ids)
+        ? ((profile as { home_ocd_ids: unknown[] }).home_ocd_ids.filter(
+            (id): id is string => typeof id === "string" && id.trim() !== "",
+          ))
+        : [];
+
+      const { data: elections } = await admin
+        .from("elections")
+        .select("id, office_name, ocd_id, election_date, district_id");
+      const rows = (elections ?? []) as {
+        id: string;
+        office_name: string;
+        ocd_id?: string | null;
+        election_date?: string | null;
+        district_id?: string | null;
+      }[];
+      const matched = rows.filter(
+        (row) =>
+          (districtId && row.district_id === districtId) ||
+          (row.ocd_id != null && homeIds.includes(row.ocd_id)),
+      );
+      return matched.map((row) => ({
+        electionId: row.id,
+        label: formatCandidacyLabel(row.office_name, row.ocd_id, row.election_date),
+      }));
+    }
+
+    const { data: elections } = await admin
+      .from("elections")
+      .select("id, office_name, ocd_id, election_date")
+      .in("id", electionIds);
+
+    return ((elections ?? []) as {
+      id: string;
+      office_name: string;
+      ocd_id?: string | null;
+      election_date?: string | null;
+    }[]).map((row) => ({
+      electionId: row.id,
+      label: formatCandidacyLabel(row.office_name, row.ocd_id, row.election_date),
+    }));
+  } catch {
+    return [];
+  }
+}
+
 async function ownStanceIsEmpty(userId: string) {
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
@@ -333,7 +409,7 @@ async function ownStanceIsEmpty(userId: string) {
 
 export default async function CandidatePage({ params }: CandidatePageProps) {
   const { id: candidateId } = await params;
-  const [candidate, loaded, user, lockedTargets, coalitionSummary] = await Promise.all([
+  const [candidate, loaded, user, lockedTargets, coalitionSummary, pledgeRaces] = await Promise.all([
     loadCandidate(candidateId),
     loadPublicCandidate(candidateId),
     getServerUser(),
@@ -341,6 +417,7 @@ export default async function CandidatePage({ params }: CandidatePageProps) {
     isUuid(candidateId)
       ? loadCandidateCoalitionSummary(candidateId).catch(() => null)
       : Promise.resolve(null),
+    isUuid(candidateId) ? loadPledgeRaces(candidateId) : Promise.resolve([]),
   ]);
   const viewingOwnProfile = user != null && user.id === candidateId;
   const showStanceCta = viewingOwnProfile && (await ownStanceIsEmpty(user.id));
@@ -390,6 +467,14 @@ export default async function CandidatePage({ params }: CandidatePageProps) {
               eloLocked={profile?.eloLocked ?? false}
               lockedMatchCount={profile?.lockedMatchCount ?? 0}
               electionId={profile?.targetDistrictId ?? null}
+              pledge={
+                viewingOwnProfile
+                  ? null
+                  : {
+                      races: pledgeRaces,
+                      signedIn: user != null,
+                    }
+              }
             />
             {coalitionSummary ? (
               <CandidateCoalitionSummary

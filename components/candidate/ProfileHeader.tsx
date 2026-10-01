@@ -1,6 +1,7 @@
 "use client";
 
 import { MapPin, ShieldCheck } from "lucide-react";
+import { PledgeSupportButton, type PledgeRaceOption } from "@/app/components/PledgeModal";
 import { PledgeEscrowButton } from "@/components/pledges/PledgeEscrowButton";
 import { CandidateAvatar } from "@/components/profile/CandidateAvatar";
 import { VerificationBadge } from "@/components/verification/VerificationBadge";
@@ -17,6 +18,7 @@ export function ProfileHeader({
   eloLocked,
   lockedMatchCount,
   electionId,
+  pledge = null,
 }: {
   candidateId: string;
   name: string;
@@ -29,6 +31,7 @@ export function ProfileHeader({
   eloLocked: boolean;
   lockedMatchCount: number;
   electionId?: string | null;
+  pledge?: { races: PledgeRaceOption[]; signedIn: boolean } | null;
 }) {
   return (
     <header className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
@@ -103,12 +106,21 @@ export function ProfileHeader({
             </p>
           </div>
         </div>
-        <PledgeEscrowButton
-          candidateId={candidateId}
-          candidateName={name}
-          electionId={electionId}
-          className="sm:max-w-[16rem]"
-        />
+        {pledge ? (
+          <PledgeSupportButton
+            candidateId={candidateId}
+            candidateName={name}
+            races={pledge.races}
+            signedIn={pledge.signedIn}
+          />
+        ) : (
+          <PledgeEscrowButton
+            candidateId={candidateId}
+            candidateName={name}
+            electionId={electionId}
+            className="sm:max-w-[16rem]"
+          />
+        )}
       </div>
     </header>
   );
