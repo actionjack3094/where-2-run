@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CountdownTimer } from "@/app/components/countdown-timer";
 import { RealtimeDebateListener } from "@/app/components/realtime-debate-listener";
+import { FileDebateAppeal } from "@/components/debates/FileDebateAppeal";
+import { RoundTranscript } from "@/components/debates/RoundTranscript";
 import { resolveDebate } from "@/lib/actions/debate-resolution";
 import { isUuid } from "@/lib/arena/display";
 import { loadDebateComments } from "@/lib/comments";
 import { createServerSupabase } from "@/lib/db/supabase-server";
-import { roundPairs, turnFor, type ArgumentRow, type RoundPair } from "@/lib/debates/round-state";
+import { roundPairs, turnFor, type ArgumentRow } from "@/lib/debates/round-state";
+import { loadDebateAppealDesk } from "@/lib/jury-desk";
 import { TOTAL_ROUNDS } from "@/lib/arena/time";
 import { displayTally } from "@/lib/vote-weight";
 import { submitArgument } from "./actions";
@@ -22,7 +26,10 @@ type DebateRow = {
   topic: string;
   status: string;
   expires_at: string | null;
+  elo_applied_at?: string | null;
+  election_id: string | null;
   election_question_id: string | null;
+  district_id: string | null;
   candidate_a_id: string | null;
   candidate_b_id: string | null;
   candidate_a_argument: string | null;
@@ -61,7 +68,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
 
   const supabase = await createServerSupabase();
   const debateColumns =
-    "id, topic, status, expires_at, election_question_id, candidate_a_id, candidate_b_id, candidate_a_argument, candidate_b_argument, winner_id, candidate_a_votes, candidate_b_votes, candidate_a_weighted_votes, candidate_b_weighted_votes, current_round";
+    "id, topic, status, expires_at, elo_applied_at, election_id, election_question_id, district_id, candidate_a_id, candidate_b_id, candidate_a_argument, candidate_b_argument, winner_id, candidate_a_votes, candidate_b_votes, candidate_a_weighted_votes, candidate_b_weighted_votes, current_round";
   let { data, error } = await supabase
     .from("debates")
     .select(debateColumns)
@@ -77,7 +84,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
     const fallback = await supabase
       .from("debates")
       .select(
-        "id, topic, status, expires_at, election_question_id, candidate_a_id, candidate_b_id, current_round",
+        "id, topic, status, expires_at, elo_applied_at, election_id, election_question_id, district_id, candidate_a_id, candidate_b_id, current_round",
       )
       .eq("id", debateId)
       .maybeSingle();
@@ -91,6 +98,9 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
           candidate_b_votes: 0,
           candidate_a_weighted_votes: 0,
           candidate_b_weighted_votes: 0,
+          election_id: (fallback.data as { election_id?: string | null }).election_id ?? null,
+          district_id: (fallback.data as { district_id?: string | null }).district_id ?? null,
+          elo_applied_at: (fallback.data as { elo_applied_at?: string | null }).elo_applied_at ?? null,
         }
       : null;
     error = fallback.error;
@@ -149,6 +159,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const appealDesk = await loadDebateAppealDesk(debate, user?.id ?? null);
 
   const isCandidateA = user?.id != null && user.id === debate.candidate_a_id;
   const isCandidateB = user?.id != null && user.id === debate.candidate_b_id;
@@ -259,8 +270,28 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
                 <p className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment">
                   {concludedOutcome(debate)}
                 </p>
+                {appealDesk.eligible && appealDesk.withinWindow && !appealDesk.ownAppealId ? (
+                  <FileDebateAppeal
+                    debateId={debate.id}
+                    pendingAppealId={appealDesk.pendingAppealId}
+                  />
+                ) : appealDesk.ownAppealId ? (
+                  <Link
+                    href={`/spectator/jury/${appealDesk.ownAppealId}`}
+                    className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-widest text-gold hover:text-parchment"
+                  >
+                    Open jury dashboard
+                  </Link>
+                ) : appealDesk.eligible && appealDesk.pendingAppealId ? (
+                  <Link
+                    href={`/spectator/jury/${appealDesk.pendingAppealId}`}
+                    className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-widest text-gold hover:text-parchment"
+                  >
+                    Serve on the jury
+                  </Link>
+                ) : null}
               </div>
-              <RoundCards
+              <RoundTranscript
                 rounds={rounds}
                 aVotes={finalTally.primary.a}
                 bVotes={finalTally.primary.b}
@@ -275,7 +306,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
               >
                 Voting is now open
               </p>
-              <RoundCards rounds={rounds} />
+              <RoundTranscript rounds={rounds} />
               {ballotOpen && candidateAId && candidateBId && !isSeatedCandidate ? (
                 <SpectatorBallot
                   debateId={debateId}
@@ -296,7 +327,10 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
                 Argument stage
               </h2>
               <div className="mt-4">
-                <RoundCards rounds={rounds} activeRound={debate.current_round ?? 1} />
+                <RoundTranscript
+                  rounds={rounds}
+                  activeRound={debate.current_round ?? 1}
+                />
               </div>
 
               {isMyTurn ? (
@@ -342,69 +376,5 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
         votingOpen={debate.status === "voting"}
       />
     </main>
-  );
-}
-
-function RoundCards({
-  rounds,
-  activeRound,
-  aVotes,
-  bVotes,
-  weighted = false,
-}: {
-  rounds: RoundPair[];
-  activeRound?: number;
-  aVotes?: number;
-  bVotes?: number;
-  /** True when the vote counts are weighted totals rather than raw ballots. */
-  weighted?: boolean;
-}) {
-  const voteUnit = (count: number) => (weighted ? "weighted votes" : count === 1 ? "vote" : "votes");
-  const showVotes = aVotes !== undefined && bVotes !== undefined;
-  return (
-    <div className="flex max-h-[60vh] flex-col gap-6 overflow-y-auto">
-      {rounds.map((pair) => (
-        <div key={pair.round} className="flex flex-col gap-4">
-          {rounds.length > 1 ? (
-            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500">
-              Round {pair.round}
-              {activeRound === pair.round ? " · in progress" : ""}
-            </p>
-          ) : null}
-          <article className="rounded-xl border border-gold/40 bg-zinc-900 px-5 py-5">
-            <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
-              Candidate A
-            </p>
-            <h3 className="mt-2 text-sm font-medium text-parchment">
-              {pair.round === 1 ? "Stance" : "Rebuttal"}
-            </h3>
-            <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-zinc-400">
-              {pair.a ?? "Opening stance will appear here."}
-            </p>
-            {showVotes && pair.round === rounds.length ? (
-              <p className="mt-4 text-2xl font-semibold tabular-nums tracking-tight text-parchment">
-                {aVotes} <span className="text-xs font-normal text-zinc-400">{voteUnit(aVotes ?? 0)}</span>
-              </p>
-            ) : null}
-          </article>
-          <article className="rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-5">
-            <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-400">
-              Candidate B
-            </p>
-            <h3 className="mt-2 text-sm font-medium text-parchment">
-              {pair.round === 1 ? "Counter-stance" : "Counter-rebuttal"}
-            </h3>
-            <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-zinc-400">
-              {pair.b ?? "Counter-stance will appear here."}
-            </p>
-            {showVotes && pair.round === rounds.length ? (
-              <p className="mt-4 text-2xl font-semibold tabular-nums tracking-tight text-parchment">
-                {bVotes} <span className="text-xs font-normal text-zinc-400">{voteUnit(bVotes ?? 0)}</span>
-              </p>
-            ) : null}
-          </article>
-        </div>
-      ))}
-    </div>
   );
 }

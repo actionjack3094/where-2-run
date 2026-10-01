@@ -8,6 +8,12 @@ import { isUuid } from "@/lib/arena/display";
 import { checkLocalEligibility } from "@/lib/civic-fencing";
 import { isMissingRelation } from "@/lib/coalitions";
 import { createAdminClient } from "@/lib/db/supabase-admin";
+import {
+  APPEAL_REASON_MAX,
+  isResolvedDebate,
+  withinAppealWindow,
+  type DebateResolutionClock,
+} from "@/lib/jury-window";
 import type { Debate, JuryAppeal } from "@/types/database.types";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
@@ -16,18 +22,13 @@ export type JuryAppealActionResult<T extends object = object> =
   | ({ ok: true } & T)
   | { ok: false; error: string };
 
-const APPEAL_WINDOW_MS = 24 * 60 * 60 * 1000;
-const APPEAL_REASON_MAX = 2000;
 const GENERIC_APPEAL_ERROR = "We couldn't file that appeal. Please try again.";
 const GENERIC_VERDICT_ERROR = "We couldn't record that verdict. Please try again.";
 const CONSTITUENT_APPEAL_ERROR = "Only verified constituents can appeal this debate.";
 const CONSTITUENT_JURY_ERROR = "Only verified constituents can serve on this jury";
 const WINDOW_ERROR = "Outside the 24-hour appeal window";
 
-type DebateWithResolution = Debate & {
-  resolved_at?: string | null;
-  updated_at?: string | null;
-};
+type DebateWithResolution = Debate & DebateResolutionClock;
 
 function isMissingColumn(error: { message?: string; code?: string } | null) {
   if (!error) return false;
@@ -52,34 +53,6 @@ function asOcdIds(value: unknown): string[] {
   return value.filter((entry): entry is string => typeof entry === "string" && entry.trim() !== "");
 }
 
-function isResolvedDebate(status: string | null | undefined) {
-  return status === "completed" || status === "resolved";
-}
-
-/** Prefer resolved_at / updated_at; elo_applied_at is when the outcome was sealed. */
-function resolutionTimestamp(debate: DebateWithResolution) {
-  const now = Date.now();
-  for (const raw of [
-    debate.resolved_at,
-    debate.updated_at,
-    debate.elo_applied_at,
-    debate.expires_at,
-  ]) {
-    if (!raw) continue;
-    const at = Date.parse(raw);
-    if (Number.isNaN(at) || at > now) continue;
-    return at;
-  }
-  return null;
-}
-
-function withinAppealWindow(debate: DebateWithResolution) {
-  const at = resolutionTimestamp(debate);
-  if (at == null) return false;
-  const elapsed = Date.now() - at;
-  return elapsed >= 0 && elapsed <= APPEAL_WINDOW_MS;
-}
-
 async function isVerifiedConstituent(
   admin: AdminClient,
   userId: string,
@@ -101,9 +74,11 @@ async function isVerifiedConstituent(
   return checkLocalEligibility(asOcdIds(data?.ocd_ids), districtOcdId);
 }
 
-function revalidateAppeal(debateId: string) {
+function revalidateAppeal(debateId: string, appealId?: string) {
   revalidatePath("/feed");
+  revalidatePath("/spectator/jury");
   revalidatePath(`/debates/${debateId}`);
+  if (appealId) revalidatePath(`/spectator/jury/${appealId}`);
 }
 
 /**
@@ -186,7 +161,7 @@ export async function fileDebateAppeal(
       throw insertError ?? new Error("Appeal insert returned no row.");
     }
 
-    revalidateAppeal(debate.id);
+    revalidateAppeal(debate.id, created.id);
     return { ok: true, appealId: created.id };
   } catch (caught) {
     console.error("fileDebateAppeal failed.", caught);
@@ -287,7 +262,7 @@ export async function submitJuryVerdict(
       console.error("resolveJuryAppeal failed.", caught);
     }
 
-    revalidateAppeal(debate.id);
+    revalidateAppeal(debate.id, appeal.id);
     return { ok: true, verdictId: created.id };
   } catch (caught) {
     console.error("submitJuryVerdict failed.", caught);

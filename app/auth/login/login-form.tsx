@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/db/supabase";
+import { hasStanceVector } from "@/lib/ideology/stance";
 import { cn } from "@/lib/utils";
 
 type Mode = "sign-in" | "create-account";
@@ -36,8 +37,8 @@ export function LoginForm() {
 
   async function routeAfterAuth(userId: string) {
     const { data, error: profileError } = await supabase
-      .from("candidates")
-      .select("onboarding_completed")
+      .from("users")
+      .select("home_ocd_ids, stance_vector")
       .eq("id", userId)
       .maybeSingle();
 
@@ -47,7 +48,12 @@ export function LoginForm() {
       return;
     }
 
-    if (data?.onboarding_completed) {
+    const home = Array.isArray(data?.home_ocd_ids)
+      ? data.home_ocd_ids.filter((id): id is string => typeof id === "string" && id.trim() !== "")
+      : [];
+    const complete = home.length > 0 && hasStanceVector(data?.stance_vector);
+
+    if (complete) {
       router.push(safeNextPath(searchParams.get("next")) ?? "/feed");
       router.refresh();
       return;
@@ -125,7 +131,7 @@ export function LoginForm() {
         <p className="mt-2 text-sm leading-6 text-zinc-400">
           {signingIn
             ? "Return to the floor with the email on your candidate ticket."
-            : "Open a candidate ticket, then file your district and ideology baseline."}
+            : "Map your ZIP, file a baseline stance, then see who you match."}
         </p>
 
         <div

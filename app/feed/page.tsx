@@ -34,7 +34,7 @@ export default async function FeedPage(props: PageProps<"/feed">) {
       <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
         <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
           <Link
-            href="/onboarding/district"
+            href="/onboarding"
             className="block w-full rounded-xl border border-gold bg-zinc-900 px-6 py-8 shadow-[inset_3px_0_0_0_var(--gold-strong)] transition-colors hover:border-gold hover:bg-zinc-900/80"
           >
             <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">

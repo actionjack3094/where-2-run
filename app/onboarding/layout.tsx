@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Candidate Onboarding · WHERE 2 RUN",
+  title: "Onboarding · WHERE 2 RUN",
   description:
-    "Verify a residential address, calibrate a six-axis ideology vector, and reveal the three most viable races.",
+    "Map a residential ZIP to a congressional district and seed a baseline stance vector.",
 };
 
 export default function OnboardingLayout({ children }: LayoutProps<"/onboarding">) {

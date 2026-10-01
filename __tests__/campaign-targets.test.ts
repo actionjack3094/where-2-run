@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatCandidacyLabel,
   formatStatutoryDate,
+  isUpcomingElectionDate,
   relocationDeadlineIso,
   RESIDENCY_DISCLAIMER,
 } from "@/lib/campaign/targets";
@@ -34,5 +36,25 @@ describe("RESIDENCY_DISCLAIMER", () => {
     expect(RESIDENCY_DISCLAIMER).toBe(
       "This is a statutory estimate. You must independently verify all residency and filing deadlines with the State Secretary of State before relocating or vaulting funds.",
     );
+  });
+});
+
+describe("formatCandidacyLabel", () => {
+  it("prints a congressional race as year plus compact House label", () => {
+    expect(
+      formatCandidacyLabel(
+        "U.S. House Texas District 37",
+        "ocd-division/country:us/state:tx/cd:37",
+        "2026-11-03",
+      ),
+    ).toBe("2026 U.S. House TX-37");
+  });
+});
+
+describe("isUpcomingElectionDate", () => {
+  it("keeps undated races and future election days", () => {
+    expect(isUpcomingElectionDate(null)).toBe(true);
+    expect(isUpcomingElectionDate("2026-11-03", new Date("2026-01-01T00:00:00Z"))).toBe(true);
+    expect(isUpcomingElectionDate("2024-11-05", new Date("2026-01-01T00:00:00Z"))).toBe(false);
   });
 });

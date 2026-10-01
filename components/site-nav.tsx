@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { LibertyBell } from "@/app/components/LibertyBell";
 import { LogOutButton } from "@/components/LogOutButton";
+import { countPendingJuryDuty } from "@/lib/actions/jury-feed";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -24,6 +25,12 @@ const links = [
     label: "Leaderboards",
     match: (path: string) =>
       path.startsWith("/leaderboards") || path.startsWith("/district"),
+  },
+  {
+    href: "/spectator/jury",
+    label: "Jury Duty",
+    match: (path: string) =>
+      path === "/spectator/jury" || path.startsWith("/spectator/jury/"),
   },
   {
     href: "/profile",
@@ -45,9 +52,36 @@ const links = [
   },
 ] as const;
 
+function JuryDutyCount({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span
+      aria-label={`${count} pending ${count === 1 ? "case" : "cases"}`}
+      className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-brass px-1 text-[9px] font-semibold tabular-nums text-charcoal"
+    >
+      {count > 9 ? "9+" : count}
+    </span>
+  );
+}
+
 export function SiteNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [juryDutyCount, setJuryDutyCount] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    countPendingJuryDuty()
+      .then((next) => {
+        if (!cancelled) setJuryDutyCount(next);
+      })
+      .catch(() => {
+        if (!cancelled) setJuryDutyCount(0);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
   // Close the mobile menu whenever the route changes.
   const [menuPathname, setMenuPathname] = useState(pathname);
@@ -70,6 +104,7 @@ export function SiteNav() {
           {links.map((link) => {
             const active = link.match(pathname);
             const notifications = link.href === "/notifications";
+            const juryDuty = link.href === "/spectator/jury";
             return (
               <Link
                 key={link.href}
@@ -79,15 +114,23 @@ export function SiteNav() {
                   "text-[11px] font-medium uppercase tracking-widest transition-colors",
                   notifications
                     ? "inline-flex items-center"
-                    : active
-                      ? "text-brass"
-                      : "text-charcoal-muted hover:text-charcoal",
+                    : juryDuty
+                      ? cn(
+                          "inline-flex items-center",
+                          active ? "text-brass" : "text-charcoal-muted hover:text-charcoal",
+                        )
+                      : active
+                        ? "text-brass"
+                        : "text-charcoal-muted hover:text-charcoal",
                 )}
               >
                 {notifications ? (
                   <LibertyBell className="text-brass-dark hover:text-brass transition-colors" />
                 ) : (
-                  link.label
+                  <>
+                    {link.label}
+                    {juryDuty ? <JuryDutyCount count={juryDutyCount} /> : null}
+                  </>
                 )}
               </Link>
             );
@@ -113,6 +156,7 @@ export function SiteNav() {
           {links.map((link) => {
             const active = link.match(pathname);
             const notifications = link.href === "/notifications";
+            const juryDuty = link.href === "/spectator/jury";
             return (
               <Link
                 key={link.href}
@@ -122,15 +166,23 @@ export function SiteNav() {
                   "rounded-md px-2 py-2 text-[11px] font-medium uppercase tracking-widest transition-colors duration-200 hover:bg-parchment-light",
                   notifications
                     ? "inline-flex w-fit items-center"
-                    : active
-                      ? "text-brass"
-                      : "text-charcoal-muted",
+                    : juryDuty
+                      ? cn(
+                          "inline-flex w-fit items-center",
+                          active ? "text-brass" : "text-charcoal-muted",
+                        )
+                      : active
+                        ? "text-brass"
+                        : "text-charcoal-muted",
                 )}
               >
                 {notifications ? (
                   <LibertyBell className="text-brass-dark hover:text-brass transition-colors" />
                 ) : (
-                  link.label
+                  <>
+                    {link.label}
+                    {juryDuty ? <JuryDutyCount count={juryDutyCount} /> : null}
+                  </>
                 )}
               </Link>
             );

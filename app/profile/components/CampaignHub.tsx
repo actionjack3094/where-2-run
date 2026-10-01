@@ -5,6 +5,7 @@ import { Lock, LockKeyhole } from "lucide-react";
 import { declareCampaignTarget } from "@/lib/actions/campaign-targets";
 import { requestDisbursement } from "@/lib/actions/disbursement";
 import { CoalitionNetwork } from "@/app/profile/components/CoalitionNetwork";
+import { DeclareCandidacy } from "@/app/profile/components/DeclareCandidacy";
 import { EscrowVaultButton } from "@/app/profile/components/EscrowVaultModal";
 import {
   formatStatutoryDate,
@@ -117,8 +118,23 @@ export function CampaignHub({
   }, [profile.userId, targetsVersion]);
 
   async function handleTargeted() {
-    setTargetsVersion((value) => value + 1);
     await onTargetsChanged?.();
+    setTargetsVersion((value) => value + 1);
+  }
+
+  const hasActiveCampaign =
+    targets.length > 0 || profile.matchedRaces.some((race) => race.targetId !== null);
+
+  if (targetsLoading && !hasActiveCampaign) {
+    return <p className="mt-10 text-sm leading-6 text-zinc-400">Opening your campaign desk…</p>;
+  }
+
+  if (!hasActiveCampaign) {
+    return (
+      <div className="mt-10">
+        <DeclareCandidacy onDeclared={handleTargeted} />
+      </div>
+    );
   }
 
   return (

@@ -1,8 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const STANCE_VALUES = ["-0.6", "0.8", "0.4", "-0.2", "0.5", "0.7"] as const;
-
-test("new voter signs up, files Austin District 9, and reaches matchmaker and the civic feed", async ({
+test("new voter signs up, maps a ZIP, calibrates a baseline vector, and reaches matchmaker", async ({
   page,
 }) => {
   const email = `e2e.${Date.now()}@example.com`;
@@ -16,39 +14,25 @@ test("new voter signs up, files Austin District 9, and reaches matchmaker and th
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Create Account" }).click();
 
-  await page.waitForURL((url) => !url.pathname.startsWith("/auth/login"));
+  await page.waitForURL("**/onboarding");
+  await expect(page.getByRole("heading", { name: "Onboarding" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Map your district" })).toBeVisible();
 
-  if (!page.url().includes("/onboarding/district")) {
-    await page.getByRole("banner").getByRole("link", { name: "Matchmaker", exact: true }).click();
-    await page.waitForURL("**/matchmaker");
-    const verifyDistrict = page.getByRole("link", { name: /verify your local district/i });
-    await expect(verifyDistrict).toBeVisible();
-    await verifyDistrict.click();
+  await page.getByLabel("ZIP code").fill("78704");
+  await page.getByRole("button", { name: "Match my district" }).click();
+
+  await expect(page.getByRole("heading", { name: "Baseline vector" })).toBeVisible();
+  await expect(page.getByText(/U\.S\. House Texas District 37|37th Congressional/i)).toBeVisible();
+
+  const firstPicks = [
+    /Phase out fossil fuels/,
+    /Move to a public single-payer/,
+    /Expand legal immigration/,
+  ];
+  for (const pick of firstPicks) {
+    await page.getByRole("button", { name: pick }).click();
   }
-
-  await page.waitForURL("**/onboarding/district");
-  await expect(page.getByRole("heading", { name: "Verify your local district" })).toBeVisible();
-
-  await page.getByRole("radio", { name: /Austin City Council - District 9/ }).check();
-  await page.getByRole("button", { name: "Verify district" }).click();
-
-  await page.waitForURL("**/onboarding/stance");
-  await expect(page.getByRole("heading", { name: "Set your ideological stances" })).toBeVisible();
-
-  const sliders = page.getByRole("slider");
-  await expect(sliders).toHaveCount(STANCE_VALUES.length);
-  for (const [index, value] of STANCE_VALUES.entries()) {
-    await sliders.nth(index).fill(value);
-  }
-
-  await page.getByRole("button", { name: "File stance vector" }).click();
 
   await page.waitForURL("**/matchmaker");
   await expect(page.getByRole("heading", { name: "YOUR MATCHES" })).toBeVisible();
-
-  await page.getByRole("banner").getByRole("link", { name: "Feed", exact: true }).click();
-  await page.waitForURL("**/feed");
-  await expect(page.getByText("Civic Feed", { exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Endless Social Feed" })).toBeVisible();
-  await expect(page.getByText("Viewing live activity for: Austin City Council - District 9")).toBeVisible();
 });

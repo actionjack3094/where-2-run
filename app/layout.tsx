@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Cinzel, Geist, Geist_Mono } from "next/font/google";
 import { PledgeHost } from "@/components/pledges/PledgeHost";
 import { SiteChrome } from "@/components/site-chrome";
+import { redirectIfOnboardingIncomplete } from "@/lib/onboarding/gate";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -25,7 +26,8 @@ export const metadata: Metadata = {
   description: "Find the district that matches your ideology, then enter the race.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  await redirectIfOnboardingIncomplete();
   return (
     <html
       lang="en"

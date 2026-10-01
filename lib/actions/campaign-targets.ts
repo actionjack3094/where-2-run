@@ -3,8 +3,22 @@
 import { revalidatePath } from "next/cache";
 import { requireActionUserId } from "@/lib/arena/auth";
 import { isUuid } from "@/lib/arena/display";
+import { formatCandidacyLabel, isUpcomingElectionDate } from "@/lib/campaign/targets";
 import { normalizeOcdId } from "@/lib/civic-fencing";
+import { isMissingRelation } from "@/lib/coalitions";
 import { createAdminClient } from "@/lib/db/supabase-admin";
+
+function asOcdIds(value: unknown): string[] {
+  if (typeof value === "string") {
+    try {
+      return asOcdIds(JSON.parse(value) as unknown);
+    } catch {
+      return value.trim() ? [value.trim()] : [];
+    }
+  }
+  if (!Array.isArray(value)) return [];
+  return value.filter((entry): entry is string => typeof entry === "string" && entry.trim() !== "");
+}
 
 export type DeclareCampaignTargetResult =
   | { ok: true; targetId: string; alreadyTargeting: boolean }
@@ -91,5 +105,142 @@ export async function declareCampaignTarget(
   } catch (caught) {
     console.error("declareCampaignTarget failed.", caught);
     return { ok: false, error: "We couldn't target that race. Please try again." };
+  }
+}
+
+export type HomeElectionOption = {
+  id: string;
+  label: string;
+  officeName: string;
+  electionDate: string | null;
+};
+
+export type DeclareCandidacyResult =
+  | { ok: true; targetId: string }
+  | { ok: false; error: string };
+
+async function eligibleDistrictIds(admin: ReturnType<typeof createAdminClient>, userId: string) {
+  const [profileQuery, tier2Query] = await Promise.all([
+    admin.from("users").select("home_ocd_ids").eq("id", userId).maybeSingle(),
+    admin.from("tier2_verifications").select("ocd_ids").eq("user_id", userId).maybeSingle(),
+  ]);
+  if (profileQuery.error) throw new Error(profileQuery.error.message);
+  if (tier2Query.error && !isMissingRelation(tier2Query.error)) {
+    throw new Error(tier2Query.error.message);
+  }
+
+  return new Set(
+    [
+      ...asOcdIds(profileQuery.data?.home_ocd_ids),
+      ...asOcdIds(tier2Query.data?.ocd_ids),
+    ]
+      .map((id) => normalizeOcdId(id))
+      .filter(Boolean),
+  );
+}
+
+/**
+ * Upcoming races on the caller's physical ballot (`home_ocd_ids`) or
+ * Tier 2 verified divisions.
+ */
+export async function listHomeElections(): Promise<HomeElectionOption[]> {
+  try {
+    const userId = await requireActionUserId();
+    if (!userId) return [];
+
+    const admin = createAdminClient();
+    const eligible = await eligibleDistrictIds(admin, userId);
+    if (eligible.size === 0) return [];
+
+    const { data, error } = await admin
+      .from("elections")
+      .select("id, office_name, ocd_id, election_date")
+      .order("election_date", { ascending: true, nullsFirst: false });
+    if (error) throw new Error(error.message);
+
+    return ((data ?? []) as {
+      id: string;
+      office_name: string;
+      ocd_id?: string | null;
+      election_date?: string | null;
+    }[])
+      .filter((row) => {
+        const ocdId = normalizeOcdId(row.ocd_id);
+        return Boolean(ocdId) && eligible.has(ocdId) && isUpcomingElectionDate(row.election_date);
+      })
+      .map((row) => ({
+        id: row.id,
+        officeName: row.office_name,
+        electionDate: row.election_date ?? null,
+        label: formatCandidacyLabel(row.office_name, row.ocd_id, row.election_date),
+      }));
+  } catch (caught) {
+    console.error("listHomeElections failed.", caught);
+    return [];
+  }
+}
+
+/**
+ * Officially declare a run: inserts campaign_targets at alignment_streak 0 so
+ * the Campaign Hub can open an escrow vault and streak tracker.
+ */
+export async function declareCandidacy(electionId: string): Promise<DeclareCandidacyResult> {
+  try {
+    if (!isUuid(electionId)) return { ok: false, error: "Choose a valid race to run in." };
+
+    const userId = await requireActionUserId();
+    if (!userId) return { ok: false, error: "Sign in to declare candidacy." };
+
+    const admin = createAdminClient();
+
+    const { data: election, error: electionError } = await admin
+      .from("elections")
+      .select("id, ocd_id")
+      .eq("id", electionId)
+      .maybeSingle();
+    if (electionError) throw new Error(electionError.message);
+    if (!election) return { ok: false, error: "That race is no longer on the board." };
+
+    const eligible = await eligibleDistrictIds(admin, userId);
+    const ocdId = normalizeOcdId((election as { ocd_id?: string | null }).ocd_id);
+    if (!ocdId || !eligible.has(ocdId)) {
+      return { ok: false, error: "You can only declare in a district on your ballot." };
+    }
+
+    const { data: existing, error: existingError } = await admin
+      .from("campaign_targets")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("election_id", electionId)
+      .maybeSingle();
+    if (existingError) throw new Error(existingError.message);
+    if (existing) {
+      return { ok: false, error: "You're already running in this race." };
+    }
+
+    const { data: created, error: insertError } = await admin
+      .from("campaign_targets")
+      .insert({
+        user_id: userId,
+        election_id: electionId,
+        status: "exploring",
+        alignment_streak: 0,
+      })
+      .select("id")
+      .single();
+
+    if (insertError || !created) {
+      if (insertError?.code === "23505") {
+        return { ok: false, error: "You're already running in this race." };
+      }
+      throw new Error(insertError?.message ?? "Could not declare this race.");
+    }
+
+    revalidatePath("/profile");
+    revalidatePath("/feed");
+    return { ok: true, targetId: created.id };
+  } catch (caught) {
+    console.error("declareCandidacy failed.", caught);
+    return { ok: false, error: "We couldn't declare that race. Please try again." };
   }
 }
