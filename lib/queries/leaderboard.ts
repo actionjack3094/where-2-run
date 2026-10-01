@@ -1,10 +1,16 @@
+import { cache } from "react";
+import { isUuid } from "@/lib/arena/display";
 import { parseElo } from "@/lib/arena/elo";
+import { formatCandidacyLabel } from "@/lib/campaign/targets";
 import { normalizeOcdId } from "@/lib/civic-fencing";
+import { isMissingRelation } from "@/lib/coalitions";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 import { createServerSupabase } from "@/lib/db/supabase-server";
 import { recordFromStats } from "@/lib/leaderboard";
+import { parseAmount } from "@/lib/pledges";
 
 export const GLOBAL_LEADERBOARD_LIMIT = 50;
+export const ALIGNMENT_STREAK_GOAL = 10;
 
 export type GlobalRanking = {
   id: string;
@@ -23,6 +29,11 @@ type StatsRow = {
   debates_won: number | null;
   debates_played: number | null;
 };
+
+function asOcdIds(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((entry): entry is string => typeof entry === "string" && entry.trim() !== "");
+}
 
 /**
  * Top candidates by Elo, with their win/loss record.
@@ -67,140 +78,278 @@ export async function loadGlobalLeaderboard(
   return { rankings, error: null };
 }
 
-export const DISTRICT_LEADERBOARD_LIMIT = 10;
-
-export type DistrictRanking = GlobalRanking & {
+export type DistrictLeaderboardEntry = {
+  id: string;
+  rank: number;
+  name: string;
+  elo: number;
   alignmentStreak: number;
+  escrowTotal: number;
+  endorsements: number;
 };
 
+export type DistrictLeaderboardRace = {
+  id: string;
+  officeName: string;
+  label: string;
+  ocdId: string | null;
+  electionDate: string | null;
+};
+
+export type DistrictLeaderboard = {
+  election: DistrictLeaderboardRace | null;
+  rankings: DistrictLeaderboardEntry[];
+  error: string | null;
+};
+
+export type ActiveLeaderboardRace = DistrictLeaderboardRace & {
+  candidateCount: number;
+};
+
+function toRaceLabel(row: {
+  office_name: string;
+  ocd_id?: string | null;
+  election_date?: string | null;
+}) {
+  return formatCandidacyLabel(row.office_name, row.ocd_id, row.election_date);
+}
+
 /**
- * Top `limit` candidates by Elo who are actively targeting a district, matched by OCD
- * division. A race counts when `elections.ocd_id` is the division or when its
- * district row carries that `ocd_id`. Candidates with no completed debates are
- * kept (they are still rivals for the seat) and rank by Elo like everyone else.
- *
- * If the viewer targets the district but ranks below `limit`, their row (with
- * their true rank) is appended as an extra final item.
- *
- * `campaign_targets` is private to each user under RLS, so this reads with the
- * service-role client. Only public fields are returned.
+ * Rank every candidate targeting `electionId` by Elo, with streak, escrow, and
+ * endorsement counts. `campaign_targets` and `campaign_pledges` are private
+ * under RLS, so this reads with the service-role client and returns public fields only.
  */
-export async function getDistrictLeaderboard(
-  ocdId: string,
-  viewerId: string | null = null,
-  limit = DISTRICT_LEADERBOARD_LIMIT,
-): Promise<{ rankings: DistrictRanking[]; error: string | null }> {
+export const getDistrictLeaderboard = cache(async function getDistrictLeaderboard(
+  electionId: string,
+): Promise<DistrictLeaderboard> {
+  const empty: DistrictLeaderboard = { election: null, rankings: [], error: null };
+  if (!isUuid(electionId)) return empty;
+
   try {
     const admin = createAdminClient();
-    const wanted = normalizeOcdId(ocdId);
 
-    const [electionsQuery, districtsQuery] = await Promise.all([
-      admin.from("elections").select("id, ocd_id, district_id"),
-      admin.from("districts").select("id, ocd_id"),
-    ]);
-    if (electionsQuery.error) return { rankings: [], error: electionsQuery.error.message };
-    if (districtsQuery.error) return { rankings: [], error: districtsQuery.error.message };
+    const { data: election, error: electionError } = await admin
+      .from("elections")
+      .select("id, office_name, ocd_id, election_date")
+      .eq("id", electionId)
+      .maybeSingle();
+    if (electionError) return { ...empty, error: electionError.message };
+    if (!election) return empty;
 
-    const districtIds = new Set(
-      (districtsQuery.data ?? [])
-        .filter((row) => normalizeOcdId(row.ocd_id) === wanted)
-        .map((row) => row.id),
-    );
-    const electionIds = (electionsQuery.data ?? [])
-      .filter(
-        (row) =>
-          normalizeOcdId(row.ocd_id) === wanted ||
-          (row.district_id !== null && districtIds.has(row.district_id)),
-      )
-      .map((row) => row.id);
-    if (electionIds.length === 0) return { rankings: [], error: null };
+    const race: DistrictLeaderboardRace = {
+      id: election.id,
+      officeName: election.office_name,
+      ocdId: election.ocd_id ?? null,
+      electionDate: election.election_date ?? null,
+      label: toRaceLabel(election),
+    };
 
-    const targetsQuery = await admin
+    const { data: targets, error: targetError } = await admin
       .from("campaign_targets")
       .select("user_id, alignment_streak")
-      .in("election_id", electionIds);
-    if (targetsQuery.error) return { rankings: [], error: targetsQuery.error.message };
+      .eq("election_id", electionId);
+    if (targetError) return { election: race, rankings: [], error: targetError.message };
 
     const streaks = new Map<string, number>();
-    for (const row of targetsQuery.data ?? []) {
-      const streak = row.alignment_streak ?? 0;
-      streaks.set(row.user_id, Math.max(streak, streaks.get(row.user_id) ?? 0));
+    for (const row of targets ?? []) {
+      streaks.set(row.user_id, Math.max(row.alignment_streak ?? 0, streaks.get(row.user_id) ?? 0));
     }
-    if (streaks.size === 0) return { rankings: [], error: null };
+    const candidateIds = [...streaks.keys()];
+    if (candidateIds.length === 0) return { election: race, rankings: [], error: null };
 
-    const statsQuery = await admin
-      .from("candidate_stats")
-      .select("id, username, elo_rating, debates_won, debates_played")
-      .in("id", [...streaks.keys()])
-      .order("elo_rating", { ascending: false })
-      .order("debates_won", { ascending: false })
-      .order("username", { ascending: true })
-      .limit(limit);
-    if (statsQuery.error) return { rankings: [], error: statsQuery.error.message };
+    const [usersQuery, profilesQuery, pledgesQuery, endorsementsQuery] = await Promise.all([
+      admin.from("users").select("id, username, elo_rating").in("id", candidateIds),
+      admin.from("profiles").select("id, full_name").in("id", candidateIds),
+      admin
+        .from("campaign_pledges")
+        .select("candidate_id, amount, status")
+        .eq("election_id", electionId)
+        .in("candidate_id", candidateIds)
+        .in("status", ["pending", "released"]),
+      admin.from("coalition_endorsements").select("endorsed_id").in("endorsed_id", candidateIds),
+    ]);
 
-    const toRanking = (row: StatsRow, rank: number): DistrictRanking => {
-      const record = recordFromStats({
-        debates_won: row.debates_won ?? 0,
-        debates_played: row.debates_played ?? 0,
-      });
-      return {
-        id: row.id,
-        rank,
-        username: row.username?.trim() || "Unnamed candidate",
-        elo: parseElo(row.elo_rating),
-        wins: record.wins,
-        losses: record.losses,
-        isViewer: row.id === viewerId,
-        alignmentStreak: streaks.get(row.id) ?? 0,
-      };
-    };
-
-    const topRows = (statsQuery.data ?? []) as StatsRow[];
-    const rankings = topRows.map((row, index) => toRanking(row, index + 1));
-
-    // Pin the viewer below the top N when they target this district but fell
-    // outside the cutoff, so they never vanish from the board.
-    if (viewerId && streaks.has(viewerId) && !topRows.some((row) => row.id === viewerId)) {
-      const viewerQuery = await admin
-        .from("candidate_stats")
-        .select("id, username, elo_rating, debates_won, debates_played")
-        .eq("id", viewerId)
-        .maybeSingle();
-      if (viewerQuery.error) return { rankings, error: viewerQuery.error.message };
-
-      const viewerRow = viewerQuery.data as StatsRow | null;
-      if (viewerRow) {
-        // Only candidates with Elo at or above the viewer's can outrank them.
-        const viewerElo = Number(viewerRow.elo_rating);
-        const aheadQuery = await admin
-          .from("candidate_stats")
-          .select("id, username, elo_rating, debates_won")
-          .in("id", [...streaks.keys()])
-          .neq("id", viewerId)
-          .gte("elo_rating", viewerRow.elo_rating ?? 0);
-        if (aheadQuery.error) return { rankings, error: aheadQuery.error.message };
-
-        const viewerWins = viewerRow.debates_won ?? 0;
-        const viewerName = viewerRow.username?.trim() || "Unnamed candidate";
-        // Mirrors the ordering above: Elo desc, wins desc, username asc.
-        const ahead = (aheadQuery.data ?? []).filter((row) => {
-          const elo = Number(row.elo_rating);
-          if (elo !== viewerElo) return elo > viewerElo;
-          const wins = row.debates_won ?? 0;
-          if (wins !== viewerWins) return wins > viewerWins;
-          return (row.username?.trim() || "Unnamed candidate").localeCompare(viewerName) < 0;
-        }).length;
-
-        // The viewer sits outside the top `limit`, so never rank them inside it.
-        rankings.push(toRanking(viewerRow, Math.max(ahead + 1, topRows.length + 1)));
-      }
+    if (usersQuery.error) return { election: race, rankings: [], error: usersQuery.error.message };
+    if (profilesQuery.error && !isMissingRelation(profilesQuery.error)) {
+      return { election: race, rankings: [], error: profilesQuery.error.message };
+    }
+    if (pledgesQuery.error && !isMissingRelation(pledgesQuery.error)) {
+      return { election: race, rankings: [], error: pledgesQuery.error.message };
+    }
+    if (endorsementsQuery.error && !isMissingRelation(endorsementsQuery.error)) {
+      return { election: race, rankings: [], error: endorsementsQuery.error.message };
     }
 
-    return { rankings, error: null };
+    const names = new Map<string, string>();
+    const elos = new Map<string, number>();
+    for (const row of (usersQuery.data ?? []) as {
+      id: string;
+      username: string | null;
+      elo_rating: number | string | null;
+    }[]) {
+      names.set(row.id, row.username?.trim() || "Unnamed candidate");
+      elos.set(row.id, parseElo(row.elo_rating));
+    }
+    for (const row of (profilesQuery.error ? [] : (profilesQuery.data ?? [])) as {
+      id: string;
+      full_name: string | null;
+    }[]) {
+      const fullName = row.full_name?.trim();
+      if (fullName) names.set(row.id, fullName);
+    }
+
+    const escrow = new Map<string, number>();
+    for (const row of (pledgesQuery.error ? [] : (pledgesQuery.data ?? [])) as {
+      candidate_id: string;
+      amount: number | string | null;
+      status: string;
+    }[]) {
+      escrow.set(row.candidate_id, (escrow.get(row.candidate_id) ?? 0) + parseAmount(row.amount));
+    }
+
+    const endorsements = new Map<string, number>();
+    for (const row of (endorsementsQuery.error ? [] : (endorsementsQuery.data ?? [])) as {
+      endorsed_id: string;
+    }[]) {
+      endorsements.set(row.endorsed_id, (endorsements.get(row.endorsed_id) ?? 0) + 1);
+    }
+
+    const rankings = candidateIds
+      .map((id) => ({
+        id,
+        rank: 0,
+        name: names.get(id) ?? "Unnamed candidate",
+        elo: elos.get(id) ?? parseElo(null),
+        alignmentStreak: streaks.get(id) ?? 0,
+        escrowTotal: escrow.get(id) ?? 0,
+        endorsements: endorsements.get(id) ?? 0,
+      }))
+      .sort(
+        (left, right) =>
+          right.elo - left.elo ||
+          right.escrowTotal - left.escrowTotal ||
+          left.name.localeCompare(right.name),
+      )
+      .map((row, index) => ({ ...row, rank: index + 1 }));
+
+    return { election: race, rankings, error: null };
   } catch (caught) {
     return {
+      election: null,
       rankings: [],
-      error: caught instanceof Error ? caught.message : "Could not load district rivals.",
+      error: caught instanceof Error ? caught.message : "Could not load this district leaderboard.",
     };
+  }
+});
+
+/** Elections that already have at least one declared candidate. */
+export async function listActiveLeaderboardRaces(): Promise<ActiveLeaderboardRace[]> {
+  try {
+    const admin = createAdminClient();
+    const { data: targets, error: targetError } = await admin
+      .from("campaign_targets")
+      .select("election_id");
+    if (targetError) throw new Error(targetError.message);
+
+    const counts = new Map<string, number>();
+    for (const row of targets ?? []) {
+      counts.set(row.election_id, (counts.get(row.election_id) ?? 0) + 1);
+    }
+    const electionIds = [...counts.keys()];
+    if (electionIds.length === 0) return [];
+
+    const { data: elections, error: electionError } = await admin
+      .from("elections")
+      .select("id, office_name, ocd_id, election_date")
+      .in("id", electionIds);
+    if (electionError) throw new Error(electionError.message);
+
+    return ((elections ?? []) as {
+      id: string;
+      office_name: string;
+      ocd_id?: string | null;
+      election_date?: string | null;
+    }[])
+      .map((row) => ({
+        id: row.id,
+        officeName: row.office_name,
+        ocdId: row.ocd_id ?? null,
+        electionDate: row.election_date ?? null,
+        label: toRaceLabel(row),
+        candidateCount: counts.get(row.id) ?? 0,
+      }))
+      .sort(
+        (left, right) =>
+          right.candidateCount - left.candidateCount || left.label.localeCompare(right.label),
+      );
+  } catch (caught) {
+    console.error("listActiveLeaderboardRaces failed.", caught);
+    return [];
+  }
+}
+
+/** Primary upcoming race on the viewer's home ballot, if one exists. */
+export async function resolveHomeLeaderboardElection(
+  userId: string | null,
+): Promise<ActiveLeaderboardRace | null> {
+  if (!userId) return null;
+
+  try {
+    const admin = createAdminClient();
+    const { data: profile, error: profileError } = await admin
+      .from("users")
+      .select("home_ocd_ids")
+      .eq("id", userId)
+      .maybeSingle();
+    if (profileError) throw new Error(profileError.message);
+
+    const homes = asOcdIds(profile?.home_ocd_ids).map((id) => normalizeOcdId(id)).filter(Boolean);
+    if (homes.length === 0) return null;
+
+    const { data: elections, error: electionError } = await admin
+      .from("elections")
+      .select("id, office_name, ocd_id, election_date");
+    if (electionError) throw new Error(electionError.message);
+
+    const matches = ((elections ?? []) as {
+      id: string;
+      office_name: string;
+      ocd_id?: string | null;
+      election_date?: string | null;
+    }[]).filter((row) => homes.includes(normalizeOcdId(row.ocd_id)));
+    if (matches.length === 0) return null;
+
+    const { data: targets } = await admin
+      .from("campaign_targets")
+      .select("election_id")
+      .in(
+        "election_id",
+        matches.map((row) => row.id),
+      );
+    const counts = new Map<string, number>();
+    for (const row of targets ?? []) {
+      counts.set(row.election_id, (counts.get(row.election_id) ?? 0) + 1);
+    }
+
+    const ranked = matches
+      .map((row) => ({
+        id: row.id,
+        officeName: row.office_name,
+        ocdId: row.ocd_id ?? null,
+        electionDate: row.election_date ?? null,
+        label: toRaceLabel(row),
+        candidateCount: counts.get(row.id) ?? 0,
+      }))
+      .sort((left, right) => {
+        const leftHome = homes.indexOf(normalizeOcdId(left.ocdId));
+        const rightHome = homes.indexOf(normalizeOcdId(right.ocdId));
+        if (leftHome !== rightHome) return leftHome - rightHome;
+        return right.candidateCount - left.candidateCount;
+      });
+
+    return ranked[0] ?? null;
+  } catch (caught) {
+    console.error("resolveHomeLeaderboardElection failed.", caught);
+    return null;
   }
 }
