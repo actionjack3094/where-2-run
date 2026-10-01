@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createServerSupabase as createClient } from '@/lib/db/supabase-server';
 
 export interface IdeologyScores {
   economic?: number;    // -100 (left) to 100 (right)
@@ -6,9 +6,6 @@ export interface IdeologyScores {
   governance?: number;  // -100 (decentralized) to 100 (centralized)
 }
 
-/**
- * Calculates Euclidean distance between two ideological vectors.
- */
 function calculateIdeologicalDistance(a: IdeologyScores, b: IdeologyScores): number {
   const dEco = (a.economic ?? 0) - (b.economic ?? 0);
   const dSoc = (a.social ?? 0) - (b.social ?? 0);
@@ -16,13 +13,9 @@ function calculateIdeologicalDistance(a: IdeologyScores, b: IdeologyScores): num
   return Math.sqrt(dEco * dEco + dSoc * dSoc + dGov * dGov);
 }
 
-/**
- * Matches a user to open primary elections nationwide based on ideological proximity.
- */
 export async function matchUserToTournaments(userId: string) {
   const supabase = await createClient();
 
-  // Fetch the candidate's ideological profile
   const { data: userIdeology } = await supabase
     .from('user_ideologies')
     .select('vector_data')
@@ -33,14 +26,12 @@ export async function matchUserToTournaments(userId: string) {
     throw new Error('User ideology profile not found. Complete deck questions first.');
   }
 
-  // Fetch all active open primary elections nationwide
   const { data: openElections } = await supabase
     .from('elections')
     .select('id, title, state, district, target_ideology');
 
   if (!openElections || openElections.length === 0) return [];
 
-  // Rank open elections by closest ideological proximity
   const rankedTournaments = openElections
     .map((election) => {
       const distance = calculateIdeologicalDistance(
