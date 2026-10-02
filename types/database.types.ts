@@ -497,6 +497,20 @@ export interface UserNotification {
   created_at: string;
 }
 
+export type ArenaNotificationType =
+  | "challenge_accepted"
+  | "debate_concluded"
+  | "seat_expiring_soon";
+
+export interface ArenaNotification {
+  id: string;
+  user_id: string;
+  type: ArenaNotificationType | string;
+  debate_id: string;
+  is_read: boolean;
+  created_at: string;
+}
+
 export interface ElectionCycle {
   id: string;
   source: CivicDataSource | string;
@@ -1237,6 +1251,28 @@ export interface Database {
             columns: ["user_id"];
             isOneToOne: false;
             referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      notifications: {
+        Row: ArenaNotification;
+        Insert: Partial<ArenaNotification> &
+          Pick<ArenaNotification, "user_id" | "type" | "debate_id">;
+        Update: Partial<ArenaNotification>;
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_debate_id_fkey";
+            columns: ["debate_id"];
+            isOneToOne: false;
+            referencedRelation: "arena_debates";
             referencedColumns: ["id"];
           },
         ];

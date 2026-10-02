@@ -154,7 +154,7 @@ export async function rankedField(admin: PlatformAdmin, primaryId: string) {
   return rows
     .filter((row) => {
       const profile = profiles.get(row.user_id);
-      return profile && canRank(profile) && row.debates_count > 0;
+      return profile && !profile.is_synthetic && row.debates_count > 0;
     })
     .map((row) => row.elo);
 }

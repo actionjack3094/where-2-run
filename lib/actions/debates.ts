@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { notifyChallengeAccepted, notifyExpiringSeats } from "@/lib/actions/notifications";
 import { adjudicateDebate } from "@/lib/ai/judge";
 import { isUuid } from "@/lib/arena/display";
 import { requireActionUserId } from "@/lib/arena/auth";
@@ -199,6 +200,7 @@ export async function loadDiscoveryDebates(): Promise<{
 }
 
 const SEAT_LOCK_MS = 24 * 60 * 60 * 1000;
+const PROMPT_MIN = 12;
 const STANCE_MIN = 20;
 const STANCE_MAX = 2000;
 
@@ -237,6 +239,95 @@ async function primaryFor(admin: PlatformAdmin, primaryId: string) {
     .maybeSingle();
   if (error) throw new Error(error.message);
   return (data as Primary | null) ?? null;
+}
+
+/** Reopen arena seats whose 24-hour lock expired before a rebuttal was filed. */
+export async function releaseExpiredSeats(): Promise<{ released: number }> {
+  await notifyExpiringSeats();
+  const admin = platformAdmin();
+  const now = new Date().toISOString();
+  const { data, error } = await admin
+    .from("arena_debates")
+    .update({
+      status: "open_challenge",
+      candidate_b_id: null,
+      seat_locked_until: null,
+      updated_at: now,
+    })
+    .eq("status", "active")
+    .is("stance_b", null)
+    .lt("seat_locked_until", now)
+    .select("id, prompt_id");
+  if (error) throw new Error(error.message);
+  const rows = (data ?? []) as { id: string; prompt_id: string }[];
+  const promptIds = [...new Set(rows.map((row) => row.prompt_id))];
+  if (promptIds.length > 0) {
+    const { error: promptError } = await admin
+      .from("debate_prompts")
+      .update({ status: "open" })
+      .in("id", promptIds)
+      .eq("status", "locked");
+    if (promptError) throw new Error(promptError.message);
+  }
+  return { released: rows.length };
+}
+
+export async function createPrimaryDebatePrompt(
+  primaryId: string,
+  promptText: string,
+  stanceText: string,
+): Promise<DebateActionResult> {
+  try {
+    if (!isUuid(primaryId)) return { error: "That primary is not on the board." };
+    const session = await signedIn();
+    if (!session.userId || !session.admin) return { error: session.error ?? "Sign in to continue." };
+    if (!ready(session.profile)) return { error: "Finish the ideology diagnostic first." };
+
+    const prompt = promptText.trim();
+    const stance = stanceText.trim();
+    if (prompt.length < PROMPT_MIN) return { error: "Write the question you want judged." };
+    if (stance.length < STANCE_MIN || stance.length > STANCE_MAX) {
+      return { error: "The opening stance needs at least a short paragraph." };
+    }
+
+    const primary = await primaryFor(session.admin, primaryId);
+    if (!primary) return { error: "That primary is not on the board." };
+    const party = partyFromCoordinate({
+      x: session.profile.ideology_x ?? 0,
+      y: session.profile.ideology_y ?? 0,
+    });
+    if (party !== primary.party) return { error: "You can only open a seat in your own party." };
+
+    const { data: created, error: promptError } = await session.admin
+      .from("debate_prompts")
+      .insert({
+        primary_id: primary.id,
+        author_id: session.userId,
+        author_kind: "user",
+        prompt_text: prompt,
+        stance_text: stance,
+        ideology_x: session.profile.ideology_x ?? 0,
+        ideology_y: session.profile.ideology_y ?? 0,
+        status: "open",
+      })
+      .select("id")
+      .single();
+    if (promptError) return { error: promptError.message };
+
+    const { error: debateError } = await session.admin.from("arena_debates").insert({
+      primary_id: primary.id,
+      prompt_id: created.id,
+      candidate_a_id: session.userId,
+      stance_a: stance,
+      status: "open_challenge",
+    });
+    if (debateError) return { error: debateError.message };
+
+    refreshArena(primary.slug);
+    return { message: "Your opening stance is on the board." };
+  } catch (caught) {
+    return { error: caught instanceof Error ? caught.message : "Could not post that question." };
+  }
 }
 
 export async function acceptDebateChallenge(debateId: string): Promise<DebateActionResult> {
@@ -278,6 +369,8 @@ export async function acceptDebateChallenge(debateId: string): Promise<DebateAct
       .maybeSingle();
     if (error) return { error: error.message };
     if (!claimed) return { error: "That seat is no longer open." };
+
+    await notifyChallengeAccepted(debate.id, debate.candidate_a_id);
 
     const { error: promptError } = await session.admin
       .from("debate_prompts")

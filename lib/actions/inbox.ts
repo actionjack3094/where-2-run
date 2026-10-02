@@ -46,7 +46,15 @@ export async function markAsRead(
     }
 
     revalidateInbox();
-    return { ok: true, marked: (data ?? []).length };
+    const arena = await admin
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("user_id", userId)
+      .in("id", ids)
+      .eq("is_read", false)
+      .select("id");
+    if (arena.error && !isMissingSchema(arena.error)) throw arena.error;
+    return { ok: true, marked: (data ?? []).length + (arena.data ?? []).length };
   } catch (caught) {
     console.error("markAsRead failed.", caught);
     return { ok: false, error: "We couldn't update those alerts. Please try again." };

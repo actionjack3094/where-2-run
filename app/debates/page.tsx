@@ -103,14 +103,21 @@ export default async function DebatesPage(props: { searchParams: Promise<{ filed
                 </p>
                 <h2 className="mt-3 font-display text-xl text-parchment">{card.prompt}</h2>
                 <p className="mt-4 text-sm font-medium text-parchment">
-                  {card.sideA.name}{" "}
+                  <Link href={`/profile/${card.sideA.id}`} className="hover:text-gold">
+                    {card.sideA.name}
+                  </Link>{" "}
                   <span className="text-[11px] uppercase tracking-widest text-zinc-500">
                     {tierLabel(card.sideA.tier)}
                   </span>
                 </p>
                 <p className="mt-2 text-sm leading-6 text-zinc-300">{card.stanceA}</p>
                 {card.sideB ? (
-                  <p className="mt-4 text-sm text-zinc-400">Challenged by {card.sideB.name}</p>
+                  <p className="mt-4 text-sm text-zinc-400">
+                    Challenged by{" "}
+                    <Link href={`/profile/${card.sideB.id}`} className="hover:text-gold">
+                      {card.sideB.name}
+                    </Link>
+                  </p>
                 ) : null}
                 <div className="mt-5">
                   {!locked && !mine && user ? <ChallengeForm debateId={card.id} /> : null}

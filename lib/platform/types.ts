@@ -11,6 +11,7 @@ export type ArenaSide = {
   name: string;
   tier: CandidateTierName;
   verified: boolean;
+  donationHref: string | null;
 };
 
 export type CrowdFavorite = {
@@ -64,12 +65,15 @@ export type ArenaCard = {
 
 export type LeaderRow = {
   userId: string;
-  legalName: string;
+  legalName: string | null;
+  displayName: string;
   elo: number;
   wins: number;
   losses: number;
   ties: number;
   tier: CandidateTierName;
+  verified: boolean;
+  ranked: boolean;
 };
 
 export type PrimaryHub = {
@@ -84,6 +88,7 @@ export type PrimaryHub = {
   baselineY: number;
   generalSlug: string;
   leaderboard: LeaderRow[];
+  unranked: LeaderRow[];
   openSeats: ArenaCard[];
 };
 

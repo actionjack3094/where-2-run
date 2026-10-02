@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { LibertyBell } from "@/app/components/LibertyBell";
 import { getInbox, markAsRead } from "@/lib/actions/inbox";
+import { createClient } from "@/lib/db/supabase";
 import { INBOX_PREVIEW, INBOX_UPDATED_EVENT, type InboxItem } from "@/lib/notifications/inbox-shared";
 import { formatRelativeTime } from "@/lib/pledges";
 import { cn } from "@/lib/utils";
@@ -83,10 +84,31 @@ export function InboxMenu() {
     void load();
     const interval = window.setInterval(() => void load(), 20_000);
     window.addEventListener(INBOX_UPDATED_EVENT, load);
+    const supabase = createClient();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    void supabase.auth.getUser().then(({ data }) => {
+      if (cancelled || !data.user) return;
+      channel = supabase
+        .channel(`arena-notifications:${data.user.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "notifications",
+            filter: `user_id=eq.${data.user.id}`,
+          },
+          () => {
+            void load();
+          },
+        )
+        .subscribe();
+    });
     return () => {
       cancelled = true;
       window.clearInterval(interval);
       window.removeEventListener(INBOX_UPDATED_EVENT, load);
+      if (channel) void supabase.removeChannel(channel);
     };
   }, [pathname]);
 

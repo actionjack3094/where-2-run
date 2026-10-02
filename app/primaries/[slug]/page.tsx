@@ -79,17 +79,21 @@ export default async function PrimaryHubPage(props: HubPageProps) {
             <section className="mt-10">
               <h2 className="font-display text-xl text-parchment">Leaderboard</h2>
               <p className="mt-2 text-sm leading-6 text-zinc-400">
-                Ranked seats require Stripe verification and a legal name.
+                Declared Candidates and Frontrunners are verified and listed under their legal name.
+                Everyone else keeps their Elo in the unranked division.
               </p>
               {hub.leaderboard.length === 0 ? (
-                <p className="mt-4 text-sm text-zinc-400">No verified contenders ranked yet.</p>
+                <p className="mt-4 text-sm text-zinc-400">No declared contenders in this primary yet.</p>
               ) : (
                 <ol className="mt-4 grid gap-3">
                   {hub.leaderboard.map((row, index) => (
                     <li key={row.userId} className="rounded-xl border border-zinc-800 px-4 py-3">
                       <div className="flex flex-wrap items-baseline justify-between gap-2">
                         <p className="text-sm font-medium text-parchment">
-                          {index + 1}. {row.legalName}
+                          {index + 1}.{" "}
+                          <Link href={`/profile/${row.userId}`} className="hover:text-gold">
+                            {row.legalName}
+                          </Link>
                         </p>
                         <p className="text-sm text-zinc-300">{row.elo} Elo</p>
                       </div>
@@ -112,6 +116,33 @@ export default async function PrimaryHubPage(props: HubPageProps) {
                   ))}
                 </ol>
               )}
+              {hub.unranked.length > 0 ? (
+                <div className="mt-8">
+                  <h3 className="text-sm font-medium uppercase tracking-[0.16em] text-zinc-500">
+                    Unranked
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-zinc-400">
+                    Pseudonyms and unverified debaters compete here until Stripe verification and a legal name.
+                  </p>
+                  <ul className="mt-4 grid gap-3">
+                    {hub.unranked.map((row) => (
+                      <li key={row.userId} className="rounded-xl border border-zinc-800 px-4 py-3">
+                        <div className="flex flex-wrap items-baseline justify-between gap-2">
+                          <p className="text-sm font-medium text-parchment">
+                            <Link href={`/profile/${row.userId}`} className="hover:text-gold">
+                              {row.displayName}
+                            </Link>
+                          </p>
+                          <p className="text-sm text-zinc-300">{row.elo} Elo</p>
+                        </div>
+                        <p className="mt-1 text-[11px] uppercase tracking-widest text-zinc-500">
+                          {row.verified ? "Pundit" : "Unverified"} · {row.wins}-{row.losses}-{row.ties}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </section>
 
             <section className="mt-10">
@@ -122,7 +153,11 @@ export default async function PrimaryHubPage(props: HubPageProps) {
                     <h3 className="text-sm font-medium text-parchment">{seat.prompt}</h3>
                     <p className="mt-2 text-sm leading-6 text-zinc-300">{seat.stanceA}</p>
                     <p className="mt-2 text-[11px] uppercase tracking-widest text-zinc-500">
-                      {seat.sideA.name} · {tierLabel(seat.sideA.tier)}
+                      <Link href={`/profile/${seat.sideA.id}`} className="hover:text-gold">
+                        {seat.sideA.name}
+                      </Link>
+                      {" · "}
+                      {tierLabel(seat.sideA.tier)}
                     </p>
                     {canPost && user?.id !== seat.sideA.id ? (
                       <div className="mt-4">

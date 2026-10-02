@@ -1,6 +1,14 @@
+import { releaseExpiredSeats } from "@/lib/actions/debates";
+import {
+  activeEloField,
+  buildPrimaryBoard,
+  loadReleasedDonationHrefs,
+  tierForPrimaryStanding,
+  type StandingRow,
+} from "@/lib/actions/tiers";
 import { normalizeOcdId } from "@/lib/civic-fencing";
 import { isMissingSchema } from "@/lib/db/schema-errors";
-import { matchPrimaries, parseTier, partyFromCoordinate, type Party } from "@/lib/platform/scoring";
+import { matchPrimaries, partyFromCoordinate, type Party } from "@/lib/platform/scoring";
 import {
   asTier,
   canRank,
@@ -16,7 +24,7 @@ import {
   type PlatformAdmin,
   type PlatformProfile,
 } from "@/lib/platform/records";
-import type { ArenaCard, BallotComment, BallotMatch, LeaderRow, PrimaryHub } from "@/lib/platform/types";
+import type { ArenaCard, BallotComment, BallotMatch, PrimaryHub } from "@/lib/platform/types";
 import type { DebatePrompt, Primary } from "@/types/database.types";
 
 const ARENA_PUBLIC =
@@ -41,6 +49,7 @@ function side(profile: PlatformProfile | undefined, id: string) {
       is_synthetic: false,
       synthetic_key: null,
     }),
+    donationHref: null,
   };
 }
 
@@ -87,6 +96,7 @@ async function loadOpenCounts(admin: PlatformAdmin, primaryIds: string[]) {
 }
 
 export async function loadArenaFeed(userId: string | null) {
+  await releaseExpiredSeats();
   const admin = platformAdmin();
   const primaries = await loadPrimaries(admin);
   const profile = userId ? await loadProfile(admin, userId) : null;
@@ -181,6 +191,7 @@ export async function loadBallot(userId: string | null) {
   if (!userId) {
     return { signedOut: true, needsAddress: false, matches: [] as BallotMatch[] };
   }
+  await releaseExpiredSeats();
   const admin = platformAdmin();
   const home = await loadHomeOcdIds(admin, userId);
   if (home.length === 0) {
@@ -199,14 +210,40 @@ export async function loadBallot(userId: string | null) {
       "primary_id",
       primaries.map((primary) => primary.id),
     )
+    .in("status", ["active", "concluded"])
     .not("candidate_b_id", "is", null)
     .order("created_at", { ascending: false });
   if (error) throw new Error(schemaMessage(error) ?? error.message);
-  const debates = ((data ?? []) as ArenaPublic[]).filter((debate) => debate.candidate_b_id);
+  const debates = ((data ?? []) as ArenaPublic[]).filter(
+    (debate) =>
+      debate.candidate_b_id && (debate.status === "active" || debate.status === "concluded"),
+  );
   const profiles = await loadProfiles(
     admin,
     debates.flatMap((debate) => [debate.candidate_a_id, debate.candidate_b_id ?? ""]),
   );
+  const standingResult = await admin
+    .from("primary_standings")
+    .select("user_id, primary_id, elo, wins, losses, ties, debates_count")
+    .in(
+      "primary_id",
+      primaries.map((primary) => primary.id),
+    );
+  if (standingResult.error) {
+    throw new Error(schemaMessage(standingResult.error) ?? standingResult.error.message);
+  }
+  const standingRows = (standingResult.data ?? []) as (StandingRow & { primary_id: string })[];
+  const standingsByPrimary = new Map<string, StandingRow[]>();
+  for (const row of standingRows) {
+    const list = standingsByPrimary.get(row.primary_id) ?? [];
+    list.push(row);
+    standingsByPrimary.set(row.primary_id, list);
+  }
+  const standingProfiles = await loadProfiles(
+    admin,
+    standingRows.map((row) => row.user_id),
+  );
+  for (const [id, profile] of profiles) standingProfiles.set(id, profile);
   const promptIds = debates.map((debate) => debate.prompt_id);
   const promptText = new Map<string, string>();
   if (promptIds.length > 0) {
@@ -267,11 +304,28 @@ export async function loadBallot(userId: string | null) {
     commentRows.map((row) => row.author_id),
   );
   const primaryById = new Map(primaries.map((primary) => [primary.id, primary]));
+  const donationHrefs = await loadReleasedDonationHrefs(
+    admin,
+    debates.flatMap((debate) => [debate.candidate_a_id, debate.candidate_b_id ?? ""]),
+  );
 
   const matches = debates.map((debate) => {
     const primary = primaryById.get(debate.primary_id);
-    const sideA = side(profiles.get(debate.candidate_a_id), debate.candidate_a_id);
-    const sideB = side(profiles.get(debate.candidate_b_id ?? ""), debate.candidate_b_id ?? "");
+    const rows = standingsByPrimary.get(debate.primary_id) ?? [];
+    const field = activeEloField(rows, standingProfiles);
+    const seat = (id: string) => {
+      const profile = standingProfiles.get(id) ?? profiles.get(id);
+      const base = side(profile, id);
+      const standing = rows.find((row) => row.user_id === id);
+      const tier = standing ? tierForPrimaryStanding(standing, profile, field) : "pundit" as const;
+      return {
+        ...base,
+        tier,
+        donationHref: tier === "frontrunner" ? (donationHrefs.get(id) ?? null) : null,
+      };
+    };
+    const sideA = seat(debate.candidate_a_id);
+    const sideB = seat(debate.candidate_b_id ?? "");
     const localLikes = likeRows.filter((like) => {
       if (like.debate_id !== debate.id || !primary) return false;
       const liker = likerProfiles.get(like.user_id);
@@ -331,6 +385,7 @@ export async function loadBallot(userId: string | null) {
 }
 
 export async function loadPrimaryHub(slug: string): Promise<PrimaryHub | null> {
+  await releaseExpiredSeats();
   const admin = platformAdmin();
   const primaries = await loadPrimaries(admin);
   const primary = primaries.find((row) => row.slug === slug);
@@ -354,23 +409,7 @@ export async function loadPrimaryHub(slug: string): Promise<PrimaryHub | null> {
     admin,
     standings.map((row) => row.user_id),
   );
-  const leaderboard: LeaderRow[] = standings
-    .filter((row) => {
-      const profile = profiles.get(row.user_id);
-      return profile && canRank(profile) && row.debates_count > 0;
-    })
-    .map((row) => {
-      const profile = profiles.get(row.user_id)!;
-      return {
-        userId: row.user_id,
-        legalName: profile.legal_name!.trim(),
-        elo: row.elo,
-        wins: row.wins,
-        losses: row.losses,
-        ties: row.ties,
-        tier: parseTier(profile.candidate_tier),
-      };
-    });
+  const board = buildPrimaryBoard(standings, profiles);
 
   const { data: openRows, error: openError } = await admin
     .from("arena_debates")
@@ -413,7 +452,8 @@ export async function loadPrimaryHub(slug: string): Promise<PrimaryHub | null> {
     baselineX: primary.baseline_x,
     baselineY: primary.baseline_y,
     generalSlug: primary.general_slug,
-    leaderboard,
+    leaderboard: board.ranked,
+    unranked: board.unranked,
     openSeats: open.map((debate) =>
       card(debate, primary, openProfiles, prompts.get(debate.prompt_id) ?? "Open question"),
     ),

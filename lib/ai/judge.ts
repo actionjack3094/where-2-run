@@ -16,6 +16,7 @@ import {
   withinTieMargin,
   type AxisPoint,
 } from "@/lib/platform/scoring";
+import { notifyDebateConcluded } from "@/lib/actions/notifications";
 import {
   loadArenaById,
   loadProfile,
@@ -597,6 +598,7 @@ export async function adjudicateDebate(debateId: string): Promise<SideJudgments>
 
   await recomputeTier(admin, debate.candidate_a_id);
   await recomputeTier(admin, debate.candidate_b_id);
+  await notifyDebateConcluded(debate.id, debate.candidate_a_id, debate.candidate_b_id);
 
   return judgments({
     winner,

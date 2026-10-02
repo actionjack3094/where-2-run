@@ -73,7 +73,10 @@ export function notificationHref(
     case "coalition_invite":
       return "/my-campaign/coalitions";
     case "challenge_received":
-      return id ? `/debates/${id}` : "/feed";
+    case "challenge_accepted":
+    case "seat_expiring_soon":
+    case "debate_concluded":
+      return id ? "/debates" : "/debates";
     default:
       return "/inbox";
   }

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireActionUserId } from "@/lib/arena/auth";
-import { acceptDebateChallenge, submitRebuttal } from "@/lib/actions/debates";
+import { acceptDebateChallenge, createPrimaryDebatePrompt, submitRebuttal } from "@/lib/actions/debates";
 import { coordinateFromAnswers } from "@/lib/platform/questions";
 import {
   loadArenaById,
@@ -11,15 +11,9 @@ import {
   ocdMatches,
   platformAdmin,
   type PlatformAdmin,
-  type PlatformProfile,
 } from "@/lib/platform/records";
-import { partyFromCoordinate } from "@/lib/platform/scoring";
 import type { PublicJudgment } from "@/lib/platform/types";
 import type { Primary } from "@/types/database.types";
-
-const STANCE_MIN = 20;
-const STANCE_MAX = 2000;
-const PROMPT_MIN = 12;
 
 export type PlatformFormState = {
   error?: string;
@@ -39,16 +33,6 @@ async function signedIn() {
   const admin = platformAdmin();
   const profile = await loadProfile(admin, userId);
   return { error: null, userId, admin, profile };
-}
-
-function ready(profile: PlatformProfile | null): profile is PlatformProfile {
-  return Boolean(
-    profile?.onboarding_completed && profile.ideology_x != null && profile.ideology_y != null,
-  );
-}
-
-function partyOf(profile: PlatformProfile) {
-  return partyFromCoordinate({ x: profile.ideology_x ?? 0, y: profile.ideology_y ?? 0 });
 }
 
 async function primaryForDebate(admin: PlatformAdmin, primaryId: string) {
@@ -93,51 +77,11 @@ export async function postOpening(
   _prev: PlatformFormState,
   formData: FormData,
 ): Promise<PlatformFormState> {
-  try {
-    const session = await signedIn();
-    if (!session.userId || !session.admin) return { error: session.error ?? "Sign in to continue." };
-    if (!ready(session.profile)) return { error: "Finish the ideology diagnostic first." };
-    const primaryId = String(formData.get("primaryId") ?? "");
-    const prompt = String(formData.get("prompt") ?? "").trim();
-    const stance = String(formData.get("stance") ?? "").trim();
-    if (prompt.length < PROMPT_MIN) return { error: "Write the question you want judged." };
-    if (stance.length < STANCE_MIN || stance.length > STANCE_MAX) {
-      return { error: "The opening stance needs at least a short paragraph." };
-    }
-    const primary = await primaryForDebate(session.admin, primaryId);
-    if (!primary) return { error: "That primary is not on the board." };
-    if (partyOf(session.profile) !== primary.party) {
-      return { error: "You can only open a seat in your own party." };
-    }
-    const { data: created, error: promptError } = await session.admin
-      .from("debate_prompts")
-      .insert({
-        primary_id: primary.id,
-        author_id: session.userId,
-        author_kind: "user",
-        prompt_text: prompt,
-        stance_text: stance,
-        ideology_x: session.profile.ideology_x ?? 0,
-        ideology_y: session.profile.ideology_y ?? 0,
-        status: "open",
-      })
-      .select("id")
-      .single();
-    if (promptError) return { error: promptError.message };
-    const { error: debateError } = await session.admin.from("arena_debates").insert({
-      primary_id: primary.id,
-      prompt_id: created.id,
-      candidate_a_id: session.userId,
-      stance_a: stance,
-      status: "open_challenge",
-    });
-    if (debateError) return { error: debateError.message };
-    refresh();
-    revalidatePath(`/primaries/${primary.slug}`);
-    return { message: "Your opening stance is on the board." };
-  } catch (caught) {
-    return { error: caught instanceof Error ? caught.message : "Could not post that question." };
-  }
+  return createPrimaryDebatePrompt(
+    String(formData.get("primaryId") ?? ""),
+    String(formData.get("prompt") ?? ""),
+    String(formData.get("stance") ?? ""),
+  );
 }
 
 export async function challengeSeat(

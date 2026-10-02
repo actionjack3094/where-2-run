@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { forfeitArenaSeat, judgeArenaExchange } from "@/lib/ai/judge";
+import { judgeArenaExchange } from "@/lib/ai/judge";
+import { releaseExpiredSeats } from "@/lib/actions/debates";
 import {
   ARENA_PUBLIC_COLUMNS,
   loadPrimaries,
@@ -204,16 +205,5 @@ export async function ensureColdStart() {
     await judgeArenaExchange(debate.id);
   }
 
-  const { data: expired, error: expiredError } = await admin
-    .from("arena_debates")
-    .select("id, seat_locked_until, stance_b, status")
-    .eq("status", "active")
-    .is("stance_b", null);
-  if (expiredError) throw new Error(expiredError.message);
-  const now = Date.now();
-  for (const row of (expired ?? []) as { id: string; seat_locked_until: string | null }[]) {
-    const lock = row.seat_locked_until ? Date.parse(row.seat_locked_until) : NaN;
-    if (!Number.isFinite(lock) || lock > now) continue;
-    await forfeitArenaSeat(row.id);
-  }
+  await releaseExpiredSeats();
 }

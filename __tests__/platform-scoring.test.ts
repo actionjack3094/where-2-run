@@ -66,6 +66,9 @@ describe("platform scoring", () => {
     expect(tierForStanding(1900, field, false, "Ada Lovelace")).toBe("pundit");
     expect(tierForStanding(1600, field, true, "Ada Lovelace")).toBe("declared_candidate");
     expect(tierForStanding(1900, field, true, "Ada Lovelace")).toBe("frontrunner");
+    expect(tierForStanding(1500, field, true, "Ada Lovelace")).toBe("declared_candidate");
+    expect(tierForStanding(1400, field, true, "Ada Lovelace")).toBe("pundit");
+    expect(tierForStanding(1900, field, true, "  ")).toBe("pundit");
     expect(percentileRank(1900, field)).toBe(0.9);
   });
 

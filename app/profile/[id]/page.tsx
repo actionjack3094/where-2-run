@@ -17,6 +17,8 @@ import {
 import { CoalitionBadge } from "@/components/coalitions/CoalitionBadge";
 import { VerificationBadge } from "@/components/verification/VerificationBadge";
 import { isUuid } from "@/lib/arena/display";
+import { loadArenaPublicProfile } from "@/lib/platform/public-profile";
+import { ArenaPublicProfileView } from "@/app/profile/[id]/arena-public";
 import { hasTrustBadge, verificationLabel } from "@/lib/verification";
 import { loadActiveCoalitionsForCandidate } from "@/lib/coalitions";
 import {
@@ -183,8 +185,9 @@ export async function generateMetadata({
   params: Promise<ProfileParams>;
 }): Promise<Metadata> {
   const { id } = await params;
+  const arena = isUuid(id) ? await loadArenaPublicProfile(id).catch(() => null) : null;
   const { profile } = await loadPublicProfile(id);
-  const name = profile?.stats.username;
+  const name = arena?.name ?? profile?.stats.username;
 
   return {
     title: name ? `${name} · Public Profile` : "Public Profile · WHERE 2 RUN",
@@ -200,6 +203,16 @@ export default async function PublicProfilePage({
   params: Promise<ProfileParams>;
 }) {
   const { id } = await params;
+  const arena = isUuid(id) ? await loadArenaPublicProfile(id).catch(() => null) : null;
+  if (arena) {
+    return (
+      <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+        <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
+          <ArenaPublicProfileView profile={arena} />
+        </div>
+      </main>
+    );
+  }
   const { profile, error } = await loadPublicProfile(id);
 
   return (

@@ -82,7 +82,7 @@ export default async function BallotPage() {
                 </p>
                 {match.priority ? (
                   <span className="rounded-full border border-gold px-2 py-0.5 text-[10px] uppercase tracking-widest text-gold">
-                    Priority
+                    Frontrunner
                   </span>
                 ) : null}
                 {match.crowd ? (
@@ -95,19 +95,37 @@ export default async function BallotPage() {
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 {[match.sideA, match.sideB].map((side, index) => (
                   <div key={side.id} className="rounded-lg border border-zinc-800 px-3 py-3">
-                    <p className="text-sm font-medium text-parchment">{side.name}</p>
-                    <p className="mt-1 text-[11px] uppercase tracking-widest text-zinc-500">
-                      {tierLabel(side.tier)}
+                    <p className="text-sm font-medium text-parchment">
+                      <Link href={`/profile/${side.id}`} className="hover:text-gold">
+                        {side.name}
+                      </Link>
+                    </p>
+                    <p className="mt-1 flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-widest text-zinc-500">
+                      <span>{tierLabel(side.tier)}</span>
+                      {side.tier === "frontrunner" ? (
+                        <span className="rounded-full border border-gold px-2 py-0.5 text-[10px] tracking-widest text-gold">
+                          Frontrunner
+                        </span>
+                      ) : null}
                     </p>
                     <p className="mt-3 text-sm leading-6 text-zinc-300">
-                      {index === 0 ? match.stanceA : match.stanceB}
+                      {index === 0 ? match.stanceA : match.stanceB || "Rebuttal not filed yet."}
                     </p>
                     {side.tier === "declared_candidate" ? (
                       <Link href={`/profile/${side.id}`} className="mt-3 inline-flex text-xs uppercase tracking-widest text-gold">
                         Platform
                       </Link>
                     ) : null}
-                    {side.tier === "frontrunner" ? (
+                    {side.tier === "frontrunner" && side.donationHref ? (
+                      <a
+                        href={side.donationHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 inline-flex text-xs uppercase tracking-widest text-gold"
+                      >
+                        Contribute
+                      </a>
+                    ) : side.tier === "frontrunner" ? (
                       <Link href={`/candidate/${side.id}`} className="mt-3 inline-flex text-xs uppercase tracking-widest text-gold">
                         Donate
                       </Link>
@@ -115,7 +133,9 @@ export default async function BallotPage() {
                   </div>
                 ))}
               </div>
-              {match.isTie ? (
+              {match.status === "active" ? (
+                <p className="mt-4 text-sm text-zinc-300">In progress. Rebuttals stay on Debates.</p>
+              ) : match.isTie ? (
                 <p className="mt-4 text-sm text-zinc-300">Tie.</p>
               ) : match.winnerId ? (
                 <p className="mt-4 text-sm text-zinc-300">

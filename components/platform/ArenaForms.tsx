@@ -4,10 +4,9 @@ import { useActionState, useEffect, useState } from "react";
 import {
   commentOnMatch,
   likeMatch,
-  postOpening,
   type PlatformFormState,
 } from "@/app/actions/platform";
-import { acceptDebateChallenge, submitRebuttal } from "@/lib/actions/debates";
+import { acceptDebateChallenge, createPrimaryDebatePrompt, submitRebuttal } from "@/lib/actions/debates";
 import { Button } from "@/components/ui/button";
 import { formatCoordinate, type PublicJudgment } from "@/lib/platform/types";
 
@@ -29,10 +28,17 @@ function Status({ state }: { state: PlatformFormState }) {
 }
 
 export function OpeningForm({ primaryId }: { primaryId: string }) {
-  const [state, action, pending] = useActionState(postOpening, null);
+  const [state, action, pending] = useActionState(
+    async (_prev: PlatformFormState, formData: FormData) =>
+      createPrimaryDebatePrompt(
+        primaryId,
+        String(formData.get("prompt") ?? ""),
+        String(formData.get("stance") ?? ""),
+      ),
+    null,
+  );
   return (
     <form action={action} className="mt-6 grid gap-3">
-      <input type="hidden" name="primaryId" value={primaryId} />
       <label className="grid gap-2 text-sm text-zinc-300">
         Question
         <textarea
