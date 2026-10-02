@@ -49,8 +49,8 @@ export async function finalizeExpiredDebates(now = new Date()) {
   const { data, error } = await admin
     .from("debates")
     .select("id, status, candidate_a_id, candidate_b_id, expires_at")
-    .in("status", ["matching", "active", "voting"])
-    .lte("expires_at", now.toISOString());
+    .in("status", ["matching", "in_progress", "active", "voting", "concluded"])
+    .or(`status.eq.concluded,expires_at.lte.${now.toISOString()}`);
 
   if (error) throw new Error(error.message);
   const rows = (data ?? []) as DebateRow[];
@@ -79,7 +79,7 @@ export async function finalizeExpiredDebates(now = new Date()) {
     if (!isMissingSchema(caseError)) throw new Error(caseError.message);
     const resolved = (
       await Promise.all(
-        rows.filter((row) => row.status === "voting").map((row) => resolveDebate(row.id)),
+        debatesToFinalize(floors, new Set(), now).map((id) => resolveDebate(id)),
       )
     ).filter((id): id is string => id !== null);
     return { resolved, held: [] as string[], released: [] as string[] };

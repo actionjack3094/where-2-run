@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { CountdownTimer } from "@/app/components/countdown-timer";
 import { RealtimeDebateListener } from "@/app/components/realtime-debate-listener";
 import { RoundTranscript } from "@/components/debates/RoundTranscript";
-import { resolveDebate } from "@/lib/actions/debate-resolution";
+import { isOfficialResolutionDue, resolveDebate } from "@/lib/actions/debate-resolution";
 import { isUuid } from "@/lib/arena/display";
 import { loadDebateComments } from "@/lib/comments";
 import { createServerSupabase } from "@/lib/db/supabase-server";
@@ -107,11 +107,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
   if (error || !data) notFound();
   let debate = data as DebateRow;
 
-  if (
-    debate.status === "voting" &&
-    debate.expires_at != null &&
-    new Date(debate.expires_at) <= new Date()
-  ) {
+  if (isOfficialResolutionDue(debate)) {
     await resolveDebate(debate.id);
     const refreshed = await supabase
       .from("debates")
@@ -168,7 +164,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
 
   const candidateAId = debate.candidate_a_id;
   const candidateBId = debate.candidate_b_id;
-  const isCompleted = debate.status === "completed";
+  const isCompleted = debate.status === "completed" || debate.status === "resolved";
   const finalTally = displayTally(
     { a: debate.candidate_a_votes, b: debate.candidate_b_votes },
     {
@@ -227,7 +223,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
         <header>
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-            {isCompleted ? "Completed debate" : "Active debate"}
+            {debate.status === "resolved" ? "Resolved debate" : isCompleted ? "Completed debate" : "Active debate"}
           </p>
           <h1 className="mt-3 font-display text-3xl font-semibold leading-tight tracking-tight text-parchment">
             {prompt || "Untitled question"}

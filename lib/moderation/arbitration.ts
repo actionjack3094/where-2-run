@@ -30,13 +30,15 @@ export function isAbandonedDebate(debate: ExpiredFloor, now: Date) {
   return debate.status === "active" && debate.argumentCount === 0;
 }
 
+const RATING_STATUSES = new Set(["voting", "concluded", "in_progress", "active"]);
+
 export function debatesToFinalize(
   debates: readonly ExpiredFloor[],
   openHoldIds: ReadonlySet<string>,
   now: Date,
 ) {
   return debates
-    .filter((debate) => debate.status === "voting")
+    .filter((debate) => RATING_STATUSES.has(debate.status))
     .filter((debate) => !openHoldIds.has(debate.id))
     .filter((debate) => !isAbandonedDebate(debate, now))
     .map((debate) => debate.id);

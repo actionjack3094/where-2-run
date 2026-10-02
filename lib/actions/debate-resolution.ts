@@ -1,3 +1,5 @@
+import { calculateDebateElo } from "@/lib/actions/elo";
+import { parseElo } from "@/lib/arena/elo";
 import { normalizeOcdId } from "@/lib/civic-fencing";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 import { formatTally, type Tally } from "@/lib/vote-weight";
@@ -10,7 +12,44 @@ type DebateRecord = {
   debates_played: number | null;
 };
 
+type DebateRow = {
+  id: string;
+  candidate_a_id: string | null;
+  candidate_b_id: string | null;
+  status: string;
+  election_id: string | null;
+  election_question_id: string | null;
+  district_id: string | null;
+  expires_at: string | null;
+  elo_applied_at: string | null;
+  winner_id: string | null;
+  candidate_a_votes: number | null;
+  candidate_b_votes: number | null;
+  candidate_a_weighted_votes: number | null;
+  candidate_b_weighted_votes: number | null;
+};
+
 const PAGE_SIZE = 1000;
+const DEFAULT_RATING = 1200;
+
+/** Floors whose match timer can close the debate. */
+const TIMER_STATUSES = new Set(["in_progress", "active", "voting", "matching"]);
+
+/**
+ * Official resolution trigger.
+ * A debate is due when its status is `concluded`, or when the match timer
+ * has expired while the floor is still open.
+ * Spectator rows in `debate_votes` are not a trigger and are not a ballot.
+ */
+export function isOfficialResolutionDue(
+  debate: { status: string; expires_at: string | null },
+  now = Date.now(),
+) {
+  if (debate.status === "concluded") return true;
+  if (!TIMER_STATUSES.has(debate.status) || !debate.expires_at) return false;
+  const expires = Date.parse(debate.expires_at);
+  return Number.isFinite(expires) && expires <= now;
+}
 
 /**
  * The district a debate was filed in, as a normalized OCD-ID: the election's
@@ -59,8 +98,8 @@ export async function debateDistrictOcdId(
   return normalizeOcdId((data as { ocd_id: string | null } | null)?.ocd_id) || null;
 }
 
-/** Official ballots for the two seated candidates, paged past the 1000-row API cap. */
-async function loadBallots(
+/** Official `votes` rows for the two seated candidates. Does not read `debate_votes`. */
+async function loadOfficialBallots(
   admin: AdminClient,
   debateId: string,
   candidateIds: string[],
@@ -97,30 +136,60 @@ export type DebateResolution = {
   summary: string;
 };
 
-async function tallyBallots(
-  admin: AdminClient,
-  debate: {
-    id: string;
-    candidate_a_id: string | null;
-    candidate_b_id: string | null;
-    election_id: string | null;
-    election_question_id: string | null;
-    district_id: string | null;
-  },
-) {
+function storedOutcome(debate: DebateRow) {
+  const raw: Tally = {
+    a: Math.max(0, debate.candidate_a_votes ?? 0),
+    b: Math.max(0, debate.candidate_b_votes ?? 0),
+  };
+  const storedWeighted: Tally = {
+    a: Math.max(0, debate.candidate_a_weighted_votes ?? 0),
+    b: Math.max(0, debate.candidate_b_weighted_votes ?? 0),
+  };
+  const hasMargin = raw.a + raw.b > 0 || storedWeighted.a + storedWeighted.b > 0;
+  if (!hasMargin && !debate.winner_id) return null;
+
+  const weighted = storedWeighted.a + storedWeighted.b > 0 ? storedWeighted : { ...raw };
+  let winnerId = debate.winner_id;
+  if (!winnerId) {
+    if (weighted.a > weighted.b) winnerId = debate.candidate_a_id;
+    else if (weighted.b > weighted.a) winnerId = debate.candidate_b_id;
+  }
+
+  return { raw, weighted, winnerId };
+}
+
+async function tallyOfficialBallots(admin: AdminClient, debate: DebateRow) {
   const seated = [debate.candidate_a_id, debate.candidate_b_id].filter(
     (id): id is string => Boolean(id),
   );
-  const districtOcdId = await debateDistrictOcdId(admin, debate);
-  const ballots = seated.length > 0 ? await loadBallots(admin, debate.id, seated) : [];
-
+  const ballots = seated.length > 0 ? await loadOfficialBallots(admin, debate.id, seated) : [];
   const raw: Tally = { a: 0, b: 0 };
   for (const ballot of ballots) {
     const side = ballot.candidate_id === debate.candidate_a_id ? "a" : "b";
     raw[side] += 1;
   }
 
-  return { raw, weighted: { ...raw }, verifiedBallots: 0, districtOcdId };
+  let winnerId: string | null = null;
+  if (raw.a > raw.b) winnerId = debate.candidate_a_id;
+  else if (raw.b > raw.a) winnerId = debate.candidate_b_id;
+
+  return { raw, weighted: { ...raw }, winnerId };
+}
+
+/** Margin passed to calculateDebateElo. A stored winner with an empty tally is 1–0. */
+function eloMargin(
+  winnerId: string | null,
+  candidateAId: string,
+  candidateBId: string,
+  raw: Tally,
+  weighted: Tally,
+) {
+  const votesA = weighted.a + weighted.b > 0 ? weighted.a : raw.a;
+  const votesB = weighted.a + weighted.b > 0 ? weighted.b : raw.b;
+  if (votesA + votesB > 0) return { votesA, votesB };
+  if (winnerId === candidateAId) return { votesA: 1, votesB: 0 };
+  if (winnerId === candidateBId) return { votesA: 0, votesB: 1 };
+  return { votesA: 0, votesB: 0 };
 }
 
 function loserIdFor(
@@ -183,10 +252,108 @@ async function incrementMatchRecord(
   if (loserError) throw new Error(loserError.message);
 }
 
+async function tournamentElectionId(admin: AdminClient, debate: DebateRow) {
+  if (debate.election_id) return debate.election_id;
+  if (!debate.election_question_id) return null;
+  const { data, error } = await admin
+    .from("election_questions")
+    .select("election_id")
+    .eq("id", debate.election_question_id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as { election_id: string | null } | null)?.election_id ?? null;
+}
+
+async function loadStoredRatings(
+  admin: AdminClient,
+  electionId: string | null,
+  candidateAId: string,
+  candidateBId: string,
+) {
+  const ids = [candidateAId, candidateBId];
+  const { data, error } = await admin
+    .from("users")
+    .select("id, elo_rating")
+    .in("id", ids);
+  if (error) throw new Error(error.message);
+
+  const global = new Map<string, number>();
+  for (const row of (data ?? []) as { id: string; elo_rating: number | null }[]) {
+    global.set(row.id, parseElo(row.elo_rating));
+  }
+
+  const tournament = new Map<string, { rating: number; matchesPlayed: number }>();
+  if (electionId) {
+    const { data: rows, error: tournamentError } = await admin
+      .from("tournament_participants")
+      .select("user_id, elo_rating, matches_played")
+      .eq("election_id", electionId)
+      .in("user_id", ids);
+    if (tournamentError) throw new Error(tournamentError.message);
+    for (const row of (rows ?? []) as {
+      user_id: string;
+      elo_rating: number;
+      matches_played: number;
+    }[]) {
+      tournament.set(row.user_id, {
+        rating: parseElo(row.elo_rating),
+        matchesPlayed: row.matches_played,
+      });
+    }
+  }
+
+  function ratingFor(userId: string) {
+    return tournament.get(userId)?.rating ?? global.get(userId) ?? DEFAULT_RATING;
+  }
+
+  return { ratingFor, tournament };
+}
+
+async function persistRating(
+  admin: AdminClient,
+  userId: string,
+  electionId: string | null,
+  newRating: number,
+  priorMatches: number | null,
+  now: string,
+) {
+  const { error } = await admin
+    .from("users")
+    .update({ elo_rating: newRating, updated_at: now })
+    .eq("id", userId);
+  if (error) throw new Error(error.message);
+
+  if (!electionId) return;
+
+  if (priorMatches == null) {
+    const { error: insertError } = await admin.from("tournament_participants").insert({
+      user_id: userId,
+      election_id: electionId,
+      elo_rating: newRating,
+      matches_played: 1,
+    });
+    if (insertError) throw new Error(insertError.message);
+    return;
+  }
+
+  const { error: updateError } = await admin
+    .from("tournament_participants")
+    .update({
+      elo_rating: newRating,
+      matches_played: priorMatches + 1,
+    })
+    .eq("user_id", userId)
+    .eq("election_id", electionId);
+  if (updateError) throw new Error(updateError.message);
+}
+
 /**
- * Tallies the ballot and marks an open debate completed. The winner is the side
- * with more spectator votes. Returns null when the debate is not in voting or
- * was resolved by someone else first.
+ * Resolves a debate whose status is `concluded`, whose match timer has
+ * expired, or whose voting window is being closed explicitly.
+ * The outcome is the stored winner and tally, or the official `votes` ballot
+ * when nothing has been stored yet. `debate_votes` is spectator telemetry and
+ * is not read. Ratings are written with `calculateDebateElo`.
+ * Returns null when the debate is not due or was resolved by someone else first.
  */
 export async function resolveDebateWithTally(
   debateId: string,
@@ -196,30 +363,45 @@ export async function resolveDebateWithTally(
   const { data, error } = await admin
     .from("debates")
     .select(
-      "id, candidate_a_id, candidate_b_id, status, election_id, election_question_id, district_id",
+      "id, candidate_a_id, candidate_b_id, status, election_id, election_question_id, district_id, expires_at, elo_applied_at, winner_id, candidate_a_votes, candidate_b_votes, candidate_a_weighted_votes, candidate_b_weighted_votes",
     )
     .eq("id", debateId)
     .maybeSingle();
 
   if (error) throw new Error(error.message);
-  if (!data || data.status !== "voting") return null;
+  const debate = data as DebateRow | null;
+  if (!debate || debate.status === "resolved" || debate.elo_applied_at) return null;
+  if (debate.status !== "voting" && !isOfficialResolutionDue(debate)) return null;
+  if (!debate.candidate_a_id || !debate.candidate_b_id) return null;
 
-  const { raw, weighted, verifiedBallots, districtOcdId } = await tallyBallots(admin, data);
+  const candidateAId = debate.candidate_a_id;
+  const candidateBId = debate.candidate_b_id;
+  const districtOcdId = await debateDistrictOcdId(admin, debate);
+  const outcome = storedOutcome(debate) ?? (await tallyOfficialBallots(admin, debate));
+  const { raw, weighted, winnerId } = outcome;
+  const margin = eloMargin(winnerId, candidateAId, candidateBId, raw, weighted);
 
-  let winnerId: string | null = null;
-  if (weighted.a > weighted.b) winnerId = data.candidate_a_id;
-  else if (weighted.b > weighted.a) winnerId = data.candidate_b_id;
+  const electionId = await tournamentElectionId(admin, debate);
+  const ratings = await loadStoredRatings(admin, electionId, candidateAId, candidateBId);
+  const ratingA = ratings.ratingFor(candidateAId);
+  const ratingB = ratings.ratingFor(candidateBId);
+  const next = calculateDebateElo(
+    { userId: candidateAId, rating: ratingA },
+    { userId: candidateBId, rating: ratingB },
+    margin,
+  );
 
-  const loserId = winnerId
-    ? loserIdFor(winnerId, data.candidate_a_id, data.candidate_b_id)
-    : null;
+  const loserId = winnerId ? loserIdFor(winnerId, candidateAId, candidateBId) : null;
   const priorRecords =
     winnerId && loserId ? await loadRecords(admin, [winnerId, loserId]) : null;
 
+  const resolvedAt = new Date().toISOString();
   const { data: saved, error: updateError } = await admin
     .from("debates")
     .update({
-      status: "completed",
+      status: "resolved",
+      resolved_at: resolvedAt,
+      elo_applied_at: resolvedAt,
       candidate_a_votes: raw.a,
       candidate_b_votes: raw.b,
       candidate_a_weighted_votes: weighted.a,
@@ -227,17 +409,30 @@ export async function resolveDebateWithTally(
       winner_id: winnerId,
     })
     .eq("id", debateId)
-    .eq("status", "voting")
+    .eq("status", debate.status)
+    .is("elo_applied_at", null)
     .select("id")
     .maybeSingle();
 
   if (updateError) throw new Error(updateError.message);
   if (!saved) return null;
 
-  const { error: eloError } = await admin.rpc("apply_debate_elo", {
-    debate_uuid: debateId,
-  });
-  if (eloError) throw new Error(eloError.message);
+  await persistRating(
+    admin,
+    candidateAId,
+    electionId,
+    next.newRatingA,
+    ratings.tournament.get(candidateAId)?.matchesPlayed ?? null,
+    resolvedAt,
+  );
+  await persistRating(
+    admin,
+    candidateBId,
+    electionId,
+    next.newRatingB,
+    ratings.tournament.get(candidateBId)?.matchesPlayed ?? null,
+    resolvedAt,
+  );
 
   if (winnerId && loserId && priorRecords) {
     await incrementMatchRecord(admin, winnerId, loserId, priorRecords);
@@ -245,9 +440,7 @@ export async function resolveDebateWithTally(
 
   const summary = formatTally(raw, weighted);
   console.info(
-    `[Resolve] Debate ${saved.id} ${summary} (${verifiedBallots} verified constituent ballot(s)${
-      districtOcdId ? ` in ${districtOcdId}` : ", no district resolved, all ballots weight 1"
-    })`,
+    `[Resolve] Debate ${saved.id} ${summary} ratings ${ratingA}->${next.newRatingA} (${next.deltaA >= 0 ? "+" : ""}${next.deltaA}) / ${ratingB}->${next.newRatingB} (${next.deltaB >= 0 ? "+" : ""}${next.deltaB})`,
   );
 
   return {
@@ -256,7 +449,7 @@ export async function resolveDebateWithTally(
     districtOcdId,
     raw,
     weighted,
-    verifiedBallots,
+    verifiedBallots: 0,
     summary,
   };
 }

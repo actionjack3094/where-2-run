@@ -20,9 +20,12 @@ export type DistrictLevel = "local" | "state" | "federal" | string;
 export type DebateStatus =
   | "waiting"
   | "matching"
+  | "in_progress"
   | "active"
   | "voting"
+  | "concluded"
   | "completed"
+  | "resolved"
   | "expired";
 
 export interface District {
@@ -100,6 +103,8 @@ export interface Debate {
   current_round: number;
   expires_at: string;
   elo_applied_at: string | null;
+  /** Set when ratings and match history have been written. */
+  resolved_at: string | null;
   created_at: string;
 }
 

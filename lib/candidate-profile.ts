@@ -217,7 +217,7 @@ export const loadPublicCandidate = cache(async (
         `,
         )
         .or(`candidate_a_id.eq.${id},candidate_b_id.eq.${id}`)
-        .in("status", ["completed", "expired"])
+        .in("status", ["completed", "resolved", "expired"])
         .order("expires_at", { ascending: false }),
       loadEscrowTotals(id),
     ]);

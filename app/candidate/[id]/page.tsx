@@ -162,7 +162,7 @@ const loadCandidate = cache(async (id: string): Promise<LoadedCandidate> => {
     supabase
       .from("debates")
       .select("id, topic, election_question_id, winner_id, expires_at")
-      .eq("status", "completed")
+      .in("status", ["completed", "resolved"])
       .or(`candidate_a_id.eq.${id},candidate_b_id.eq.${id}`)
       .order("expires_at", { ascending: false }),
     supabase

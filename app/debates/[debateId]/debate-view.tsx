@@ -246,7 +246,9 @@ export function DebateView({
   const judgeEligible =
     isCandidate &&
     roundsComplete &&
-    (debate?.status === "voting" || debate?.status === "completed");
+    (debate?.status === "voting" ||
+      debate?.status === "completed" ||
+      debate?.status === "resolved");
 
   useEffect(() => {
     if (!judgeEligible || myEvaluation) return;
@@ -280,7 +282,7 @@ export function DebateView({
   // Weighted totals are stored when the debate resolves; until then (and for
   // debates resolved before weights existed) the live raw ballots lead.
   const weightedTotals =
-    debate?.status === "completed"
+    debate?.status === "completed" || debate?.status === "resolved"
       ? { a: debate.candidate_a_weighted_votes ?? 0, b: debate.candidate_b_weighted_votes ?? 0 }
       : null;
   const liveRaw = {
