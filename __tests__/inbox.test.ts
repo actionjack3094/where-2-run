@@ -20,13 +20,9 @@ describe("inbox copy", () => {
 
   it("routes each alert type to the underlying record", () => {
     expect(notificationHref("pledge_received", "abc")).toBe("/profile");
-    expect(notificationHref("appeal_filed", "appeal-1")).toBe("/spectator/jury/appeal-1");
-    expect(notificationHref("verdict_overturned", "appeal-1")).toBe(
-      "/spectator/jury/appeal-1",
-    );
     expect(notificationHref("coalition_invite", "coal-1")).toBe("/my-campaign/coalitions");
     expect(notificationHref("challenge_received", "debate-1")).toBe("/debates/debate-1");
     expect(notificationHref("payout_disbursed", "election-1")).toBe("/profile");
-    expect(notificationHref("jury_unlocked", null)).toBe("/spectator/jury");
+    expect(notificationHref("pledge_funded", "pledge-1")).toBe("/profile");
   });
 });

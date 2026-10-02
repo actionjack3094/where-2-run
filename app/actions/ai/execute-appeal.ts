@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { lockDebateEloAfterArbitration } from "@/lib/arena/apply-elo";
+import { settleDebateElo } from "@/lib/actions/settle-debate-elo";
 import { requireActionUserId } from "@/lib/arena/auth";
 import { isUuid } from "@/lib/arena/display";
 import {
@@ -132,16 +132,7 @@ export async function executeAppeal(input: {
   if (lockError) throw new Error(lockError.message);
   const locked = lockedRow as DebateEvaluation;
 
-  const { data: siblingRows } = await admin
-    .from("debate_evaluations")
-    .select("*")
-    .eq("debate_id", debate.id);
-
-  const elo = await lockDebateEloAfterArbitration(
-    admin,
-    debate,
-    (siblingRows ?? [locked]) as DebateEvaluation[],
-  );
+  const elo = await settleDebateElo(admin, debate.id);
 
   revalidatePath(`/debates/${debate.id}`);
   revalidatePath("/leaderboards");

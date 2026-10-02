@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { EndorsementBadge } from "@/components/coalitions/EndorsementBadge";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  getIdeologicalMatches,
-  type IdeologicalMatch,
-} from "@/lib/actions/matchmaker";
+import { matchUserToTournaments } from "@/lib/actions/matchmaker";
 import { createServerSupabase, getServerUser } from "@/lib/db/supabase-server";
 
 export const metadata: Metadata = {
@@ -91,11 +87,11 @@ export default async function MatchmakerPage() {
     );
   }
 
-  let matches: IdeologicalMatch[] = [];
+  let tournaments: Awaited<ReturnType<typeof matchUserToTournaments>> = [];
   let errorMessage: string | null = null;
 
   try {
-    matches = await getIdeologicalMatches();
+    tournaments = await matchUserToTournaments(user.id);
   } catch (error) {
     errorMessage = error instanceof Error ? error.message : "Could not load matches.";
   }
@@ -108,48 +104,43 @@ export default async function MatchmakerPage() {
             YOUR MATCHES
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-400">
-            Candidates closest to your stance vector, ranked by alignment.
+            Primary tournaments nationwide, ranked by ideological distance. Physical location is ignored.
           </p>
         </header>
 
         {errorMessage ? (
           <p className="mt-10 text-sm leading-6 text-zinc-400">{errorMessage}</p>
-        ) : matches.length === 0 ? (
+        ) : tournaments.length === 0 ? (
           <p className="mt-10 text-sm leading-6 text-zinc-400">
-            No matches yet. File a stance so the matchmaker can score candidates.
+            No matches yet. File a stance so the matchmaker can score primaries.
           </p>
         ) : (
           <ol className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {matches.map((candidate, index) => (
-              <li key={candidate.id}>
-                <Link href={`/candidate/${candidate.id}`} className="group block h-full">
-                  <Card className="h-full transition-all group-hover:border-zinc-500">
-                    <CardContent className="flex items-center gap-4 px-5 py-5">
-                      <span className="w-10 shrink-0 font-display text-lg tabular-nums text-gold">
-                        {index + 1}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate font-medium text-parchment">
-                          {candidate.name}
+            {tournaments.map(({ election, distance }, index) => {
+              const title =
+                (election as { title?: string; office_name?: string }).title ||
+                (election as { office_name?: string }).office_name ||
+                "Open primary";
+              return (
+                <li key={election.id}>
+                  <Link href={`/elections/${election.id}`} className="group block h-full">
+                    <Card className="h-full transition-all group-hover:border-zinc-500">
+                      <CardContent className="flex items-center gap-4 px-5 py-5">
+                        <span className="w-10 shrink-0 font-display text-lg tabular-nums text-gold">
+                          {index + 1}
                         </span>
-                        <span className="mt-1 block text-[11px] font-medium uppercase tracking-widest text-zinc-500">
-                          {candidate.elo} ELO
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-medium text-parchment">{title}</span>
+                          <span className="mt-1 block text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                            Ideological distance {Math.round(distance)}
+                          </span>
                         </span>
-                        <EndorsementBadge count={candidate.endorsements} className="mt-2" />
-                      </span>
-                      <span className="shrink-0 text-right">
-                        <span className="block font-display text-lg tabular-nums text-gold">
-                          {candidate.alignmentScore}%
-                        </span>
-                        <span className="mt-0.5 block text-[11px] font-medium uppercase tracking-widest text-zinc-500">
-                          Alignment Score
-                        </span>
-                      </span>
-                    </CardContent>
-                  </Card>
-                </Link>
-              </li>
-            ))}
+                      </CardContent>
+                    </Card>
+                  </Link>
+                </li>
+              );
+            })}
           </ol>
         )}
       </div>

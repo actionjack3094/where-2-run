@@ -85,24 +85,6 @@ async function createAccount(
   });
   if (profileError) fail(`Could not insert ${role} profile: ${profileError.message}`);
 
-  if (options.verified) {
-    const { error: verifyError } = await db.from("tier2_verifications").insert({
-      user_id: id,
-      verified_address: `e2e-${role}`,
-      ocd_ids: ocdIds,
-    });
-    if (verifyError) fail(`Could not verify ${role}: ${verifyError.message}`);
-
-    const { error: identityError } = await db
-      .from("profiles")
-      .update({
-        tier2_status: "verified",
-        identity_verified_at: new Date().toISOString(),
-      })
-      .eq("id", id);
-    if (identityError) fail(`Could not mark ${role} identity verified: ${identityError.message}`);
-  }
-
   return { id, email, password, username };
 }
 
@@ -185,75 +167,4 @@ export async function seedCompletedDebateWithAlignmentStreak(): Promise<JuryRoll
     candidateB,
     constituent,
   };
-}
-
-/**
- * Insert three Overturn verdicts and run resolveJuryAppeal so the quorum
- * adjudicates without driving three extra browsers.
- */
-export async function injectOverturnVerdicts(appealId: string) {
-  const id = appealId.trim();
-  if (!id) fail("An appeal id is required to inject overturn verdicts.");
-
-  const db = admin();
-  const { data: appeal, error: appealError } = await db
-    .from("jury_appeals")
-    .select("id, debate_id, appellant_id, status")
-    .eq("id", id)
-    .maybeSingle();
-  if (appealError) fail(`Could not load the appeal: ${appealError.message}`);
-  if (!appeal) fail(`No appeal with id ${id}.`);
-
-  const { data: debate, error: debateError } = await db
-    .from("debates")
-    .select("id, election_id, district_id, candidate_a_id, candidate_b_id")
-    .eq("id", appeal.debate_id)
-    .maybeSingle();
-  if (debateError) fail(`Could not load the appealed debate: ${debateError.message}`);
-  if (!debate) fail("The appealed debate could not be found.");
-
-  let ocdId = TX37_OCD;
-  if (debate.election_id) {
-    const { data: election, error: electionError } = await db
-      .from("elections")
-      .select("ocd_id")
-      .eq("id", debate.election_id)
-      .maybeSingle();
-    if (electionError) fail(`Could not load the debate election: ${electionError.message}`);
-    if (election?.ocd_id) ocdId = election.ocd_id as string;
-  }
-
-  const blocked = new Set(
-    [appeal.appellant_id, debate.candidate_a_id, debate.candidate_b_id].filter(
-      (value): value is string => Boolean(value),
-    ),
-  );
-
-  const jurors: SeededAccount[] = [];
-  for (let index = 0; index < 3; index += 1) {
-    const juror = await createAccount(db, `juror${index + 1}`, ocdId, { verified: true });
-    if (blocked.has(juror.id)) fail("A juror collided with a seated candidate or appellant.");
-    jurors.push(juror);
-  }
-
-  for (const juror of jurors) {
-    const { error } = await db.from("jury_verdicts").insert({
-      appeal_id: appeal.id,
-      juror_id: juror.id,
-      overturned: true,
-    });
-    if (error && error.code !== "23505") {
-      fail(`Could not insert an overturn verdict for ${juror.username}: ${error.message}`);
-    }
-  }
-
-  const { resolveJuryAppeal } = await import("../lib/actions/jury-resolution");
-  const result = await resolveJuryAppeal(appeal.id);
-  if (!result.ok) fail(result.error);
-  if (result.status !== "overturned") {
-    fail(
-      `Expected the appeal to be overturned after a 3-vote quorum, got ${result.status} (${result.overturnedVotes}/${result.verdicts}).`,
-    );
-  }
-  return result;
 }

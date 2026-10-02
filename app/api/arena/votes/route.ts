@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     const { data: existingVote } = await admin
       .from("debate_votes")
       .select("id")
-      .eq("match_id", body.debateId)
+      .eq("debate_id", body.debateId)
       .eq("spectator_id", body.voterId)
       .maybeSingle();
 
@@ -71,9 +71,9 @@ export async function POST(request: Request) {
     }
 
     const recorded = await recordSpectatorVote(admin, {
-      matchId: body.debateId,
+      debateId: body.debateId,
       spectatorId: body.voterId,
-      voteForUserId: body.candidateId,
+      votedForUserId: body.candidateId,
     });
 
     if (recorded.duplicate) {

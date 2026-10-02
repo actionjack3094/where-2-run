@@ -6,8 +6,6 @@ import { useCallback, useEffect, useState } from "react";
 import { loadProfileHub } from "@/app/actions/profile/load-hub";
 import { AboutMe } from "@/app/profile/components/AboutMe";
 import { CampaignHub } from "@/app/profile/components/CampaignHub";
-import { Tier2Verification } from "@/app/profile/components/Tier2Verification";
-import { VerificationPanel } from "@/app/profile/components/VerificationPanel";
 import type { ProfileHubData } from "@/lib/profile/hub";
 import { cn } from "@/lib/utils";
 
@@ -73,24 +71,6 @@ export default function MyProfilePage() {
             </Link>
           ) : null}
         </header>
-
-        {hub ? (
-          <section aria-labelledby="constituent-hub-heading" className="mt-8 flex flex-col gap-6">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-                Constituent Hub
-              </p>
-              <h2
-                id="constituent-hub-heading"
-                className="mt-2 font-display text-xl font-semibold tracking-tight text-parchment"
-              >
-                Civic standing
-              </h2>
-            </div>
-            <Tier2Verification />
-            <VerificationPanel />
-          </section>
-        ) : null}
 
         <div
           role="tablist"

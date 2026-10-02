@@ -18,10 +18,6 @@ type NotificationDraft = {
   message: string;
 };
 
-function uniqueUserIds(ids: Array<string | null | undefined>) {
-  return [...new Set(ids.filter((id): id is string => Boolean(id)))];
-}
-
 export function revalidateInbox() {
   try {
     revalidatePath("/inbox");
@@ -162,39 +158,6 @@ export async function notifyPayoutDisbursed(
   revalidateInbox();
 }
 
-export async function notifyAppealFiled(
-  admin: AdminClient,
-  input: {
-    appealId: string;
-    candidateIds: Array<string | null | undefined>;
-  },
-) {
-  await insertUserNotifications(
-    admin,
-    uniqueUserIds(input.candidateIds).map((userId) => ({
-      userId,
-      type: "appeal_filed" as const,
-      referenceId: input.appealId,
-      message: "A constituent appealed your recent debate outcome.",
-    })),
-  );
-}
-
-export async function notifyVerdictOverturned(
-  admin: AdminClient,
-  input: { appealId: string; winnerId: string | null },
-) {
-  if (!input.winnerId) return;
-  await insertUserNotifications(admin, [
-    {
-      userId: input.winnerId,
-      type: "verdict_overturned",
-      referenceId: input.appealId,
-      message: "A jury overturned your debate win. Elo and escrow have been rolled back.",
-    },
-  ]);
-}
-
 export async function notifyCoalitionInvite(
   admin: AdminClient,
   input: { candidateId: string; coalitionId: string; coalitionName: string },
@@ -206,16 +169,6 @@ export async function notifyCoalitionInvite(
       type: "coalition_invite",
       referenceId: input.coalitionId,
       message: `You've been invited to join ${name}.`,
-    },
-  ]);
-}
-
-export async function notifyJuryUnlocked(admin: AdminClient, userId: string) {
-  await insertUserNotifications(admin, [
-    {
-      userId,
-      type: "jury_unlocked",
-      message: "Your identity is verified. You can file and vote on jury appeals in your districts.",
     },
   ]);
 }

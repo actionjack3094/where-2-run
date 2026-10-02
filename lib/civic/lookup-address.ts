@@ -1,4 +1,3 @@
-import { encryptResidentialAddress } from "@/lib/civic/address-cipher";
 import { assignConstituentDistrict } from "@/lib/civic/district-routing";
 import { extractOcdIdentifiers, isMissingCivicColumn } from "@/lib/civic-fencing";
 import { isMissingSchema } from "@/lib/db/schema-errors";
@@ -108,17 +107,6 @@ export async function routeVoterAddress(userId: string, address: string) {
       throw new Error("ocd_identifiers is not on profiles yet. Apply the civic fencing migration.");
     }
     throw new Error(userError.message);
-  }
-
-  const { error: tierError } = await admin.from("tier2_verifications").upsert({
-    user_id: userId,
-    verified_address: encryptResidentialAddress(located.address),
-    ocd_ids: located.ocdIdentifiers,
-    verified_at: new Date().toISOString(),
-  });
-
-  if (tierError && !isMissingSchema(tierError)) {
-    throw new Error(tierError.message);
   }
 
   return {

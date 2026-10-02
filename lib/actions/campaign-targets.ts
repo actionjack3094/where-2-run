@@ -5,7 +5,6 @@ import { requireActionUserId } from "@/lib/arena/auth";
 import { isUuid } from "@/lib/arena/display";
 import { formatCandidacyLabel, isUpcomingElectionDate } from "@/lib/campaign/targets";
 import { normalizeOcdId } from "@/lib/civic-fencing";
-import { isMissingRelation } from "@/lib/coalitions";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 
 function asOcdIds(value: unknown): string[] {
@@ -120,20 +119,15 @@ export type DeclareCandidacyResult =
   | { ok: false; error: string };
 
 async function eligibleDistrictIds(admin: ReturnType<typeof createAdminClient>, userId: string) {
-  const [profileQuery, tier2Query] = await Promise.all([
-    admin.from("users").select("home_ocd_ids").eq("id", userId).maybeSingle(),
-    admin.from("tier2_verifications").select("ocd_ids").eq("user_id", userId).maybeSingle(),
-  ]);
+  const profileQuery = await admin
+    .from("users")
+    .select("home_ocd_ids, ocd_identifiers")
+    .eq("id", userId)
+    .maybeSingle();
   if (profileQuery.error) throw new Error(profileQuery.error.message);
-  if (tier2Query.error && !isMissingRelation(tier2Query.error)) {
-    throw new Error(tier2Query.error.message);
-  }
 
   return new Set(
-    [
-      ...asOcdIds(profileQuery.data?.home_ocd_ids),
-      ...asOcdIds(tier2Query.data?.ocd_ids),
-    ]
+    [...asOcdIds(profileQuery.data?.home_ocd_ids), ...asOcdIds(profileQuery.data?.ocd_identifiers)]
       .map((id) => normalizeOcdId(id))
       .filter(Boolean),
   );

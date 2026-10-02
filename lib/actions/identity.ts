@@ -7,12 +7,9 @@ import { requireActionUserId } from "@/lib/arena/auth";
 import { isUuid } from "@/lib/arena/display";
 import { isMissingSchema } from "@/lib/db/schema-errors";
 import { createAdminClient } from "@/lib/db/supabase-admin";
-import {
-  markIdentitySessionPending,
-  parseTier2Status,
-  type Tier2Status,
-} from "@/lib/identity/tier2";
 import { getStripe } from "@/lib/stripe";
+
+type Tier2Status = "unverified" | "pending" | "verified";
 
 export type IdentitySessionResult =
   | { ok: true; url: string }
@@ -21,6 +18,26 @@ export type IdentitySessionResult =
 export type IdentityStatusResult =
   | { ok: true; userId: string; tier2Status: Tier2Status }
   | { ok: false; error: string };
+
+function parseTier2Status(value: unknown): Tier2Status {
+  if (value === "pending" || value === "verified") return value;
+  return "unverified";
+}
+
+async function markIdentitySessionPending(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  sessionId: string,
+) {
+  const { error } = await admin
+    .from("profiles")
+    .update({
+      tier2_status: "pending",
+      stripe_identity_session_id: sessionId,
+    })
+    .eq("id", userId);
+  if (error && !isMissingSchema(error)) throw new Error(error.message);
+}
 
 const GENERIC_ERROR = "We couldn't start identity verification. Please try again.";
 const MISSING_KEY = "Stripe is not configured. Add STRIPE_SECRET_KEY to verify identity.";
@@ -48,10 +65,10 @@ export async function createIdentityVerificationSession(
 ): Promise<IdentitySessionResult> {
   try {
     const wanted = userId.trim();
-    if (!isUuid(wanted)) return { ok: false, error: "Sign in to unlock jury rights." };
+    if (!isUuid(wanted)) return { ok: false, error: "Sign in to verify your identity." };
 
     const callerId = await requireActionUserId();
-    if (!callerId) return { ok: false, error: "Sign in to unlock jury rights." };
+    if (!callerId) return { ok: false, error: "Sign in to verify your identity." };
     if (callerId !== wanted) {
       return { ok: false, error: "You can only verify your own identity." };
     }
@@ -65,7 +82,7 @@ export async function createIdentityVerificationSession(
     if (profileError && !isMissingSchema(profileError)) throw profileError;
 
     if (parseTier2Status(profile?.tier2_status) === "verified") {
-      return { ok: true, url: "/spectator/jury" };
+      return { ok: true, url: "/profile" };
     }
 
     const stripe = getStripe();

@@ -193,9 +193,9 @@ export async function castVote(debateId: string, candidateId: string) {
 
   const admin = createAdminClient();
   const recorded = await recordSpectatorVote(admin, {
-    matchId: debateId,
+    debateId,
     spectatorId: user.id,
-    voteForUserId: candidateId,
+    votedForUserId: candidateId,
   });
 
   if (recorded.duplicate) {

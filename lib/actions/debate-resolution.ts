@@ -69,16 +69,16 @@ async function loadBallots(
   for (let from = 0; ; from += PAGE_SIZE) {
     const { data, error } = await admin
       .from("debate_votes")
-      .select("spectator_id, vote_for_user_id")
-      .eq("match_id", debateId)
-      .in("vote_for_user_id", candidateIds)
+      .select("spectator_id, voted_for_user_id")
+      .eq("debate_id", debateId)
+      .in("voted_for_user_id", candidateIds)
       .order("id", { ascending: true })
       .range(from, from + PAGE_SIZE - 1);
 
     if (!error) {
-      const page = (data ?? []) as { spectator_id: string; vote_for_user_id: string }[];
+      const page = (data ?? []) as { spectator_id: string; voted_for_user_id: string }[];
       ballots.push(
-        ...page.map((row) => ({ voter_id: row.spectator_id, candidate_id: row.vote_for_user_id })),
+        ...page.map((row) => ({ voter_id: row.spectator_id, candidate_id: row.voted_for_user_id })),
       );
       if (page.length < PAGE_SIZE) break;
       continue;

@@ -1,24 +1,14 @@
 import { createElement, type ReactElement } from "react";
 import { Resend } from "resend";
 import {
-  JuryUnlockedEmail,
-  type JuryUnlockedEmailProps,
-} from "@/emails/JuryUnlockedEmail";
-import {
   PledgeFundedEmail,
   type PledgeFundedEmailProps,
 } from "@/emails/PledgeFundedEmail";
-import {
-  VerdictOverturnedEmail,
-  type VerdictOverturnedEmailProps,
-} from "@/emails/VerdictOverturnedEmail";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export type PledgeFundedEmailData = PledgeFundedEmailProps;
-export type VerdictOverturnedEmailData = VerdictOverturnedEmailProps;
-export type JuryUnlockedEmailData = JuryUnlockedEmailProps;
 
 function isSimBotEmail(email: string) {
   return email.trim().toLowerCase().startsWith("arena-sim+");
@@ -122,33 +112,5 @@ export async function sendPledgeFundedEmail(to: string, data: PledgeFundedEmailD
       amount,
       electionId: data.electionId,
     }),
-  });
-}
-
-export async function sendVerdictOverturnedEmail(
-  to: string,
-  data: VerdictOverturnedEmailData,
-) {
-  const candidateName = data.candidateName.trim() || "Candidate";
-  const escrowLocked = Number.isFinite(data.escrowLocked) ? data.escrowLocked : 0;
-  await dispatch({
-    label: "verdict overturned email",
-    to,
-    subject: `Jury overturned ${candidateName}'s debate win`,
-    react: createElement(VerdictOverturnedEmail, {
-      candidateName,
-      escrowLocked,
-      streakStatus: data.streakStatus,
-    }),
-  });
-}
-
-export async function sendJuryUnlockedEmail(to: string, data: JuryUnlockedEmailData) {
-  const username = data.username.trim() || "Constituent";
-  await dispatch({
-    label: "jury unlocked email",
-    to,
-    subject: "Welcome to the jury pool",
-    react: createElement(JuryUnlockedEmail, { username }),
   });
 }

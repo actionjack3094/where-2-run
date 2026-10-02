@@ -1,13 +1,12 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { lookupUserEmail, sendJuryUnlockedEmail, sendPledgeFundedEmail } from "@/lib/actions/email";
+import { lookupUserEmail, sendPledgeFundedEmail } from "@/lib/actions/email";
 import { isUuid } from "@/lib/arena/display";
 import { isMissingRelation } from "@/lib/coalitions";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 import { ALIGNMENT_STREAK_UNLOCK_CONDITION } from "@/lib/escrow";
-import { applyVerifiedIdentitySession } from "@/lib/identity/tier2";
-import { notifyJuryUnlocked, notifyPledgeFunded } from "@/lib/notifications/inbox";
+import { notifyPledgeFunded } from "@/lib/notifications/inbox";
 import {
   customerIdOf,
   getStripe,
@@ -201,30 +200,22 @@ async function recordFundedPledge(session: Stripe.Checkout.Session) {
 }
 
 async function applyIdentityVerified(session: Stripe.Identity.VerificationSession) {
-  const admin = createAdminClient();
-  const result = await applyVerifiedIdentitySession(admin, session);
-  if (!result) return;
+  const userId = session.client_reference_id || session.metadata?.userId;
+  if (!userId || !isUuid(userId)) return;
 
-  if (!result.alreadyVerified) {
-    await notifyJuryUnlocked(admin, result.userId);
-    try {
-      const [to, user] = await Promise.all([
-        lookupUserEmail(result.userId),
-        admin.from("users").select("username").eq("id", result.userId).maybeSingle(),
-      ]);
-      if (to) {
-        await sendJuryUnlockedEmail(to, {
-          username: user.data?.username?.trim() || "Constituent",
-        });
-      }
-    } catch (caught) {
-      console.error("sendJuryUnlockedEmail failed after identity verification.", caught);
-    }
-  }
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("profiles")
+    .update({
+      tier2_status: "verified",
+      identity_verified_at: new Date().toISOString(),
+      stripe_identity_session_id: session.id,
+    })
+    .eq("id", userId);
+  if (error && !isMissingRelation(error)) throw new Error(error.message);
 
   try {
     revalidatePath("/profile");
-    revalidatePath("/spectator/jury");
     revalidatePath("/inbox");
   } catch {
     // The upgrade is already saved. A cache refresh failure must not make
