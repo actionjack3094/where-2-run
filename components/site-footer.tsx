@@ -1,10 +1,11 @@
 import Link from "next/link";
 
 const links = [
-  { href: "/feed", label: "Feed" },
-  { href: "/leaderboards", label: "Leaderboards" },
-  { href: "/profile", label: "My Profile" },
-  { href: "/verify", label: "Verify" },
+  { href: "/ballot", label: "My Ballot" },
+  { href: "/debates", label: "Debates" },
+  { href: "/primaries", label: "Primary Hubs" },
+  { href: "/profile", label: "Profile" },
+  { href: "/verify", label: "Verification" },
   { href: "/about", label: "About Us" },
 ] as const;
 
@@ -14,7 +15,7 @@ export function SiteFooter() {
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-10 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <Link
-            href="/feed"
+            href="/ballot"
             className="font-display text-xs font-medium uppercase tracking-[0.2em] text-brass"
           >
             Where 2 Run

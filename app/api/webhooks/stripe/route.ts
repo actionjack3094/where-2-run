@@ -295,6 +295,15 @@ function identityUserId(session: Stripe.Identity.VerificationSession) {
   return fromMetadata || session.client_reference_id?.trim() || "";
 }
 
+function legalNameFromIdentity(session: Stripe.Identity.VerificationSession) {
+  const outputs = session.verified_outputs;
+  const name = [outputs?.first_name, outputs?.last_name]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(" ");
+  return name || null;
+}
+
 async function applyIdentityVerified(session: Stripe.Identity.VerificationSession) {
   const userId = identityUserId(session);
   if (!userId || !isUuid(userId)) return;
@@ -306,10 +315,13 @@ async function applyIdentityVerified(session: Stripe.Identity.VerificationSessio
     .eq("id", userId);
   if (userError) throw new Error(userError.message);
 
+  const legalName = legalNameFromIdentity(session);
   const { error } = await admin
     .from("profiles")
     .update({
       tier2_status: "verified",
+      is_verified: true,
+      ...(legalName ? { legal_name: legalName } : {}),
       identity_verified_at: new Date().toISOString(),
       stripe_identity_session_id: session.id,
     })

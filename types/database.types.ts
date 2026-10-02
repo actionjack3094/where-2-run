@@ -43,6 +43,14 @@ export interface District {
   updated_at: string;
 }
 
+export type CandidateTier = "pundit" | "declared_candidate" | "frontrunner";
+
+export type PrimaryParty = "democrat" | "republican";
+
+export type PromptStatus = "open" | "locked" | "concluded";
+
+export type ArenaDebateStatus = "open_challenge" | "active" | "concluded";
+
 export type AccountProfile = {
   id: string;
   email: string | null;
@@ -54,8 +62,94 @@ export type AccountProfile = {
   tier2_status: "unverified" | "pending" | "verified" | string;
   stripe_identity_session_id: string | null;
   identity_verified_at: string | null;
+  ideology_x: number | null;
+  ideology_y: number | null;
+  onboarding_completed: boolean;
+  /** Stripe KYC. Required to rank or claim candidate status. */
+  is_verified: boolean;
+  legal_name: string | null;
+  display_name: string | null;
+  candidate_tier: CandidateTier | string;
+  is_synthetic: boolean;
+  synthetic_key: string | null;
   created_at: string | null;
   updated_at: string | null;
+};
+
+export interface Primary {
+  id: string;
+  party: PrimaryParty | string;
+  office_name: string;
+  state: string;
+  district: string | null;
+  ocd_id: string;
+  baseline_x: number;
+  baseline_y: number;
+  slug: string;
+  general_slug: string;
+  created_at: string;
+}
+
+export interface PrimaryStanding {
+  id: string;
+  user_id: string;
+  primary_id: string;
+  elo: number;
+  debates_count: number;
+  wins: number;
+  losses: number;
+  ties: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DebatePrompt {
+  id: string;
+  primary_id: string;
+  author_id: string | null;
+  author_kind: "user" | "ai" | string;
+  prompt_text: string;
+  stance_text: string;
+  ideology_x: number;
+  ideology_y: number;
+  status: PromptStatus | string;
+  created_at: string;
+}
+
+export interface ArenaDebate {
+  id: string;
+  primary_id: string;
+  prompt_id: string;
+  candidate_a_id: string;
+  candidate_b_id: string | null;
+  stance_a: string;
+  stance_b: string | null;
+  seat_locked_until: string | null;
+  status: ArenaDebateStatus | string;
+  winner_id: string | null;
+  is_tie: boolean;
+  /** Internal. Do not select for client responses. */
+  candidate_a_score: number | null;
+  /** Internal. Do not select for client responses. */
+  candidate_b_score: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DebateComment {
+  id: string;
+  debate_id: string;
+  author_id: string;
+  body: string;
+  created_at: string;
+}
+
+export interface DebateLike {
+  id: string;
+  debate_id: string;
+  user_id: string;
+  supported_id: string;
+  created_at: string;
 };
 
 export interface UserProfile {
@@ -1321,6 +1415,113 @@ export interface Database {
             columns: ["endorsed_id"];
             isOneToOne: false;
             referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      primaries: {
+        Row: Primary;
+        Insert: Partial<Primary> &
+          Pick<
+            Primary,
+            | "party"
+            | "office_name"
+            | "state"
+            | "ocd_id"
+            | "baseline_x"
+            | "baseline_y"
+            | "slug"
+            | "general_slug"
+          >;
+        Update: Partial<Primary>;
+        Relationships: [];
+      };
+      primary_standings: {
+        Row: PrimaryStanding;
+        Insert: Partial<PrimaryStanding> & Pick<PrimaryStanding, "user_id" | "primary_id">;
+        Update: Partial<PrimaryStanding>;
+        Relationships: [
+          {
+            foreignKeyName: "primary_standings_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "primary_standings_primary_id_fkey";
+            columns: ["primary_id"];
+            isOneToOne: false;
+            referencedRelation: "primaries";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      debate_prompts: {
+        Row: DebatePrompt;
+        Insert: Partial<DebatePrompt> &
+          Pick<
+            DebatePrompt,
+            "primary_id" | "prompt_text" | "stance_text" | "ideology_x" | "ideology_y"
+          >;
+        Update: Partial<DebatePrompt>;
+        Relationships: [
+          {
+            foreignKeyName: "debate_prompts_primary_id_fkey";
+            columns: ["primary_id"];
+            isOneToOne: false;
+            referencedRelation: "primaries";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      arena_debates: {
+        Row: ArenaDebate;
+        Insert: Partial<ArenaDebate> &
+          Pick<ArenaDebate, "primary_id" | "prompt_id" | "candidate_a_id" | "stance_a">;
+        Update: Partial<ArenaDebate>;
+        Relationships: [
+          {
+            foreignKeyName: "arena_debates_primary_id_fkey";
+            columns: ["primary_id"];
+            isOneToOne: false;
+            referencedRelation: "primaries";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "arena_debates_prompt_id_fkey";
+            columns: ["prompt_id"];
+            isOneToOne: false;
+            referencedRelation: "debate_prompts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      debate_comments: {
+        Row: DebateComment;
+        Insert: Partial<DebateComment> & Pick<DebateComment, "debate_id" | "author_id" | "body">;
+        Update: Partial<DebateComment>;
+        Relationships: [
+          {
+            foreignKeyName: "debate_comments_debate_id_fkey";
+            columns: ["debate_id"];
+            isOneToOne: false;
+            referencedRelation: "arena_debates";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      debate_likes: {
+        Row: DebateLike;
+        Insert: Partial<DebateLike> &
+          Pick<DebateLike, "debate_id" | "user_id" | "supported_id">;
+        Update: Partial<DebateLike>;
+        Relationships: [
+          {
+            foreignKeyName: "debate_likes_debate_id_fkey";
+            columns: ["debate_id"];
+            isOneToOne: false;
+            referencedRelation: "arena_debates";
             referencedColumns: ["id"];
           },
         ];

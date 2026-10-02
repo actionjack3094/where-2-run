@@ -1,0 +1,54 @@
+---
+description: WHERE 2 RUN platform split, ideology space, and black-box debate rules
+alwaysApply: true
+---
+
+# WHERE 2 RUN platform architecture
+
+## Two products, one account
+
+- **My Ballot** (`/ballot`) is a view-only local constituent feed. It shows only races whose OCD-ID is on the viewer's verified home address. It renders a match only after two contenders are engaged. Constituents may like and comment. It never offers a debate answer, challenge, or rebuttal.
+- **Debates** (`/debates`) is the global competition arena. A user may enter any primary of their own party, nationwide. The feed ranks primaries by Euclidean distance on the ideology plane and widens the radius when nothing is open.
+
+Do not merge these surfaces. A control that files a stance or locks a seat belongs on Debates or a Primary Hub, never on My Ballot.
+
+## Ideology plane
+
+Coordinates are `ideology_x` (Economic) and `ideology_y` (Social), each clamped to [-1.0, 1.0].
+
+Distance between a user and a primary baseline is:
+
+`sqrt((x_u - x_p)^2 + (y_u - y_p)^2)`
+
+Party for matchmaking is intra-party only: Economic below 0 is Democrat; 0 or above is Republican. A debater may not open or accept a seat in the other party.
+
+A user's coordinate moves only from their own onboarding answers and their own historical debate scores (a moving average). Opponent text, opponent scores, and spectator likes never change it.
+
+## Competition
+
+Each general election is two primaries (`democrat` and `republican`) with their own Elo ladder in `primary_standings`.
+
+A match is one exchange:
+
+1. Contender A posts a question and an opening stance (`open_challenge`).
+2. An intra-party peer challenges and locks the seat for 24 hours.
+3. Contender B files a rebuttal before the lock expires.
+4. The judge records the result.
+
+Rows for this arena live in `arena_debates` (the debates entity). Do not write these matches onto legacy `public.debates`. That table is the older floor, and its expiration cron grades a different pipeline.
+
+## Black box
+
+Users see the outcome (win, loss, or tie), the Elo delta, and the updated coordinate. A tie is a margin at or under 3%.
+
+Never return, render, log to the client, or email the adherence rubric, internal scores, or an explanation of why a stance scored as it did. `candidate_a_score` and `candidate_b_score` stay server-side.
+
+## Rank and candidate status
+
+Per-primary leaderboards and candidate tiers require Stripe KYC (`is_verified`) and a `legal_name`.
+
+- **Pundit** (default): pseudonym allowed, may debate.
+- **Declared Candidate**: top 50% Elo in that primary, plus verification and a legal name. Unlocks the campaign badge and profile platform page.
+- **Frontrunner**: top 10% Elo, plus verification and a legal name. Unlocks the donation button and priority placement on My Ballot.
+
+Unverified debaters still compete. They do not appear on the ranked ladder and cannot hold Declared Candidate or Frontrunner.

@@ -10,29 +10,23 @@ import { cn } from "@/lib/utils";
 
 const links = [
   {
-    href: "/feed",
-    label: "Feed",
-    match: (path: string) => path.startsWith("/feed"),
+    href: "/ballot",
+    label: "My Ballot",
+    match: (path: string) => path.startsWith("/ballot") || path.startsWith("/feed"),
   },
   {
-    href: "/discover",
-    label: "Discover",
-    match: (path: string) => path.startsWith("/discover"),
+    href: "/debates",
+    label: "Debates",
+    match: (path: string) => path.startsWith("/debates") || path.startsWith("/discover"),
   },
   {
-    href: "/matchmaker",
-    label: "Matchmaker",
-    match: (path: string) => path.startsWith("/matchmaker"),
-  },
-  {
-    href: "/leaderboards",
-    label: "Leaderboards",
-    match: (path: string) =>
-      path.startsWith("/leaderboards") || path.startsWith("/district"),
+    href: "/primaries",
+    label: "Primary Hubs",
+    match: (path: string) => path.startsWith("/primaries"),
   },
   {
     href: "/profile",
-    label: "My Profile",
+    label: "Profile",
     match: (path: string) =>
       path.startsWith("/profile") ||
       path.startsWith("/my-campaign") ||
@@ -40,7 +34,7 @@ const links = [
   },
   {
     href: "/verify",
-    label: "Verify",
+    label: "Verification",
     match: (path: string) => path === "/verify" || path.startsWith("/verify/"),
   },
 ] as const;
@@ -60,7 +54,7 @@ export function SiteNav() {
     <header className="border-b-2 border-brass bg-parchment shadow-[inset_0_3px_0_0_var(--brass)]">
       <div className="mx-auto flex w-full max-w-5xl items-center gap-x-4 px-6 py-3 sm:h-14 sm:py-0">
         <Link
-          href="/feed"
+          href="/ballot"
           aria-label="Where 2 Run home"
           className="font-display shrink-0 text-xs font-medium uppercase tracking-[0.2em] text-brass"
         >

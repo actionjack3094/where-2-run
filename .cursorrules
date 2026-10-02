@@ -1,0 +1,27 @@
+# WHERE 2 RUN platform architecture
+
+## Two products, one account
+
+- My Ballot (`/ballot`) is a view-only local constituent feed tied to the viewer's verified OCD-ID. Show a match only when two contenders are engaged. Likes and comments are allowed. Debate answers, challenges, and rebuttals are not.
+- Debates (`/debates`) is the global 2D ideology arena. Users may debate in any primary of their own party. Rank the feed by Euclidean distance and widen the radius when no prompt or contender is available.
+
+## Ideology plane
+
+- Economic `ideology_x` and Social `ideology_y`, each in [-1.0, 1.0].
+- Distance: sqrt((x_u - x_p)^2 + (y_u - y_p)^2).
+- Intra-party only. Economic below 0 is Democrat; otherwise Republican.
+- Personal coordinates move only from that user's onboarding and their own debate scores. Opponent answers and spectator likes never move them.
+
+## Competition
+
+- Every general election splits into Democrat and Republican primaries with separate Elo ladders.
+- Format: opening stance, 24-hour seat lock, one rebuttal, then judging.
+- Store arena matches in `arena_debates`. Leave legacy `public.debates` on its existing cron pipeline.
+
+## Black box
+
+Show win, loss, or tie (tie when the margin is 3% or less), the Elo delta, and the updated coordinate. Never show the adherence rubric, internal scores, or scoring reasons.
+
+## Rank
+
+Stripe KYC and a legal name are required to appear on a primary leaderboard or to claim Declared Candidate (top 50% Elo) or Frontrunner (top 10% Elo). Pundits may debate under a pseudonym. Frontrunners get the donation button and priority on My Ballot.
