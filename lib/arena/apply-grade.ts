@@ -1,5 +1,4 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { settleDebateElo } from "@/lib/actions/settle-debate-elo";
 import { formatVector, gradeDebateText } from "@/lib/ideology/grade";
 import type { AppDatabase } from "@/types/database.types";
 
@@ -18,7 +17,6 @@ export async function applyDebateGrade(
   record: ArgumentRecord,
 ) {
   if (record.graded_at) {
-    await settleDebateElo(admin, record.debate_id);
     return { skipped: "already_graded" as const };
   }
 
@@ -33,7 +31,6 @@ export async function applyDebateGrade(
 
   if (claimError) throw claimError;
   if (!claimed) {
-    await settleDebateElo(admin, record.debate_id);
     return { skipped: "already_graded" as const };
   }
 
@@ -83,12 +80,6 @@ export async function applyDebateGrade(
     .eq("id", author.id);
 
   if (userError) throw userError;
-
-  try {
-    await settleDebateElo(admin, record.debate_id);
-  } catch (eloError) {
-    console.error("ELO update failed after grading", eloError);
-  }
 
   return {
     skipped: null,

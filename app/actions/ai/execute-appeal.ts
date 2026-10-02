@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { settleDebateElo } from "@/lib/actions/settle-debate-elo";
 import { requireActionUserId } from "@/lib/arena/auth";
 import { isUuid } from "@/lib/arena/display";
 import {
@@ -132,8 +131,6 @@ export async function executeAppeal(input: {
   if (lockError) throw new Error(lockError.message);
   const locked = lockedRow as DebateEvaluation;
 
-  const elo = await settleDebateElo(admin, debate.id);
-
   revalidatePath(`/debates/${debate.id}`);
   revalidatePath("/leaderboards");
   revalidatePath(`/profile/${evaluation.candidate_id}`);
@@ -145,6 +142,5 @@ export async function executeAppeal(input: {
     votes: court.votes,
     tally: court.tally,
     majority: court.pass,
-    elo,
   };
 }

@@ -257,10 +257,16 @@ export interface TournamentParticipant {
 export interface DebateVote {
   id: string;
   debate_id: string;
+  /** Spectator who cast the response. */
+  user_id: string | null;
   spectator_id: string;
   voted_for_user_id: string;
+  /** Physical district this response is about. */
   district_id: string | null;
+  /** Election question this response is about. */
   topic_id: string | null;
+  /** The spectator's selection. Not a debate verdict. */
+  selection: string | null;
   created_at: string;
 }
 

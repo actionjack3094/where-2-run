@@ -59,7 +59,7 @@ export async function debateDistrictOcdId(
   return normalizeOcdId((data as { ocd_id: string | null } | null)?.ocd_id) || null;
 }
 
-/** Live ballots for the two seated candidates, paged past the 1000-row API cap. */
+/** Official ballots for the two seated candidates, paged past the 1000-row API cap. */
 async function loadBallots(
   admin: AdminClient,
   debateId: string,
@@ -68,23 +68,6 @@ async function loadBallots(
   const ballots: { voter_id: string; candidate_id: string }[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
     const { data, error } = await admin
-      .from("debate_votes")
-      .select("spectator_id, voted_for_user_id")
-      .eq("debate_id", debateId)
-      .in("voted_for_user_id", candidateIds)
-      .order("id", { ascending: true })
-      .range(from, from + PAGE_SIZE - 1);
-
-    if (!error) {
-      const page = (data ?? []) as { spectator_id: string; voted_for_user_id: string }[];
-      ballots.push(
-        ...page.map((row) => ({ voter_id: row.spectator_id, candidate_id: row.voted_for_user_id })),
-      );
-      if (page.length < PAGE_SIZE) break;
-      continue;
-    }
-
-    const legacy = await admin
       .from("votes")
       .select("voter_id, candidate_id")
       .eq("debate_id", debateId)
@@ -93,8 +76,8 @@ async function loadBallots(
       .order("id", { ascending: true })
       .range(from, from + PAGE_SIZE - 1);
 
-    if (legacy.error) throw new Error(legacy.error.message);
-    const page = (legacy.data ?? []) as { voter_id: string; candidate_id: string }[];
+    if (error) throw new Error(error.message);
+    const page = (data ?? []) as { voter_id: string; candidate_id: string }[];
     ballots.push(...page);
     if (page.length < PAGE_SIZE) break;
   }
@@ -107,7 +90,7 @@ export type DebateResolution = {
   districtOcdId: string | null;
   /** One ballot each. Saved to debates.candidate_*_votes. */
   raw: Tally;
-  /** Equal-weight spectator totals. Same as raw now that jury weighting is gone. */
+  /** Equal-weight official totals. Spectator telemetry is not included. */
   weighted: Tally;
   verifiedBallots: number;
   /** "Raw Votes: X–Y | Weighted Votes: Xw–Yw" */

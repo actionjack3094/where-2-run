@@ -1,12 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, useTransition } from "react";
-import {
-  castSpectatorVote,
-  loadSpectatorTally,
-  type SpectatorTally,
-} from "@/app/actions/debate/cast-spectator-vote";
+import { useMemo, useState, useTransition } from "react";
+import { castSpectatorVote } from "@/app/actions/debate/cast-spectator-vote";
 import { BountyButton } from "@/components/debates/BountyModal";
 import { CandidateAvatar } from "@/components/profile/CandidateAvatar";
 import { Button } from "@/components/ui/button";
@@ -256,53 +252,37 @@ function PledgeActionRow({
   );
   const [pickedId, setPickedId] = useState(seated[0]?.id ?? "");
   const winner = seated.find((candidate) => candidate.id === pickedId) ?? seated[0] ?? null;
-  const [tally, setTally] = useState<SpectatorTally>({
-    votesA: 0,
-    votesB: 0,
-    margin: 0,
-  });
+  const [selection, setSelection] = useState<string | null>(null);
   const [voteError, setVoteError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-
-  useEffect(() => {
-    let cancelled = false;
-    loadSpectatorTally(debateId)
-      .then((next) => {
-        if (!cancelled) setTally(next);
-      })
-      .catch(() => {
-        if (!cancelled) setVoteError("Could not load spectator votes.");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [debateId]);
 
   function voteFor(candidateId: string) {
     setVoteError(null);
     startTransition(async () => {
       try {
         const next = await castSpectatorVote(debateId, candidateId);
-        setTally(next);
+        setSelection(next.selection);
       } catch (caught) {
-        setVoteError(caught instanceof Error ? caught.message : "Could not record that vote.");
+        setVoteError(caught instanceof Error ? caught.message : "Could not record that response.");
       }
     });
   }
 
-  const shareA = tally.votesA + tally.votesB === 0
-    ? 0
-    : Math.round((tally.votesA / (tally.votesA + tally.votesB)) * 100);
+  const selectedName =
+    selection === candidateA?.id
+      ? candidateA.username
+      : selection === candidateB?.id
+        ? candidateB.username
+        : null;
 
   return (
     <div className="flex flex-col gap-3 border-t border-primary/20 pt-4">
-      <div className="flex flex-wrap items-end justify-between gap-2">
+      <div>
         <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-primary">
-          Spectator vote
+          District response
         </p>
-        <p className="font-mono text-xs tabular-nums text-muted-foreground">
-          {tally.votesA}–{tally.votesB}
-          {tally.votesA + tally.votesB > 0 ? ` · ${shareA}/${100 - shareA} · margin ${(tally.margin * 100).toFixed(0)}%` : ""}
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          Logged for this district topic. It does not decide the debate.
         </p>
       </div>
       {candidateA && candidateB ? (
@@ -310,29 +290,30 @@ function PledgeActionRow({
           <Button
             type="button"
             size="sm"
-            variant="outline"
-            disabled={pending}
+            variant={selection === candidateA.id ? "gold" : "outline"}
+            disabled={pending || selection != null}
             onClick={() => voteFor(candidateA.id)}
           >
-            Vote {candidateA.username}
-            <span className="ml-2 tabular-nums">{tally.votesA}</span>
+            {candidateA.username}
           </Button>
           <Button
             type="button"
             size="sm"
-            variant="outline"
-            disabled={pending}
+            variant={selection === candidateB.id ? "gold" : "outline"}
+            disabled={pending || selection != null}
             onClick={() => voteFor(candidateB.id)}
           >
-            Vote {candidateB.username}
-            <span className="ml-2 tabular-nums">{tally.votesB}</span>
+            {candidateB.username}
           </Button>
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">
-          Seats are still open. Spectator voting starts when both debaters are seated.
+          Seats are still open. Responses open when both debaters are seated.
         </p>
       )}
+      {selectedName ? (
+        <p className="text-xs text-muted-foreground">Recorded: {selectedName}</p>
+      ) : null}
       {voteError ? <p className="text-xs text-muted-foreground">{voteError}</p> : null}
 
       <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-primary">
