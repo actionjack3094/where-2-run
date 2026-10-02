@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { castSpectatorVote } from "@/app/actions/debate/cast-spectator-vote";
 import { BountyButton } from "@/components/debates/BountyModal";
 import { CandidateAvatar } from "@/components/profile/CandidateAvatar";
@@ -21,14 +21,34 @@ import {
 import { parseElo } from "@/lib/arena/elo";
 import { cn } from "@/lib/utils";
 import type { ArenaFeedCandidate, ArenaFeedDebate } from "@/lib/arena/feed-types";
+import { supabase } from "@/lib/supabase/client";
 import type { DebateEvaluation } from "@/types/database.types";
+
+type SpectatorTally = { a: number; b: number };
 
 function statusLabel(status: string) {
   if (status === "matching") return "Matching";
   if (status === "voting") return "Voting";
+  if (status === "concluded") return "Concluded";
+  if (status === "resolved") return "Resolved";
   if (status === "completed") return "Completed";
   if (status === "expired") return "Expired";
   return "Active";
+}
+
+function isFloorLocked(status: string) {
+  return status === "concluded" || status === "resolved";
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
+function voteChoice(row: Record<string, unknown>) {
+  if (typeof row.selection === "string" && row.selection) return row.selection;
+  if (typeof row.voted_for_user_id === "string") return row.voted_for_user_id;
+  return null;
 }
 
 function evaluationFor(
@@ -41,6 +61,86 @@ function evaluationFor(
 
 export function DebateCard({ debate }: { debate: ArenaFeedDebate }) {
   const evaluations = debate.evaluations;
+  const [liveStatus, setLiveStatus] = useState(debate.status);
+  const [winnerId, setWinnerId] = useState<string | null>(null);
+  const [tally, setTally] = useState<SpectatorTally>({ a: 0, b: 0 });
+  const seatsRef = useRef({ a: debate.candidateA?.id ?? null, b: debate.candidateB?.id ?? null });
+  seatsRef.current = { a: debate.candidateA?.id ?? null, b: debate.candidateB?.id ?? null };
+
+  useEffect(() => {
+    setLiveStatus(debate.status);
+  }, [debate.status]);
+
+  useEffect(() => {
+    const seen = new Set<string>();
+    let active = true;
+
+    function addVote(row: Record<string, unknown>) {
+      const id = typeof row.id === "string" ? row.id : "";
+      if (!id || seen.has(id)) return;
+      seen.add(id);
+      const choice = voteChoice(row);
+      const seats = seatsRef.current;
+      setTally((current) => {
+        if (choice && choice === seats.a) return { ...current, a: current.a + 1 };
+        if (choice && choice === seats.b) return { ...current, b: current.b + 1 };
+        return current;
+      });
+    }
+
+    function applyDebate(row: Record<string, unknown>) {
+      const status = typeof row.status === "string" ? row.status : "";
+      if (!isFloorLocked(status)) return;
+      setLiveStatus(status);
+      setWinnerId(typeof row.winner_id === "string" ? row.winner_id : null);
+    }
+
+    async function loadExistingVotes() {
+      const { data, error } = await supabase
+        .from("debate_votes")
+        .select("id, voted_for_user_id, selection")
+        .eq("debate_id", debate.id);
+      if (!active || error || !data) return;
+      for (const row of data) addVote(row);
+    }
+
+    const channel = supabase
+      .channel(`debate-floor:${debate.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "debate_votes",
+          filter: `debate_id=eq.${debate.id}`,
+        },
+        (payload) => {
+          const row = asRecord(payload.new);
+          if (row) addVote(row);
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "debates",
+          filter: `id=eq.${debate.id}`,
+        },
+        (payload) => {
+          const row = asRecord(payload.new);
+          if (row) applyDebate(row);
+        },
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") void loadExistingVotes();
+      });
+
+    return () => {
+      active = false;
+      void supabase.removeChannel(channel);
+    };
+  }, [debate.id]);
 
   const governing = useMemo(
     () => governingEvaluation(evaluations),
@@ -57,7 +157,7 @@ export function DebateCard({ debate }: { debate: ArenaFeedDebate }) {
       <CardHeader className="gap-4">
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full border border-primary/40 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-primary">
-            {statusLabel(debate.status)}
+            {statusLabel(liveStatus)}
           </span>
           {debate.districtName && debate.electionSlug ? (
             <Link
@@ -128,6 +228,9 @@ export function DebateCard({ debate }: { debate: ArenaFeedDebate }) {
           candidateA={debate.candidateA}
           candidateB={debate.candidateB}
           electionId={debate.districtId}
+          tally={tally}
+          floorLocked={isFloorLocked(liveStatus)}
+          winnerId={winnerId}
         />
       </CardContent>
     </Card>
@@ -241,11 +344,17 @@ function PledgeActionRow({
   candidateA,
   candidateB,
   electionId,
+  tally,
+  floorLocked,
+  winnerId,
 }: {
   debateId: string;
   candidateA: ArenaFeedCandidate | null;
   candidateB: ArenaFeedCandidate | null;
   electionId: string | null;
+  tally: SpectatorTally;
+  floorLocked: boolean;
+  winnerId: string | null;
 }) {
   const seated = [candidateA, candidateB].filter(
     (candidate): candidate is ArenaFeedCandidate => Boolean(candidate),
@@ -274,6 +383,12 @@ function PledgeActionRow({
       : selection === candidateB?.id
         ? candidateB.username
         : null;
+  const winnerName =
+    winnerId && winnerId === candidateA?.id
+      ? candidateA.username
+      : winnerId && winnerId === candidateB?.id
+        ? candidateB.username
+        : null;
 
   return (
     <div className="flex flex-col gap-3 border-t border-primary/20 pt-4">
@@ -284,14 +399,22 @@ function PledgeActionRow({
         <p className="mt-1 text-xs leading-5 text-muted-foreground">
           Logged for this district topic. It does not decide the debate.
         </p>
+        <p className="mt-2 font-mono text-xs tabular-nums text-parchment">
+          {candidateA?.username ?? "A"} {tally.a} · {candidateB?.username ?? "B"} {tally.b}
+        </p>
       </div>
+      {floorLocked ? (
+        <p className="text-sm leading-6 text-parchment">
+          {winnerName ? `${winnerName} is the winner.` : "The match ended in a tie."}
+        </p>
+      ) : null}
       {candidateA && candidateB ? (
         <div className="grid grid-cols-2 gap-2">
           <Button
             type="button"
             size="sm"
             variant={selection === candidateA.id ? "gold" : "outline"}
-            disabled={pending || selection != null}
+            disabled={floorLocked || pending || selection != null}
             onClick={() => voteFor(candidateA.id)}
           >
             {candidateA.username}
@@ -300,7 +423,7 @@ function PledgeActionRow({
             type="button"
             size="sm"
             variant={selection === candidateB.id ? "gold" : "outline"}
-            disabled={pending || selection != null}
+            disabled={floorLocked || pending || selection != null}
             onClick={() => voteFor(candidateB.id)}
           >
             {candidateB.username}
