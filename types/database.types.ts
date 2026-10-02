@@ -93,6 +93,8 @@ export interface Debate {
   candidate_a_argument: string | null;
   candidate_b_argument: string | null;
   winner_id: string | null;
+  /** Competitive-rubric paragraph from the adjudication model. */
+  judge_reasoning?: string | null;
   /** Raw ballots, one each. */
   candidate_a_votes: number;
   candidate_b_votes: number;

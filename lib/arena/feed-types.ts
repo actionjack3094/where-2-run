@@ -20,6 +20,7 @@ export type ArenaFeedDebate = {
   candidateA: ArenaFeedCandidate | null;
   candidateB: ArenaFeedCandidate | null;
   evaluations: DebateEvaluation[];
+  judgeReasoning: string | null;
 };
 
 export type ArenaFeedResult = {

@@ -1,4 +1,5 @@
 import { calculateDebateElo } from "@/lib/actions/elo";
+import { evaluateDebateTranscript } from "@/lib/ai/judge";
 import { lookupUserEmail } from "@/lib/actions/email";
 import { parseElo } from "@/lib/arena/elo";
 import { normalizeOcdId } from "@/lib/civic-fencing";
@@ -429,9 +430,9 @@ async function emailResolvedDebaters(
 /**
  * Resolves a debate whose status is `concluded`, whose match timer has
  * expired, or whose voting window is being closed explicitly.
- * The outcome is the stored winner and tally, or the official `votes` ballot
- * when nothing has been stored yet. `debate_votes` is spectator telemetry and
- * is not read. Ratings are written with `calculateDebateElo`.
+ * A stored winner_id is used as-is. When the row has no predefined winner,
+ * the transcript is graded by evaluateDebateTranscript and that winner_id
+ * drives Elo. `debate_votes` is spectator telemetry and is not read.
  * Returns null when the debate is not due or was resolved by someone else first.
  */
 export async function resolveDebateWithTally(
@@ -457,8 +458,26 @@ export async function resolveDebateWithTally(
   const candidateBId = debate.candidate_b_id;
   const districtOcdId = await debateDistrictOcdId(admin, debate);
   const outcome = storedOutcome(debate) ?? (await tallyOfficialBallots(admin, debate));
-  const { raw, weighted, winnerId } = outcome;
-  const margin = eloMargin(winnerId, candidateAId, candidateBId, raw, weighted);
+  const { raw, weighted } = outcome;
+  let winnerId = debate.winner_id ? outcome.winnerId : null;
+  let judgeReasoning: string | null = null;
+
+  if (!debate.winner_id) {
+    const verdict = await evaluateDebateTranscript(debate.id);
+    judgeReasoning = verdict.judge_reasoning;
+    winnerId =
+      verdict.winner_id === candidateAId || verdict.winner_id === candidateBId
+        ? verdict.winner_id
+        : null;
+  }
+
+  const margin = eloMargin(
+    winnerId,
+    candidateAId,
+    candidateBId,
+    debate.winner_id ? raw : { a: 0, b: 0 },
+    debate.winner_id ? weighted : { a: 0, b: 0 },
+  );
 
   const electionId = await tournamentElectionId(admin, debate);
   const ratings = await loadStoredRatings(admin, electionId, candidateAId, candidateBId);
@@ -486,6 +505,7 @@ export async function resolveDebateWithTally(
       candidate_a_weighted_votes: weighted.a,
       candidate_b_weighted_votes: weighted.b,
       winner_id: winnerId,
+      ...(judgeReasoning ? { judge_reasoning: judgeReasoning } : {}),
     })
     .eq("id", debateId)
     .eq("status", debate.status)

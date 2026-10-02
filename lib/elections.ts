@@ -157,6 +157,7 @@ function mapDebateRow(row: DebateQueryRow, election: Pick<Election, "slug" | "of
     candidateA: toFeedCandidate(row.candidate_a),
     candidateB: toFeedCandidate(row.candidate_b),
     evaluations,
+    judgeReasoning: row.judge_reasoning?.trim() || null,
   };
 }
 

@@ -273,6 +273,7 @@ export async function loadArenaFeed(): Promise<ArenaFeedResult> {
           candidateA: toCandidate(row.candidate_a),
           candidateB: toCandidate(row.candidate_b),
           evaluations,
+          judgeReasoning: row.judge_reasoning?.trim() || null,
         } satisfies ArenaFeedDebate,
         seated,
         matchScore,

@@ -33,6 +33,7 @@ type DebateRow = {
   candidate_a_argument: string | null;
   candidate_b_argument: string | null;
   winner_id: string | null;
+  judge_reasoning?: string | null;
   candidate_a_votes: number;
   candidate_b_votes: number;
   candidate_a_weighted_votes?: number | null;
@@ -66,7 +67,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
 
   const supabase = await createServerSupabase();
   const debateColumns =
-    "id, topic, status, expires_at, elo_applied_at, election_id, election_question_id, district_id, candidate_a_id, candidate_b_id, candidate_a_argument, candidate_b_argument, winner_id, candidate_a_votes, candidate_b_votes, candidate_a_weighted_votes, candidate_b_weighted_votes, current_round";
+    "id, topic, status, expires_at, elo_applied_at, election_id, election_question_id, district_id, candidate_a_id, candidate_b_id, candidate_a_argument, candidate_b_argument, winner_id, judge_reasoning, candidate_a_votes, candidate_b_votes, candidate_a_weighted_votes, candidate_b_weighted_votes, current_round";
   let { data, error } = await supabase
     .from("debates")
     .select(debateColumns)
@@ -92,6 +93,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
           candidate_a_argument: null,
           candidate_b_argument: null,
           winner_id: null,
+          judge_reasoning: null,
           candidate_a_votes: 0,
           candidate_b_votes: 0,
           candidate_a_weighted_votes: 0,
@@ -263,6 +265,11 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
                 <p className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment">
                   {concludedOutcome(debate)}
                 </p>
+                {debate.judge_reasoning?.trim() ? (
+                  <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-parchment/80">
+                    {debate.judge_reasoning.trim()}
+                  </p>
+                ) : null}
               </div>
               <RoundTranscript
                 rounds={rounds}

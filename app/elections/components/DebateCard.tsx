@@ -63,13 +63,15 @@ export function DebateCard({ debate }: { debate: ArenaFeedDebate }) {
   const evaluations = debate.evaluations;
   const [liveStatus, setLiveStatus] = useState(debate.status);
   const [winnerId, setWinnerId] = useState<string | null>(null);
+  const [judgeReasoning, setJudgeReasoning] = useState(debate.judgeReasoning);
   const [tally, setTally] = useState<SpectatorTally>({ a: 0, b: 0 });
   const seatsRef = useRef({ a: debate.candidateA?.id ?? null, b: debate.candidateB?.id ?? null });
   seatsRef.current = { a: debate.candidateA?.id ?? null, b: debate.candidateB?.id ?? null };
 
   useEffect(() => {
     setLiveStatus(debate.status);
-  }, [debate.status]);
+    setJudgeReasoning(debate.judgeReasoning);
+  }, [debate.status, debate.judgeReasoning]);
 
   useEffect(() => {
     const seen = new Set<string>();
@@ -93,6 +95,9 @@ export function DebateCard({ debate }: { debate: ArenaFeedDebate }) {
       if (!isFloorLocked(status)) return;
       setLiveStatus(status);
       setWinnerId(typeof row.winner_id === "string" ? row.winner_id : null);
+      if (typeof row.judge_reasoning === "string" && row.judge_reasoning.trim()) {
+        setJudgeReasoning(row.judge_reasoning.trim());
+      }
     }
 
     async function loadExistingVotes() {
@@ -231,6 +236,7 @@ export function DebateCard({ debate }: { debate: ArenaFeedDebate }) {
           tally={tally}
           floorLocked={isFloorLocked(liveStatus)}
           winnerId={winnerId}
+          judgeReasoning={judgeReasoning}
         />
       </CardContent>
     </Card>
@@ -347,6 +353,7 @@ function PledgeActionRow({
   tally,
   floorLocked,
   winnerId,
+  judgeReasoning,
 }: {
   debateId: string;
   candidateA: ArenaFeedCandidate | null;
@@ -355,6 +362,7 @@ function PledgeActionRow({
   tally: SpectatorTally;
   floorLocked: boolean;
   winnerId: string | null;
+  judgeReasoning: string | null;
 }) {
   const seated = [candidateA, candidateB].filter(
     (candidate): candidate is ArenaFeedCandidate => Boolean(candidate),
@@ -407,6 +415,9 @@ function PledgeActionRow({
         <p className="text-sm leading-6 text-parchment">
           {winnerName ? `${winnerName} is the winner.` : "The match ended in a tie."}
         </p>
+      ) : null}
+      {floorLocked && judgeReasoning ? (
+        <p className="text-sm leading-6 text-muted-foreground">{judgeReasoning}</p>
       ) : null}
       {candidateA && candidateB ? (
         <div className="grid grid-cols-2 gap-2">
