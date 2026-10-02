@@ -1,6 +1,5 @@
 "use server";
 
-import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import Stripe from "stripe";
 import { requireActionUserId } from "@/lib/arena/auth";
@@ -12,7 +11,8 @@ import { getStripe } from "@/lib/stripe";
 type Tier2Status = "unverified" | "pending" | "verified";
 
 export type IdentitySessionResult =
-  | { ok: true; url: string }
+  | { ok: true; clientSecret: string }
+  | { ok: true; clientSecret: null; status: "verified" }
   | { ok: false; error: string };
 
 export type IdentityStatusResult =
@@ -42,14 +42,6 @@ async function markIdentitySessionPending(
 const GENERIC_ERROR = "We couldn't start identity verification. Please try again.";
 const MISSING_KEY = "Stripe is not configured. Add STRIPE_SECRET_KEY to verify identity.";
 
-async function requestOrigin() {
-  const headerList = await headers();
-  const host = headerList.get("x-forwarded-host") ?? headerList.get("host");
-  const proto = headerList.get("x-forwarded-proto") ?? "http";
-  if (!host) return "http://localhost:3000";
-  return `${proto.split(",")[0]!.trim()}://${host.split(",")[0]!.trim()}`;
-}
-
 function stripeMessage(error: unknown) {
   if (error instanceof Stripe.errors.StripeError) return error.message;
   if (error instanceof Error && /STRIPE_SECRET_KEY/i.test(error.message)) return MISSING_KEY;
@@ -57,52 +49,55 @@ function stripeMessage(error: unknown) {
 }
 
 /**
- * Open Stripe Identity's hosted document capture for this constituent.
- * The webhook upgrades `profiles.tier2_status` after verification succeeds.
+ * Open a Stripe Identity document session for the signed-in user.
+ * The browser modal consumes `client_secret`. The webhook sets `users.tier`
+ * to `verified` after Stripe confirms the session.
  */
-export async function createIdentityVerificationSession(
-  userId: string,
-): Promise<IdentitySessionResult> {
+export async function createIdentityVerificationSession(): Promise<IdentitySessionResult> {
   try {
-    const wanted = userId.trim();
-    if (!isUuid(wanted)) return { ok: false, error: "Sign in to verify your identity." };
-
     const callerId = await requireActionUserId();
-    if (!callerId) return { ok: false, error: "Sign in to verify your identity." };
-    if (callerId !== wanted) {
-      return { ok: false, error: "You can only verify your own identity." };
+    if (!callerId || !isUuid(callerId)) {
+      return { ok: false, error: "Sign in to verify your identity." };
     }
 
     const admin = createAdminClient();
-    const { data: profile, error: profileError } = await admin
-      .from("profiles")
-      .select("tier2_status, stripe_identity_session_id")
-      .eq("id", callerId)
-      .maybeSingle();
-    if (profileError && !isMissingSchema(profileError)) throw profileError;
+    const [profileResult, userResult] = await Promise.all([
+      admin
+        .from("profiles")
+        .select("tier2_status, stripe_identity_session_id")
+        .eq("id", callerId)
+        .maybeSingle(),
+      admin.from("users").select("tier").eq("id", callerId).maybeSingle(),
+    ]);
+    if (profileResult.error && !isMissingSchema(profileResult.error)) {
+      throw profileResult.error;
+    }
+    if (userResult.error) throw userResult.error;
 
-    if (parseTier2Status(profile?.tier2_status) === "verified") {
-      return { ok: true, url: "/profile" };
+    const profile = profileResult.data;
+    const alreadyVerified =
+      parseTier2Status(profile?.tier2_status) === "verified" ||
+      userResult.data?.tier === "verified";
+    if (alreadyVerified) {
+      return { ok: true, clientSecret: null, status: "verified" };
     }
 
     const stripe = getStripe();
     const existingSessionId = profile?.stripe_identity_session_id?.trim();
     if (existingSessionId) {
       const existing = await stripe.identity.verificationSessions.retrieve(existingSessionId);
-      if (existing.status === "requires_input" && existing.url) {
-        return { ok: true, url: existing.url };
-      }
       if (existing.status === "verified") {
-        return { ok: true, url: "/profile?identity=complete" };
+        return { ok: true, clientSecret: null, status: "verified" };
+      }
+      if (existing.status === "requires_input" && existing.client_secret) {
+        return { ok: true, clientSecret: existing.client_secret };
       }
     }
 
-    const origin = await requestOrigin();
     const session = await stripe.identity.verificationSessions.create({
       type: "document",
       client_reference_id: callerId,
-      metadata: { userId: callerId },
-      return_url: `${origin}/profile?identity=complete`,
+      metadata: { user_id: callerId, userId: callerId },
       options: {
         document: {
           allowed_types: ["driving_license", "id_card", "passport"],
@@ -110,13 +105,14 @@ export async function createIdentityVerificationSession(
       },
     });
 
-    if (!session.url) {
-      return { ok: false, error: "Stripe did not return a verification URL." };
+    if (!session.client_secret) {
+      return { ok: false, error: "Stripe did not return a verification client secret." };
     }
 
     await markIdentitySessionPending(admin, callerId, session.id);
     revalidatePath("/profile");
-    return { ok: true, url: session.url };
+    revalidatePath("/verify");
+    return { ok: true, clientSecret: session.client_secret };
   } catch (caught) {
     console.error("createIdentityVerificationSession failed.", caught);
     return { ok: false, error: stripeMessage(caught) };

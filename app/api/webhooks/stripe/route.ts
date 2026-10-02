@@ -289,11 +289,23 @@ async function recordFundedPledge(session: Stripe.Checkout.Session) {
   }
 }
 
+function identityUserId(session: Stripe.Identity.VerificationSession) {
+  const fromMetadata =
+    session.metadata?.user_id?.trim() || session.metadata?.userId?.trim() || "";
+  return fromMetadata || session.client_reference_id?.trim() || "";
+}
+
 async function applyIdentityVerified(session: Stripe.Identity.VerificationSession) {
-  const userId = session.client_reference_id || session.metadata?.userId;
+  const userId = identityUserId(session);
   if (!userId || !isUuid(userId)) return;
 
   const admin = createAdminClient();
+  const { error: userError } = await admin
+    .from("users")
+    .update({ tier: "verified" })
+    .eq("id", userId);
+  if (userError) throw new Error(userError.message);
+
   const { error } = await admin
     .from("profiles")
     .update({
@@ -306,6 +318,7 @@ async function applyIdentityVerified(session: Stripe.Identity.VerificationSessio
 
   try {
     revalidatePath("/profile");
+    revalidatePath("/verify");
     revalidatePath("/inbox");
   } catch {
     // The upgrade is already saved. A cache refresh failure must not make
