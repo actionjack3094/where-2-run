@@ -10,7 +10,16 @@ import {
   type DraftRaceSource,
   type ViableRace,
 } from "@/lib/onboarding/draft-races";
+import { loadDistrictCentroids } from "@/lib/civic/lookup-address";
+import {
+  calibrateAxisStance,
+  formatPgAxisStance,
+  rankByAxisStance,
+  type AxisStance,
+  type StanceAxisId,
+} from "@/lib/ideology/axes";
 import { parseVector } from "@/lib/ideology/vector";
+import { getServerUser } from "@/lib/db/supabase-server";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -169,6 +178,135 @@ export async function loadDraftReveal(
       limit: 3,
     }),
   };
+}
+
+const SEEDED_DISTRICTS = 3;
+
+async function ensurePublicUser(admin: AdminClient, userId: string) {
+  const { data, error } = await admin.from("users").select("id").eq("id", userId).maybeSingle();
+  if (error) throw new Error(error.message);
+  if (data) return;
+
+  const username = `runner-${userId.replace(/-/g, "").slice(0, 8)}`;
+  const { error: insertError } = await admin.from("users").insert({ id: userId, username });
+  if (insertError && insertError.code !== "23505") throw new Error(insertError.message);
+}
+
+async function seedDistrictAlignment(admin: AdminClient, userId: string, stance: AxisStance) {
+  const [centroids, electionsQuery, profileQuery] = await Promise.all([
+    loadDistrictCentroids(),
+    admin.from("elections").select("id, district_id, ocd_id"),
+    admin.from("users").select("target_district_id, home_ocd_ids").eq("id", userId).maybeSingle(),
+  ]);
+
+  if (electionsQuery.error && !isMissingRelation(electionsQuery.error)) {
+    throw new Error(electionsQuery.error.message);
+  }
+  if (profileQuery.error) throw new Error(profileQuery.error.message);
+
+  const ranked = rankByAxisStance(
+    stance,
+    centroids.map((district) => ({
+      ...district,
+      median_ideology_vector: district.medianIdeologyVector,
+    })),
+  );
+  const closest = ranked.slice(0, SEEDED_DISTRICTS);
+  const profile = profileQuery.data as {
+    target_district_id?: string | null;
+    home_ocd_ids?: string[] | null;
+  } | null;
+
+  const districtIds = new Set(closest.map((district) => district.id));
+  if (districtIds.size === 0 && profile?.target_district_id) {
+    districtIds.add(profile.target_district_id);
+  }
+
+  const matchedOcdIds = [
+    ...new Set(
+      closest
+        .map((district) => district.ocdId?.trim())
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  if (matchedOcdIds.length === 0) {
+    const home = (profile?.home_ocd_ids ?? []).filter((id) => id.trim() !== "");
+    matchedOcdIds.push(...home);
+  }
+
+  const { error: userError } = await admin
+    .from("users")
+    .update({
+      stance_vector: formatPgAxisStance(stance),
+      matched_ocd_ids: matchedOcdIds,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", userId);
+  if (userError) throw new Error(userError.message);
+
+  const elections = (electionsQuery.data ?? []) as {
+    id: string;
+    district_id: string | null;
+    ocd_id: string | null;
+  }[];
+  const wantedOcd = new Set(matchedOcdIds.map((id) => id.toLowerCase()));
+  const targets = elections.filter((election) => {
+    if (election.district_id && districtIds.has(election.district_id)) return true;
+    return Boolean(election.ocd_id && wantedOcd.has(election.ocd_id.toLowerCase()));
+  });
+
+  if (targets.length === 0) return closest;
+
+  const { error: targetError } = await admin.from("campaign_targets").upsert(
+    targets.map((election) => ({
+      user_id: userId,
+      election_id: election.id,
+      status: "exploring",
+    })),
+    { onConflict: "user_id,election_id", ignoreDuplicates: true },
+  );
+  if (targetError && !isMissingRelation(targetError)) {
+    throw new Error(targetError.message);
+  }
+
+  return closest;
+}
+
+export async function submitIdeologicalQuiz(
+  answers: Partial<Record<StanceAxisId, number>>,
+  accessToken?: string | null,
+) {
+  const userId = (await requireActionUserId(accessToken)) ?? (await getServerUser())?.id ?? null;
+  if (!userId) throw new Error("Sign in to file your ideological quiz.");
+
+  const stance = calibrateAxisStance(answers);
+  const admin = createAdminClient();
+  await ensurePublicUser(admin, userId);
+
+  const now = new Date().toISOString();
+  const { error: ideologyError } = await admin.from("user_ideologies").upsert(
+    {
+      user_id: userId,
+      vector_data: stance,
+      updated_at: now,
+    },
+    { onConflict: "user_id" },
+  );
+  if (ideologyError) {
+    if (isMissingRelation(ideologyError)) {
+      throw new Error("user_ideologies is not on the database yet. Apply the ideology migration.");
+    }
+    throw new Error(ideologyError.message);
+  }
+
+  await seedDistrictAlignment(admin, userId, stance);
+
+  revalidatePath("/onboarding");
+  revalidatePath("/leaderboards");
+  revalidatePath("/matchmaker");
+  revalidatePath("/feed");
+  revalidatePath("/profile");
+  redirect("/matchmaker");
 }
 
 export async function completeOnboarding(accessToken?: string | null) {

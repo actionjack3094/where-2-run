@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { submitIdeologicalQuiz } from "@/app/actions/onboarding/wizard";
 import { Button } from "@/components/ui/button";
-import { saveBaselineCalibration } from "@/lib/actions/onboarding-funnel";
-import { QUIZ_QUESTIONS } from "@/lib/ideology/questions";
-import { SIX_AXIS_IDS, SIX_AXIS_LABELS, type SixAxisId } from "@/lib/ideology/six-axis";
+import { AXIS_QUESTIONS, type StanceAxisId } from "@/lib/ideology/axes";
 import { cn } from "@/lib/utils";
 
-const CALIBRATION_QUESTIONS = QUIZ_QUESTIONS.slice(0, 3);
-const CALIBRATION_AXES = SIX_AXIS_IDS.slice(0, 3) as SixAxisId[];
+const CALIBRATION_QUESTIONS = AXIS_QUESTIONS;
 
 function isNextRedirectError(error: unknown) {
   if (typeof error !== "object" || error === null) return false;
@@ -19,13 +17,13 @@ function isNextRedirectError(error: unknown) {
 
 export function CalibrationStep({ onBack }: { onBack: () => void }) {
   const [index, setIndex] = useState(0);
-  const [answers, setAnswers] = useState<Partial<Record<SixAxisId, number>>>({});
+  const [answers, setAnswers] = useState<Partial<Record<StanceAxisId, number>>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const question = CALIBRATION_QUESTIONS[index];
-  const axisId = CALIBRATION_AXES[index] ?? SIX_AXIS_IDS[index];
-  const selected = answers[axisId];
+  const axisId = question?.id;
+  const selected = axisId ? answers[axisId] : undefined;
   const isLast = index === CALIBRATION_QUESTIONS.length - 1;
 
   async function choose(score: number) {
@@ -41,7 +39,7 @@ export function CalibrationStep({ onBack }: { onBack: () => void }) {
 
     setBusy(true);
     try {
-      await saveBaselineCalibration(next);
+      await submitIdeologicalQuiz(next);
     } catch (caught) {
       if (isNextRedirectError(caught)) throw caught;
       setError(caught instanceof Error ? caught.message : "Could not seed your stance vector.");
@@ -64,8 +62,8 @@ export function CalibrationStep({ onBack }: { onBack: () => void }) {
           Baseline vector
         </h2>
         <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
-          Three rapid-fire policy questions seed your stance vector so the matchmaker
-          can rank rivals immediately.
+          Score economic, social, and governance. The last answer files your stance
+          vector and seeds the closest district races.
         </p>
       </header>
 
@@ -81,7 +79,7 @@ export function CalibrationStep({ onBack }: { onBack: () => void }) {
 
       <article className="mt-4 rounded-xl border border-gold/50 bg-zinc-900 p-6 shadow-[inset_3px_0_0_0_var(--gold-strong)]">
         <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
-          {SIX_AXIS_LABELS[axisId]}
+          {question.topic}
         </p>
         <h3 className="mt-4 font-display text-2xl font-semibold leading-snug tracking-tight text-parchment">
           {question.prompt}

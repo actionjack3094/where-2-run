@@ -82,6 +82,33 @@ async function loadRoutingRows(admin: AdminClient) {
   };
 }
 
+export type DistrictCentroid = {
+  id: string;
+  name: string | null;
+  ocdId: string | null;
+  medianIdeologyVector: unknown;
+};
+
+/** Districts the ideological matchmaker can score. Medians stay on the district row. */
+export async function loadDistrictCentroids(): Promise<DistrictCentroid[]> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("districts")
+    .select("id, name, ocd_id, median_ideology_vector");
+
+  if (error) {
+    if (isMissingSchema(error)) return [];
+    throw new Error(error.message);
+  }
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    name: row.name ?? null,
+    ocdId: row.ocd_id ?? null,
+    medianIdeologyVector: row.median_ideology_vector,
+  }));
+}
+
 export async function routeVoterAddress(userId: string, address: string) {
   const admin = createAdminClient();
   const located = await divisionsForAddress(address);

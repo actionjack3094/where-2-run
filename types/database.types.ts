@@ -244,7 +244,12 @@ export interface Vote {
 
 export interface UserIdeology {
   user_id: string;
-  vector_data: IdeologyVector | string | null;
+  /** Three-axis stance `{ economic, social, governance }` in [-1, 1], or a numeric vector. */
+  vector_data:
+    | IdeologyVector
+    | { economic?: number; social?: number; governance?: number }
+    | string
+    | null;
   scores: Record<string, number> | number[] | Record<string, unknown>;
   updated_at: string;
 }

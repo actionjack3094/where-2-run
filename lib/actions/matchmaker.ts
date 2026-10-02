@@ -1,46 +1,79 @@
-import { createServerSupabase as createClient } from '@/lib/db/supabase-server';
+import { loadDistrictCentroids } from "@/lib/civic/lookup-address";
+import { createAdminClient } from "@/lib/db/supabase-admin";
+import {
+  euclideanAxisDistance,
+  stanceFromDistrictMedian,
+  stanceFromStoredVector,
+  type AxisStance,
+} from "@/lib/ideology/axes";
 
 export interface IdeologyScores {
-  economic?: number;    // -100 (left) to 100 (right)
-  social?: number;      // -100 (libertarian) to 100 (authoritarian)
-  governance?: number;  // -100 (decentralized) to 100 (centralized)
+  economic?: number;
+  social?: number;
+  governance?: number;
 }
 
-function calculateIdeologicalDistance(a: IdeologyScores, b: IdeologyScores): number {
-  const dEco = (a.economic ?? 0) - (b.economic ?? 0);
-  const dSoc = (a.social ?? 0) - (b.social ?? 0);
-  const dGov = (a.governance ?? 0) - (b.governance ?? 0);
-  return Math.sqrt(dEco * dEco + dSoc * dSoc + dGov * dGov);
+export function calculateIdeologicalDistance(a: AxisStance, b: AxisStance): number {
+  return euclideanAxisDistance(a, b);
 }
 
 export async function matchUserToTournaments(userId: string) {
-  const supabase = await createClient();
+  const admin = createAdminClient();
+  const [ideologyQuery, profileQuery, electionsQuery, centroids] = await Promise.all([
+    admin.from("user_ideologies").select("vector_data").eq("user_id", userId).maybeSingle(),
+    admin.from("users").select("stance_vector").eq("id", userId).maybeSingle(),
+    admin.from("elections").select("id, slug, office_name, district_id, ocd_id"),
+    loadDistrictCentroids(),
+  ]);
 
-  const { data: userIdeology } = await supabase
-    .from('user_ideologies')
-    .select('vector_data')
-    .eq('user_id', userId)
-    .single();
+  if (ideologyQuery.error) throw new Error(ideologyQuery.error.message);
+  if (profileQuery.error) throw new Error(profileQuery.error.message);
+  if (electionsQuery.error) throw new Error(electionsQuery.error.message);
 
-  if (!userIdeology?.vector_data) {
-    throw new Error('User ideology profile not found. Complete deck questions first.');
+  const stance =
+    stanceFromStoredVector(ideologyQuery.data?.vector_data) ??
+    stanceFromStoredVector(profileQuery.data?.stance_vector);
+  if (!stance) {
+    throw new Error("User ideology profile not found. Complete deck questions first.");
   }
 
-  const { data: openElections } = await supabase
-    .from('elections')
-    .select('id, title, state, district, target_ideology');
+  const elections = electionsQuery.data ?? [];
+  if (elections.length === 0) return [];
 
-  if (!openElections || openElections.length === 0) return [];
+  const distanceByDistrict = new Map(
+    centroids.flatMap((district) => {
+      const centroid = stanceFromDistrictMedian(district.medianIdeologyVector);
+      if (!centroid) return [];
+      return [[district.id, euclideanAxisDistance(stance, centroid)] as const];
+    }),
+  );
+  const distanceByOcd = new Map(
+    centroids.flatMap((district) => {
+      const centroid = stanceFromDistrictMedian(district.medianIdeologyVector);
+      const ocdId = district.ocdId?.trim().toLowerCase();
+      if (!centroid || !ocdId) return [];
+      return [[ocdId, euclideanAxisDistance(stance, centroid)] as const];
+    }),
+  );
 
-  const rankedTournaments = openElections
+  return elections
     .map((election) => {
-      const distance = calculateIdeologicalDistance(
-        userIdeology.vector_data,
-        (election.target_ideology as IdeologyScores) || {}
-      );
-      return { election, distance };
+      const byDistrict = election.district_id
+        ? distanceByDistrict.get(election.district_id)
+        : undefined;
+      const byOcd = election.ocd_id
+        ? distanceByOcd.get(election.ocd_id.trim().toLowerCase())
+        : undefined;
+      const distance = byDistrict ?? byOcd;
+      if (distance == null) return null;
+      return {
+        election: {
+          ...election,
+          title: election.office_name,
+        },
+        distance,
+      };
     })
-    .sort((a, b) => a.distance - b.distance);
-
-  return rankedTournaments;
+    .filter((row): row is NonNullable<typeof row> => row != null)
+    .sort((left, right) => left.distance - right.distance || left.election.id.localeCompare(right.election.id));
 }
