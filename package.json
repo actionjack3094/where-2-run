@@ -14,6 +14,7 @@
     "verification:approve": "tsx scripts/approve-verification.ts",
     "sim:season": "tsx scripts/sim-season.ts",
     "feed:patch": "tsx scripts/patch-feed-user.ts",
+    "seed:bots": "npx tsx scripts/seed-bots.ts",
     "jury:test": "tsx scripts/test-jury-appeal.ts"
   },
   "dependencies": {
