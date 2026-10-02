@@ -1,12 +1,10 @@
 import { createElement, type ReactElement } from "react";
-import { Resend } from "resend";
 import {
   PledgeFundedEmail,
   type PledgeFundedEmailProps,
 } from "@/emails/PledgeFundedEmail";
 import { createAdminClient } from "@/lib/db/supabase-admin";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { resend } from "@/lib/email/client";
 
 export type PledgeFundedEmailData = PledgeFundedEmailProps;
 
@@ -98,27 +96,6 @@ export async function lookupUserEmail(userId: string): Promise<string | null> {
     console.error("[resend] email lookup threw.", caught);
     return null;
   }
-}
-
-export async function sendEscrowClaimReviewEmail(
-  to: string,
-  data: { candidateName: string; targetId: string; filing: string; amount: number },
-) {
-  const amount = Number.isFinite(data.amount) ? data.amount : 0;
-  const candidateName = data.candidateName.trim() || "A candidate";
-  await dispatch({
-    label: "escrow claim review",
-    to,
-    subject: `Review escrow claim for ${candidateName}`,
-    react: createElement(
-      "div",
-      null,
-      createElement("p", null, `${candidateName} filed an escrow claim for review.`),
-      createElement("p", null, `Target ${data.targetId}`),
-      createElement("p", null, `Filing: ${data.filing}`),
-      createElement("p", null, `Held escrow: $${amount.toFixed(2)}`),
-    ),
-  });
 }
 
 export async function sendPledgeFundedEmail(to: string, data: PledgeFundedEmailData) {

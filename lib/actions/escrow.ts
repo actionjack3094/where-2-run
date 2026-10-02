@@ -6,7 +6,7 @@ import { requireActionUserId } from "@/lib/arena/auth";
 import { isUuid } from "@/lib/arena/display";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 import { getServerUser } from "@/lib/db/supabase-server";
-import { sendEscrowClaimReviewEmail } from "@/lib/actions/email";
+import { resend } from "@/lib/email/client";
 import {
   normalizeOfficialCandidateId,
   officialCandidateIdError,
@@ -57,23 +57,33 @@ async function notifyAdmins(input: {
   amount: number;
 }) {
   const recipients = adminEmails();
+  const from = process.env.RESEND_FROM_EMAIL?.trim();
   if (recipients.length === 0) {
     console.error(
-      `Escrow claim ${input.targetId} for ${input.candidateName} is waiting on review. Set PLATFORM_ADMIN_EMAIL to notify an admin.`,
+      `Escrow claim ${input.targetId} for ${input.candidateName} is waiting on review. Set PLATFORM_ADMIN_EMAILS to notify an admin.`,
     );
     return;
   }
+  if (!from || !process.env.RESEND_API_KEY?.trim()) {
+    console.error("[resend] escrow claim email skipped: missing RESEND_API_KEY or RESEND_FROM_EMAIL");
+    return;
+  }
 
-  await Promise.all(
-    recipients.map((to) =>
-      sendEscrowClaimReviewEmail(to, {
-        candidateName: input.candidateName,
-        targetId: input.targetId,
-        filing: input.filing,
-        amount: input.amount,
-      }),
-    ),
-  );
+  const amount = Number.isFinite(input.amount) ? input.amount : 0;
+  const { error } = await resend.emails.send({
+    from,
+    to: recipients,
+    subject: `Review escrow claim for ${input.candidateName}`,
+    text: [
+      `${input.candidateName} filed an escrow claim for review.`,
+      `Target ID: ${input.targetId}`,
+      `FEC / registration: ${input.filing}`,
+      `Held escrow: $${amount.toFixed(2)}`,
+    ].join("\n"),
+  });
+  if (error) {
+    console.error(`[resend] escrow claim email failed: ${error.message}`);
+  }
 }
 
 /**

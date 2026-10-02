@@ -1,7 +1,9 @@
 import { calculateDebateElo } from "@/lib/actions/elo";
+import { lookupUserEmail } from "@/lib/actions/email";
 import { parseElo } from "@/lib/arena/elo";
 import { normalizeOcdId } from "@/lib/civic-fencing";
 import { createAdminClient } from "@/lib/db/supabase-admin";
+import { resend } from "@/lib/email/client";
 import { formatTally, type Tally } from "@/lib/vote-weight";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
@@ -347,6 +349,83 @@ async function persistRating(
   if (updateError) throw new Error(updateError.message);
 }
 
+function signedDelta(value: number) {
+  return `${value >= 0 ? "+" : ""}${value}`;
+}
+
+async function emailResolvedDebaters(
+  admin: AdminClient,
+  input: {
+    debateId: string;
+    candidateAId: string;
+    candidateBId: string;
+    winnerId: string | null;
+    ratingA: number;
+    ratingB: number;
+    newRatingA: number;
+    newRatingB: number;
+    deltaA: number;
+    deltaB: number;
+  },
+) {
+  const from = process.env.RESEND_FROM_EMAIL?.trim();
+  if (!from || !process.env.RESEND_API_KEY?.trim()) {
+    console.error("[resend] debate resolution email skipped: missing RESEND_API_KEY or RESEND_FROM_EMAIL");
+    return;
+  }
+
+  const { data, error } = await admin
+    .from("users")
+    .select("id, username")
+    .in("id", [input.candidateAId, input.candidateBId]);
+  if (error) throw new Error(error.message);
+
+  const names = new Map(
+    ((data ?? []) as { id: string; username: string | null }[]).map((row) => [
+      row.id,
+      row.username?.trim() || "A debater",
+    ]),
+  );
+  const nameA = names.get(input.candidateAId) ?? "Candidate A";
+  const nameB = names.get(input.candidateBId) ?? "Candidate B";
+  const outcome =
+    input.winnerId === input.candidateAId
+      ? `${nameA} won.`
+      : input.winnerId === input.candidateBId
+        ? `${nameB} won.`
+        : "The match ended in a tie.";
+  const text = [
+    `Debate ${input.debateId} is resolved.`,
+    outcome,
+    `${nameA}: Elo ${input.ratingA} → ${input.newRatingA} (${signedDelta(input.deltaA)})`,
+    `${nameB}: Elo ${input.ratingB} → ${input.newRatingB} (${signedDelta(input.deltaB)})`,
+  ].join("\n");
+
+  const addresses = await Promise.all([
+    lookupUserEmail(input.candidateAId),
+    lookupUserEmail(input.candidateBId),
+  ]);
+  const recipients = [...new Set(addresses.filter((email): email is string => Boolean(email)))];
+  if (recipients.length === 0) {
+    console.error(`[resend] debate ${input.debateId} has no debater email addresses.`);
+    return;
+  }
+
+  await Promise.all(
+    recipients.map(async (to) => {
+      const { error: sendError } = await resend.emails.send({
+        from,
+        to,
+        subject: "Your debate is resolved",
+        text,
+      });
+      if (sendError) {
+        console.error(`[resend] debate resolution email to ${to} failed: ${sendError.message}`);
+      }
+    }),
+  );
+}
+
 /**
  * Resolves a debate whose status is `concluded`, whose match timer has
  * expired, or whose voting window is being closed explicitly.
@@ -442,6 +521,23 @@ export async function resolveDebateWithTally(
   console.info(
     `[Resolve] Debate ${saved.id} ${summary} ratings ${ratingA}->${next.newRatingA} (${next.deltaA >= 0 ? "+" : ""}${next.deltaA}) / ${ratingB}->${next.newRatingB} (${next.deltaB >= 0 ? "+" : ""}${next.deltaB})`,
   );
+
+  try {
+    await emailResolvedDebaters(admin, {
+      debateId: saved.id,
+      candidateAId,
+      candidateBId,
+      winnerId,
+      ratingA,
+      ratingB,
+      newRatingA: next.newRatingA,
+      newRatingB: next.newRatingB,
+      deltaA: next.deltaA,
+      deltaB: next.deltaB,
+    });
+  } catch (caught) {
+    console.error("[resend] debate resolution email threw.", caught);
+  }
 
   return {
     id: saved.id,
