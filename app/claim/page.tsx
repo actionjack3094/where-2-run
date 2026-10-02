@@ -11,7 +11,7 @@ import { normalizeEscrowStatus, officialDonationHref } from "@/lib/escrow/candid
 export const metadata: Metadata = {
   title: "Claim escrow · WHERE 2 RUN",
   description:
-    "File a Statement of Candidacy so pledged escrow can move from accumulating to verification.",
+    "File an FEC ID or state registration link so pledged escrow can move into verification.",
 };
 
 type ClaimPageProps = {
@@ -110,9 +110,9 @@ export default async function ClaimPage({ searchParams }: ClaimPageProps) {
             Claim escrow
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
-            Locked campaigns file the official committee name, the FEC or state
-            candidate ID, and a PDF of the Statement of Candidacy. Escrow stays
-            in review until that filing is confirmed.
+            File your FEC candidate ID or the state registration link for a locked
+            campaign. Escrow stays in review until a platform admin confirms the
+            filing and captures the held pledges.
           </p>
         </header>
 

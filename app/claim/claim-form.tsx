@@ -3,18 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { submitCandidacyProof } from "@/app/actions/escrow/submit-candidacy-proof";
-import { supabase } from "@/lib/db/supabase";
-import {
-  CANDIDACY_PDF_MAX_BYTES,
-  CANDIDACY_PROOF_BUCKET,
-  type EscrowStatus,
-  committeeNameError,
-  donationUrlError,
-  officialCandidateIdError,
-  officialDonationHref,
-  pdfHeaderError,
-} from "@/lib/escrow/candidacy";
+import { initiateEscrowClaim } from "@/lib/actions/escrow";
+import { type EscrowStatus, officialDonationHref } from "@/lib/escrow/candidacy";
 
 export type ClaimTarget = {
   id: string;
@@ -29,40 +19,6 @@ export type ClaimTarget = {
 const FIELD_CLASS =
   "mt-2 h-10 w-full rounded-md border border-brass/40 bg-zinc-950 px-3 text-sm text-parchment outline-none focus-visible:ring-2 focus-visible:ring-brass/50";
 
-function StatementUpload({
-  file,
-  onFile,
-}: {
-  file: File | null;
-  onFile: (file: File | null) => void;
-}) {
-  return (
-    <label className="block text-[11px] font-medium uppercase tracking-widest text-zinc-500">
-      Statement of Candidacy (PDF)
-      <input
-        type="file"
-        accept="application/pdf,.pdf"
-        onChange={(event) => onFile(event.target.files?.[0] ?? null)}
-        className="mt-2 block w-full text-sm normal-case tracking-normal text-zinc-300 file:mr-4 file:rounded-md file:border-0 file:bg-brass file:px-3 file:py-2 file:text-xs file:font-medium file:uppercase file:tracking-widest file:text-charcoal"
-      />
-      <span className="mt-2 block text-sm normal-case tracking-normal text-zinc-400">
-        {file
-          ? file.name
-          : "FEC Form 2, or the state equivalent filed with the election board."}
-      </span>
-    </label>
-  );
-}
-
-async function assertPdf(file: File) {
-  if (file.size <= 0 || file.size > CANDIDACY_PDF_MAX_BYTES) {
-    throw new Error("Attach a PDF smaller than 10 MB.");
-  }
-  const header = new Uint8Array(await file.slice(0, 5).arrayBuffer());
-  const error = pdfHeaderError(header);
-  if (error) throw new Error(error);
-}
-
 export function ClaimForm({
   targets,
   initialTargetId,
@@ -74,10 +30,7 @@ export function ClaimForm({
   const [targetId, setTargetId] = useState(
     targets.find((target) => target.id === initialTargetId)?.id ?? targets[0]?.id ?? "",
   );
-  const [committeeName, setCommitteeName] = useState("");
-  const [candidateId, setCandidateId] = useState("");
-  const [donationUrl, setDonationUrl] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  const [filing, setFiling] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,42 +40,19 @@ export function ClaimForm({
   const donationHref = officialDonationHref(selected.donationUrl);
 
   async function onSubmit() {
-    const committeeError = committeeNameError(committeeName);
-    const candidateError = officialCandidateIdError(candidateId);
-    const donateError = donationUrlError(donationUrl);
-    if (committeeError || candidateError || donateError) {
-      setError(committeeError ?? candidateError ?? donateError);
-      return;
-    }
-    if (!file) {
-      setError("Attach a PDF of the filed Statement of Candidacy.");
+    if (!filing.trim()) {
+      setError("Enter an FEC ID or a state registration link.");
       return;
     }
 
     setPending(true);
     setError(null);
     try {
-      await assertPdf(file);
-      const { data: sessionData, error: sessionError } = await supabase.auth.getUser();
-      if (sessionError) throw new Error(sessionError.message);
-      const userId = sessionData.user?.id;
-      if (!userId) throw new Error("Sign in to claim escrow.");
-
-      const path = `${userId}/${selected.id}/${crypto.randomUUID()}.pdf`;
-      const { error: uploadError } = await supabase.storage
-        .from(CANDIDACY_PROOF_BUCKET)
-        .upload(path, file, { contentType: "application/pdf", upsert: false });
-      if (uploadError) throw new Error(uploadError.message);
-
-      const { data: stored } = supabase.storage.from(CANDIDACY_PROOF_BUCKET).getPublicUrl(path);
-      await submitCandidacyProof(selected.id, candidateId, stored.publicUrl || path, {
-        committeeName,
-        donationUrl,
-      });
-      setFile(null);
+      await initiateEscrowClaim(selected.id, filing);
+      setFiling("");
       router.refresh();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not file that candidacy proof.");
+      setError(caught instanceof Error ? caught.message : "Could not file that claim.");
     } finally {
       setPending(false);
     }
@@ -192,44 +122,22 @@ export function ClaimForm({
           }}
         >
           <label className="block text-[11px] font-medium uppercase tracking-widest text-zinc-500">
-            Official campaign committee name
+            FEC ID or state registration link
             <input
-              value={committeeName}
-              onChange={(event) => setCommitteeName(event.target.value)}
-              autoComplete="organization"
-              required
-              className={FIELD_CLASS}
-            />
-          </label>
-          <label className="block text-[11px] font-medium uppercase tracking-widest text-zinc-500">
-            Government candidate ID
-            <input
-              value={candidateId}
-              onChange={(event) => setCandidateId(event.target.value)}
-              placeholder="FEC ID or state election board ID"
+              value={filing}
+              onChange={(event) => setFiling(event.target.value)}
+              placeholder="H0TX00123 or https://…"
               autoComplete="off"
               required
               className={FIELD_CLASS}
             />
           </label>
-          <label className="block text-[11px] font-medium uppercase tracking-widest text-zinc-500">
-            ActBlue or WinRed page
-            <input
-              type="url"
-              value={donationUrl}
-              onChange={(event) => setDonationUrl(event.target.value)}
-              placeholder="https://secure.actblue.com/donate/…"
-              required
-              className={FIELD_CLASS}
-            />
-          </label>
-          <StatementUpload file={file} onFile={setFile} />
           <button
             type="submit"
             disabled={pending}
             className="inline-flex h-10 items-center justify-center rounded-md bg-brass px-4 text-xs font-medium uppercase tracking-widest text-charcoal transition-colors hover:bg-brass-dark disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {pending ? "Filing proof…" : "Submit candidacy proof"}
+            {pending ? "Filing claim…" : "Claim escrow"}
           </button>
         </form>
       ) : null}

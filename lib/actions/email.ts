@@ -100,6 +100,27 @@ export async function lookupUserEmail(userId: string): Promise<string | null> {
   }
 }
 
+export async function sendEscrowClaimReviewEmail(
+  to: string,
+  data: { candidateName: string; targetId: string; filing: string; amount: number },
+) {
+  const amount = Number.isFinite(data.amount) ? data.amount : 0;
+  const candidateName = data.candidateName.trim() || "A candidate";
+  await dispatch({
+    label: "escrow claim review",
+    to,
+    subject: `Review escrow claim for ${candidateName}`,
+    react: createElement(
+      "div",
+      null,
+      createElement("p", null, `${candidateName} filed an escrow claim for review.`),
+      createElement("p", null, `Target ${data.targetId}`),
+      createElement("p", null, `Filing: ${data.filing}`),
+      createElement("p", null, `Held escrow: $${amount.toFixed(2)}`),
+    ),
+  });
+}
+
 export async function sendPledgeFundedEmail(to: string, data: PledgeFundedEmailData) {
   const amount = Number.isFinite(data.amount) ? data.amount : 0;
   const candidateName = data.candidateName.trim() || "this campaign";
