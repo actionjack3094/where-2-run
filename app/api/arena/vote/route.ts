@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUserId } from "@/lib/arena/auth";
-import { settleExpiredDebateElo } from "@/lib/arena/apply-elo";
 import { recordSpectatorVote } from "@/lib/actions/debate-votes";
 import { CIVIC_FENCE_BALLOT_ERROR } from "@/lib/civic-fencing";
 import { createAdminClient } from "@/lib/db/supabase-admin";
@@ -59,7 +58,7 @@ export async function POST(request: Request) {
     const { data: existingVote } = await admin
       .from("debate_votes")
       .select("id")
-      .eq("match_id", matchId)
+      .eq("debate_id", matchId)
       .eq("spectator_id", userId)
       .maybeSingle();
 
@@ -87,9 +86,9 @@ export async function POST(request: Request) {
     }
 
     const recorded = await recordSpectatorVote(admin, {
-      matchId,
+      debateId: matchId,
       spectatorId: userId,
-      voteForUserId: candidateId,
+      votedForUserId: candidateId,
     });
 
     if (recorded.duplicate) {
@@ -97,12 +96,6 @@ export async function POST(request: Request) {
     }
     if (recorded.error) {
       return NextResponse.json({ error: recorded.error.message }, { status: 500 });
-    }
-
-    try {
-      await settleExpiredDebateElo(admin, matchId);
-    } catch (eloError) {
-      console.error("ELO update failed after vote", eloError);
     }
 
     return NextResponse.json({ ok: true }, { status: 200 });

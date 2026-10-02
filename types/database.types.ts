@@ -256,9 +256,11 @@ export interface TournamentParticipant {
 
 export interface DebateVote {
   id: string;
-  match_id: string;
+  debate_id: string;
   spectator_id: string;
-  vote_for_user_id: string;
+  voted_for_user_id: string;
+  district_id: string | null;
+  topic_id: string | null;
   created_at: string;
 }
 
@@ -878,16 +880,9 @@ export interface Database {
       debate_votes: {
         Row: DebateVote;
         Insert: Partial<DebateVote> &
-          Pick<DebateVote, "match_id" | "spectator_id" | "vote_for_user_id">;
+          Pick<DebateVote, "debate_id" | "spectator_id" | "voted_for_user_id">;
         Update: Partial<DebateVote>;
         Relationships: [
-          {
-            foreignKeyName: "debate_votes_match_id_fkey";
-            columns: ["match_id"];
-            isOneToOne: false;
-            referencedRelation: "debates";
-            referencedColumns: ["id"];
-          },
           {
             foreignKeyName: "debate_votes_spectator_id_fkey";
             columns: ["spectator_id"];
@@ -896,8 +891,8 @@ export interface Database {
             referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "debate_votes_vote_for_user_id_fkey";
-            columns: ["vote_for_user_id"];
+            foreignKeyName: "debate_votes_voted_for_user_id_fkey";
+            columns: ["voted_for_user_id"];
             isOneToOne: false;
             referencedRelation: "users";
             referencedColumns: ["id"];

@@ -6,12 +6,24 @@ type AdminClient = SupabaseClient<AppDatabase>;
 
 export async function recordSpectatorVote(
   admin: AdminClient,
-  input: { matchId: string; spectatorId: string; voteForUserId: string },
+  input: { debateId: string; spectatorId: string; votedForUserId: string },
 ) {
+  const { data: debate, error: contextError } = await admin
+    .from("debates")
+    .select("district_id, election_question_id")
+    .eq("id", input.debateId)
+    .maybeSingle();
+
+  if (contextError && !isMissingRelation(contextError)) {
+    return { error: contextError };
+  }
+
   const { error: debateVoteError } = await admin.from("debate_votes").insert({
-    match_id: input.matchId,
+    debate_id: input.debateId,
     spectator_id: input.spectatorId,
-    vote_for_user_id: input.voteForUserId,
+    voted_for_user_id: input.votedForUserId,
+    district_id: debate?.district_id ?? null,
+    topic_id: debate?.election_question_id ?? null,
   });
 
   if (debateVoteError) {
@@ -24,9 +36,9 @@ export async function recordSpectatorVote(
   }
 
   const { error: voteError } = await admin.from("votes").insert({
-    debate_id: input.matchId,
+    debate_id: input.debateId,
     voter_id: input.spectatorId,
-    candidate_id: input.voteForUserId,
+    candidate_id: input.votedForUserId,
   });
 
   if (voteError?.code === "23505") {

@@ -1,8 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { AppealModal } from "@/components/debates/AppealModal";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import {
+  castSpectatorVote,
+  loadSpectatorTally,
+  type SpectatorTally,
+} from "@/app/actions/debate/cast-spectator-vote";
 import { BountyButton } from "@/components/debates/BountyModal";
 import { CandidateAvatar } from "@/components/profile/CandidateAvatar";
 import { Button } from "@/components/ui/button";
@@ -12,7 +16,6 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import {
-  canFileAddendum,
   confidenceThresholdCopy,
   governingEvaluation,
   MARGINAL_CONFIDENCE_MAX,
@@ -41,14 +44,12 @@ function evaluationFor(
 }
 
 export function DebateCard({ debate }: { debate: ArenaFeedDebate }) {
-  const [evaluations, setEvaluations] = useState(debate.evaluations);
-  const [appealOpen, setAppealOpen] = useState(false);
+  const evaluations = debate.evaluations;
 
   const governing = useMemo(
     () => governingEvaluation(evaluations),
     [evaluations],
   );
-  const appealReady = canFileAddendum(governing);
   const threshold = confidenceThresholdCopy(
     governing?.confidence_score,
     Boolean(governing),
@@ -131,23 +132,8 @@ export function DebateCard({ debate }: { debate: ArenaFeedDebate }) {
           candidateA={debate.candidateA}
           candidateB={debate.candidateB}
           electionId={debate.districtId}
-          appealReady={appealReady}
-          onAppeal={() => setAppealOpen(true)}
         />
       </CardContent>
-
-      {appealOpen && governing ? (
-        <AppealModal
-          evaluation={governing}
-          onClose={() => setAppealOpen(false)}
-          onSettled={(next) => {
-            setEvaluations((current) =>
-              current.map((row) => (row.id === next.id ? next : row)),
-            );
-            setAppealOpen(false);
-          }}
-        />
-      ) : null}
     </Card>
   );
 }
@@ -246,7 +232,7 @@ function ConfidenceMeter({
       </div>
       <div className="mt-1 flex justify-between font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
         <span>0.00</span>
-        <span>{MARGINAL_CONFIDENCE_MIN.toFixed(2)} jury</span>
+        <span>{MARGINAL_CONFIDENCE_MIN.toFixed(2)} band</span>
         <span>0.90 lock</span>
         <span>1.00</span>
       </div>
@@ -259,24 +245,96 @@ function PledgeActionRow({
   candidateA,
   candidateB,
   electionId,
-  appealReady,
-  onAppeal,
 }: {
   debateId: string;
   candidateA: ArenaFeedCandidate | null;
   candidateB: ArenaFeedCandidate | null;
   electionId: string | null;
-  appealReady: boolean;
-  onAppeal: () => void;
 }) {
   const seated = [candidateA, candidateB].filter(
     (candidate): candidate is ArenaFeedCandidate => Boolean(candidate),
   );
   const [pickedId, setPickedId] = useState(seated[0]?.id ?? "");
   const winner = seated.find((candidate) => candidate.id === pickedId) ?? seated[0] ?? null;
+  const [tally, setTally] = useState<SpectatorTally>({
+    votesA: 0,
+    votesB: 0,
+    margin: 0,
+  });
+  const [voteError, setVoteError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  useEffect(() => {
+    let cancelled = false;
+    loadSpectatorTally(debateId)
+      .then((next) => {
+        if (!cancelled) setTally(next);
+      })
+      .catch(() => {
+        if (!cancelled) setVoteError("Could not load spectator votes.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [debateId]);
+
+  function voteFor(candidateId: string) {
+    setVoteError(null);
+    startTransition(async () => {
+      try {
+        const next = await castSpectatorVote(debateId, candidateId);
+        setTally(next);
+      } catch (caught) {
+        setVoteError(caught instanceof Error ? caught.message : "Could not record that vote.");
+      }
+    });
+  }
+
+  const shareA = tally.votesA + tally.votesB === 0
+    ? 0
+    : Math.round((tally.votesA / (tally.votesA + tally.votesB)) * 100);
 
   return (
     <div className="flex flex-col gap-3 border-t border-primary/20 pt-4">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-primary">
+          Spectator vote
+        </p>
+        <p className="font-mono text-xs tabular-nums text-muted-foreground">
+          {tally.votesA}–{tally.votesB}
+          {tally.votesA + tally.votesB > 0 ? ` · ${shareA}/${100 - shareA} · margin ${(tally.margin * 100).toFixed(0)}%` : ""}
+        </p>
+      </div>
+      {candidateA && candidateB ? (
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={pending}
+            onClick={() => voteFor(candidateA.id)}
+          >
+            Vote {candidateA.username}
+            <span className="ml-2 tabular-nums">{tally.votesA}</span>
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={pending}
+            onClick={() => voteFor(candidateB.id)}
+          >
+            Vote {candidateB.username}
+            <span className="ml-2 tabular-nums">{tally.votesB}</span>
+          </Button>
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Seats are still open. Spectator voting starts when both debaters are seated.
+        </p>
+      )}
+      {voteError ? <p className="text-xs text-muted-foreground">{voteError}</p> : null}
+
       <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-primary">
         Escrow the winner
       </p>
@@ -314,21 +372,6 @@ function PledgeActionRow({
             Seats are still open. Pledges unlock when a candidate is on the ticket.
           </p>
         )}
-        <Button
-          type="button"
-          variant="outline"
-          size="lg"
-          className="w-full shrink-0 sm:w-auto"
-          disabled={!appealReady}
-          title={
-            appealReady
-              ? "File a 150-word clarification addendum"
-              : `Unlocks when AI confidence is between ${MARGINAL_CONFIDENCE_MIN.toFixed(2)} and ${MARGINAL_CONFIDENCE_MAX.toFixed(2)}`
-          }
-          onClick={onAppeal}
-        >
-          Appeal to Local Jury
-        </Button>
       </div>
     </div>
   );
