@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireActionUserId } from "@/lib/arena/auth";
-import { judgeArenaExchange } from "@/lib/ai/judge";
+import { acceptDebateChallenge, submitRebuttal } from "@/lib/actions/debates";
 import { coordinateFromAnswers } from "@/lib/platform/questions";
 import {
   loadArenaById,
@@ -17,7 +17,6 @@ import { partyFromCoordinate } from "@/lib/platform/scoring";
 import type { PublicJudgment } from "@/lib/platform/types";
 import type { Primary } from "@/types/database.types";
 
-const SEAT_MS = 24 * 60 * 60 * 1000;
 const STANCE_MIN = 20;
 const STANCE_MAX = 2000;
 const PROMPT_MIN = 12;
@@ -145,70 +144,14 @@ export async function challengeSeat(
   _prev: PlatformFormState,
   formData: FormData,
 ): Promise<PlatformFormState> {
-  try {
-    const session = await signedIn();
-    if (!session.userId || !session.admin) return { error: session.error ?? "Sign in to continue." };
-    if (!ready(session.profile)) return { error: "Finish the ideology diagnostic first." };
-    const debate = await loadArenaById(session.admin, String(formData.get("debateId") ?? ""));
-    if (!debate || debate.status !== "open_challenge" || debate.candidate_b_id) {
-      return { error: "That seat is no longer open." };
-    }
-    if (debate.candidate_a_id === session.userId) return { error: "You cannot challenge your own stance." };
-    const primary = await primaryForDebate(session.admin, debate.primary_id);
-    if (!primary) return { error: "That primary is not on the board." };
-    if (partyOf(session.profile) !== primary.party) {
-      return { error: "Challenges stay inside the party." };
-    }
-    const lock = new Date(Date.now() + SEAT_MS).toISOString();
-    const { error } = await session.admin
-      .from("arena_debates")
-      .update({
-        candidate_b_id: session.userId,
-        status: "active",
-        seat_locked_until: lock,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", debate.id)
-      .eq("status", "open_challenge");
-    if (error) return { error: error.message };
-    await session.admin.from("debate_prompts").update({ status: "locked" }).eq("id", debate.prompt_id);
-    refresh();
-    return { message: "Seat locked for 24 hours. File your rebuttal before it expires." };
-  } catch (caught) {
-    return { error: caught instanceof Error ? caught.message : "Could not lock that seat." };
-  }
+  return acceptDebateChallenge(String(formData.get("debateId") ?? ""));
 }
 
 export async function fileRebuttal(
   _prev: PlatformFormState,
   formData: FormData,
 ): Promise<PlatformFormState> {
-  try {
-    const session = await signedIn();
-    if (!session.userId || !session.admin) return { error: session.error ?? "Sign in to continue." };
-    const debate = await loadArenaById(session.admin, String(formData.get("debateId") ?? ""));
-    if (!debate || debate.status !== "active") return { error: "That seat is not waiting on a rebuttal." };
-    if (debate.candidate_b_id !== session.userId) return { error: "Only the challenger files the rebuttal." };
-    const lock = debate.seat_locked_until ? Date.parse(debate.seat_locked_until) : NaN;
-    if (!Number.isFinite(lock) || lock <= Date.now()) {
-      return { error: "The 24-hour lock has expired." };
-    }
-    const stance = String(formData.get("stance") ?? "").trim();
-    if (stance.length < STANCE_MIN || stance.length > STANCE_MAX) {
-      return { error: "The rebuttal needs at least a short paragraph." };
-    }
-    const { error } = await session.admin
-      .from("arena_debates")
-      .update({ stance_b: stance, updated_at: new Date().toISOString() })
-      .eq("id", debate.id)
-      .eq("candidate_b_id", session.userId);
-    if (error) return { error: error.message };
-    const judged = await judgeArenaExchange(debate.id);
-    refresh();
-    return { judgment: judged.b, message: "The exchange is closed." };
-  } catch (caught) {
-    return { error: caught instanceof Error ? caught.message : "Could not file that rebuttal." };
-  }
+  return submitRebuttal(String(formData.get("debateId") ?? ""), String(formData.get("stance") ?? ""));
 }
 
 async function ballotDebate(admin: PlatformAdmin, userId: string, debateId: string) {

@@ -5,9 +5,11 @@ import {
   eloDelta,
   euclidean,
   matchPrimaries,
+  movingAverageDrift,
   partyFromCoordinate,
   percentileRank,
   tierForStanding,
+  withinAdherencePoints,
   withinTieMargin,
 } from "@/lib/platform/scoring";
 import { coordinateFromAnswers } from "@/lib/platform/questions";
@@ -25,6 +27,12 @@ describe("platform scoring", () => {
   it("ties a margin at or under 3 percent", () => {
     expect(withinTieMargin(0.9, 0.92)).toBe(true);
     expect(withinTieMargin(0.5, 0.7)).toBe(false);
+  });
+
+  it("ties adherence scores within 3 points and drifts 10 percent toward the plotted stance", () => {
+    expect(withinAdherencePoints(80, 83)).toBe(true);
+    expect(withinAdherencePoints(80, 83.01)).toBe(false);
+    expect(movingAverageDrift({ x: 0, y: 0 }, { x: 1, y: -1 })).toEqual({ x: 0.1, y: -0.1 });
   });
 
   it("moves Elo toward the result and ignores the opponent when drifting", () => {

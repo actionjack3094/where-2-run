@@ -9,6 +9,7 @@ export const DEFAULT_ELO = 1200;
 export const ELO_K = 32;
 export const ELO_FLOOR = 100;
 export const TIE_MARGIN = 0.03;
+export const ADHERENCE_TIE_POINTS = 3;
 export const DRIFT_GAIN = 0.12;
 
 /** Widen until a party primary has an open seat. The last step covers the whole plane. */
@@ -58,6 +59,12 @@ export function withinTieMargin(scoreA: number, scoreB: number): boolean {
   return Math.abs(scoreA - scoreB) / scale <= TIE_MARGIN;
 }
 
+/** Adherence is scored 0–100. A gap of 3 points or less is a tie. */
+export function withinAdherencePoints(scoreA: number, scoreB: number): boolean {
+  if (!Number.isFinite(scoreA) || !Number.isFinite(scoreB)) return false;
+  return Math.abs(scoreA - scoreB) <= ADHERENCE_TIE_POINTS;
+}
+
 export function expectedScore(rating: number, opponent: number): number {
   return 1 / (1 + 10 ** ((opponent - rating) / 400));
 }
@@ -75,6 +82,17 @@ export function nextElo(rating: number, delta: number): number {
  * `samples` is how many debates they had already finished.
  * The opponent's score is not an argument.
  */
+/**
+ * 10% moving average toward this debater's own plotted stance.
+ * `new = old * 0.9 + match * 0.1` on each axis.
+ */
+export function movingAverageDrift(current: AxisPoint, matchPoint: AxisPoint): AxisPoint {
+  return {
+    x: clampAxis(current.x * 0.9 + clampAxis(matchPoint.x) * 0.1),
+    y: clampAxis(current.y * 0.9 + clampAxis(matchPoint.y) * 0.1),
+  };
+}
+
 export function driftCoordinate(
   current: AxisPoint,
   baseline: AxisPoint,

@@ -1,14 +1,13 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import {
-  challengeSeat,
   commentOnMatch,
-  fileRebuttal,
   likeMatch,
   postOpening,
   type PlatformFormState,
 } from "@/app/actions/platform";
+import { acceptDebateChallenge, submitRebuttal } from "@/lib/actions/debates";
 import { Button } from "@/components/ui/button";
 import { formatCoordinate, type PublicJudgment } from "@/lib/platform/types";
 
@@ -63,29 +62,56 @@ export function OpeningForm({ primaryId }: { primaryId: string }) {
 }
 
 export function ChallengeForm({ debateId }: { debateId: string }) {
-  const [state, action, pending] = useActionState(challengeSeat, null);
+  const [state, action, pending] = useActionState(
+    async () => acceptDebateChallenge(debateId),
+    null,
+  );
   return (
     <form action={action}>
-      <input type="hidden" name="debateId" value={debateId} />
       <Button type="submit" variant="gold" disabled={pending}>
-        {pending ? "Locking…" : "Challenge (24hr lock)"}
+        {pending ? "Locking…" : "Accept Challenge"}
       </Button>
       <Status state={state} />
     </form>
   );
 }
 
+function formatLock(remainingMs: number) {
+  if (remainingMs <= 0) return "The 24-hour lock has expired.";
+  const total = Math.floor(remainingMs / 1000);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `Seat locked · ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+}
+
+export function SeatLockCountdown({ until }: { until: string }) {
+  const [label, setLabel] = useState("Seat locked");
+  useEffect(() => {
+    const tick = () => setLabel(formatLock(Date.parse(until) - Date.now()));
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [until]);
+  return <p className="text-sm text-zinc-400">{label}</p>;
+}
+
 export function RebuttalForm({ debateId }: { debateId: string }) {
-  const [state, action, pending] = useActionState(fileRebuttal, null);
+  const [state, action, pending] = useActionState(
+    async (_prev: PlatformFormState, formData: FormData) =>
+      submitRebuttal(debateId, String(formData.get("stance") ?? "")),
+    null,
+  );
   return (
     <form action={action} className="mt-4 grid gap-3">
-      <input type="hidden" name="debateId" value={debateId} />
       <label className="grid gap-2 text-sm text-zinc-300">
         Rebuttal
         <textarea
           name="stance"
           required
           minLength={20}
+          maxLength={2000}
           rows={5}
           className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-parchment"
         />
@@ -95,6 +121,31 @@ export function RebuttalForm({ debateId }: { debateId: string }) {
       </Button>
       <Status state={state} />
     </form>
+  );
+}
+
+export function LockedSeat({
+  debateId,
+  until,
+  isHolder,
+}: {
+  debateId: string;
+  until: string;
+  isHolder: boolean;
+}) {
+  const [remaining, setRemaining] = useState<number | null>(null);
+  useEffect(() => {
+    const tick = () => setRemaining(Date.parse(until) - Date.now());
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [until]);
+  const open = remaining == null || remaining > 0;
+  return (
+    <div className="mt-4">
+      <SeatLockCountdown until={until} />
+      {isHolder && open ? <RebuttalForm debateId={debateId} /> : null}
+    </div>
   );
 }
 

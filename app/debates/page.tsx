@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChallengeForm, RebuttalForm } from "@/components/platform/ArenaForms";
+import { ChallengeForm, LockedSeat } from "@/components/platform/ArenaForms";
 import { isMissingSchema } from "@/lib/db/schema-errors";
 import { getServerUser } from "@/lib/db/supabase-server";
 import { ensureColdStart } from "@/lib/platform/cold-start";
@@ -110,16 +110,17 @@ export default async function DebatesPage(props: { searchParams: Promise<{ filed
                 </p>
                 <p className="mt-2 text-sm leading-6 text-zinc-300">{card.stanceA}</p>
                 {card.sideB ? (
-                  <p className="mt-4 text-sm text-zinc-400">
-                    Challenged by {card.sideB.name}
-                    {card.seatLockedUntil
-                      ? ` · locked until ${new Date(card.seatLockedUntil).toLocaleString()}`
-                      : ""}
-                  </p>
+                  <p className="mt-4 text-sm text-zinc-400">Challenged by {card.sideB.name}</p>
                 ) : null}
                 <div className="mt-5">
                   {!locked && !mine && user ? <ChallengeForm debateId={card.id} /> : null}
-                  {locked && challenger ? <RebuttalForm debateId={card.id} /> : null}
+                  {locked && card.seatLockedUntil ? (
+                    <LockedSeat
+                      debateId={card.id}
+                      until={card.seatLockedUntil}
+                      isHolder={challenger}
+                    />
+                  ) : null}
                   {mine && !locked ? (
                     <p className="text-sm text-zinc-400">Waiting on an intra-party challenge.</p>
                   ) : null}
