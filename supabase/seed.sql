@@ -1421,3 +1421,477 @@ select u.id, 'e1ec0001-0037-4000-8000-000000000037'::uuid, 'exploring', 2
 from public.users u
 where u.username = 'runner-a1dd76-5aa4'
 on conflict (user_id, election_id) do nothing;
+
+-- Platform arena. Economic axis is ideology_x (below 0 Democrat, otherwise
+-- Republican). Social axis is ideology_y. Each bot sits next to one primary
+-- so matchmaking has an open seat in that region of the plane.
+--
+--   tx-senate-dem   -0.34,  0.12   James Harlan, Blue Dog
+--   tx-senate-rep    0.30,  0.18   Helen Cartwright, Moderate Republican
+--   ny-mayor-dem    -0.86, -0.70   Alicia Moreno, Progressive
+--   fl-governor-rep  0.86,  0.72   Travis Boone, MAGA
+--
+-- Sign-in for these four accounts is the same local password: seed-local-dev.
+
+insert into public.primaries (
+  id,
+  party,
+  office_name,
+  state,
+  district,
+  ocd_id,
+  baseline_x,
+  baseline_y,
+  slug,
+  general_slug
+)
+values
+  (
+    'b71a0001-0001-4000-8000-000000000001',
+    'democrat',
+    'U.S. Senate',
+    'TX',
+    null,
+    'ocd-division/country:us/state:tx',
+    -0.34,
+    0.12,
+    'tx-senate-dem',
+    'tx-senate'
+  ),
+  (
+    'b71a0001-0002-4000-8000-000000000002',
+    'republican',
+    'U.S. Senate',
+    'TX',
+    null,
+    'ocd-division/country:us/state:tx',
+    0.30,
+    0.18,
+    'tx-senate-rep',
+    'tx-senate'
+  ),
+  (
+    'b71a0001-0003-4000-8000-000000000003',
+    'democrat',
+    'New York City Mayor',
+    'NY',
+    null,
+    'ocd-division/country:us/state:ny/place:new_york',
+    -0.86,
+    -0.70,
+    'ny-mayor-dem',
+    'ny-mayor'
+  ),
+  (
+    'b71a0001-0004-4000-8000-000000000004',
+    'republican',
+    'Governor',
+    'FL',
+    null,
+    'ocd-division/country:us/state:fl',
+    0.86,
+    0.72,
+    'fl-governor-rep',
+    'fl-governor'
+  )
+on conflict (slug) do update
+set
+  party = excluded.party,
+  office_name = excluded.office_name,
+  state = excluded.state,
+  district = excluded.district,
+  ocd_id = excluded.ocd_id,
+  baseline_x = excluded.baseline_x,
+  baseline_y = excluded.baseline_y,
+  general_slug = excluded.general_slug;
+
+insert into auth.users (
+  instance_id,
+  id,
+  aud,
+  role,
+  email,
+  encrypted_password,
+  email_confirmed_at,
+  raw_app_meta_data,
+  raw_user_meta_data,
+  created_at,
+  updated_at,
+  confirmation_token,
+  email_change,
+  email_change_token_new,
+  recovery_token,
+  is_sso_user,
+  is_anonymous
+)
+values
+  (
+    '00000000-0000-0000-0000-000000000000',
+    'b07a0001-0001-4000-8000-000000000001',
+    'authenticated',
+    'authenticated',
+    'alicia.moreno@seed.where2run.local',
+    extensions.crypt('seed-local-dev', extensions.gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"full_name":"Alicia Moreno"}'::jsonb,
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    '',
+    false,
+    false
+  ),
+  (
+    '00000000-0000-0000-0000-000000000000',
+    'b07a0001-0002-4000-8000-000000000002',
+    'authenticated',
+    'authenticated',
+    'james.harlan@seed.where2run.local',
+    extensions.crypt('seed-local-dev', extensions.gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"full_name":"James Harlan"}'::jsonb,
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    '',
+    false,
+    false
+  ),
+  (
+    '00000000-0000-0000-0000-000000000000',
+    'b07a0001-0003-4000-8000-000000000003',
+    'authenticated',
+    'authenticated',
+    'travis.boone@seed.where2run.local',
+    extensions.crypt('seed-local-dev', extensions.gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"full_name":"Travis Boone"}'::jsonb,
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    '',
+    false,
+    false
+  ),
+  (
+    '00000000-0000-0000-0000-000000000000',
+    'b07a0001-0004-4000-8000-000000000004',
+    'authenticated',
+    'authenticated',
+    'helen.cartwright@seed.where2run.local',
+    extensions.crypt('seed-local-dev', extensions.gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"full_name":"Helen Cartwright"}'::jsonb,
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    '',
+    false,
+    false
+  )
+on conflict (id) do nothing;
+
+insert into auth.identities (
+  id,
+  user_id,
+  identity_data,
+  provider,
+  provider_id,
+  last_sign_in_at,
+  created_at,
+  updated_at
+)
+values
+  (
+    'b07a0001-0001-4000-8000-000000000001',
+    'b07a0001-0001-4000-8000-000000000001',
+    '{"sub":"b07a0001-0001-4000-8000-000000000001","email":"alicia.moreno@seed.where2run.local"}'::jsonb,
+    'email',
+    'alicia.moreno@seed.where2run.local',
+    now(),
+    now(),
+    now()
+  ),
+  (
+    'b07a0001-0002-4000-8000-000000000002',
+    'b07a0001-0002-4000-8000-000000000002',
+    '{"sub":"b07a0001-0002-4000-8000-000000000002","email":"james.harlan@seed.where2run.local"}'::jsonb,
+    'email',
+    'james.harlan@seed.where2run.local',
+    now(),
+    now(),
+    now()
+  ),
+  (
+    'b07a0001-0003-4000-8000-000000000003',
+    'b07a0001-0003-4000-8000-000000000003',
+    '{"sub":"b07a0001-0003-4000-8000-000000000003","email":"travis.boone@seed.where2run.local"}'::jsonb,
+    'email',
+    'travis.boone@seed.where2run.local',
+    now(),
+    now(),
+    now()
+  ),
+  (
+    'b07a0001-0004-4000-8000-000000000004',
+    'b07a0001-0004-4000-8000-000000000004',
+    '{"sub":"b07a0001-0004-4000-8000-000000000004","email":"helen.cartwright@seed.where2run.local"}'::jsonb,
+    'email',
+    'helen.cartwright@seed.where2run.local',
+    now(),
+    now(),
+    now()
+  )
+on conflict (id) do nothing;
+
+-- The signup trigger inserts a bare profile. Hand the synthetic key to these
+-- stable ids if a previous cold start claimed it.
+update public.profiles
+set synthetic_key = null, updated_at = now()
+where synthetic_key in ('progressive', 'blue-dog', 'maga', 'moderate')
+  and id not in (
+    'b07a0001-0001-4000-8000-000000000001',
+    'b07a0001-0002-4000-8000-000000000002',
+    'b07a0001-0003-4000-8000-000000000003',
+    'b07a0001-0004-4000-8000-000000000004'
+  );
+
+insert into public.profiles (
+  id,
+  email,
+  full_name,
+  display_name,
+  legal_name,
+  ideology_x,
+  ideology_y,
+  onboarding_completed,
+  is_verified,
+  is_synthetic,
+  synthetic_key,
+  candidate_tier,
+  updated_at
+)
+values
+  (
+    'b07a0001-0001-4000-8000-000000000001',
+    'alicia.moreno@seed.where2run.local',
+    'Alicia Moreno',
+    'Alicia Moreno',
+    'Alicia Moreno',
+    -0.82,
+    -0.66,
+    true,
+    true,
+    true,
+    'progressive',
+    'pundit',
+    now()
+  ),
+  (
+    'b07a0001-0002-4000-8000-000000000002',
+    'james.harlan@seed.where2run.local',
+    'James Harlan',
+    'James Harlan',
+    'James Harlan',
+    -0.30,
+    0.16,
+    true,
+    true,
+    true,
+    'blue-dog',
+    'pundit',
+    now()
+  ),
+  (
+    'b07a0001-0003-4000-8000-000000000003',
+    'travis.boone@seed.where2run.local',
+    'Travis Boone',
+    'Travis Boone',
+    'Travis Boone',
+    0.82,
+    0.68,
+    true,
+    true,
+    true,
+    'maga',
+    'pundit',
+    now()
+  ),
+  (
+    'b07a0001-0004-4000-8000-000000000004',
+    'helen.cartwright@seed.where2run.local',
+    'Helen Cartwright',
+    'Helen Cartwright',
+    'Helen Cartwright',
+    0.26,
+    0.14,
+    true,
+    true,
+    true,
+    'moderate',
+    'pundit',
+    now()
+  )
+on conflict (id) do update
+set
+  email = excluded.email,
+  full_name = excluded.full_name,
+  display_name = excluded.display_name,
+  legal_name = excluded.legal_name,
+  ideology_x = excluded.ideology_x,
+  ideology_y = excluded.ideology_y,
+  onboarding_completed = excluded.onboarding_completed,
+  is_verified = excluded.is_verified,
+  is_synthetic = excluded.is_synthetic,
+  synthetic_key = excluded.synthetic_key,
+  candidate_tier = excluded.candidate_tier,
+  updated_at = now();
+
+-- Open questions. The Debates feed reads arena_debates, so each prompt also
+-- gets an open_challenge seat with no challenger yet.
+insert into public.debate_prompts (
+  id,
+  primary_id,
+  author_id,
+  author_kind,
+  prompt_text,
+  stance_text,
+  ideology_x,
+  ideology_y,
+  status
+)
+select
+  v.id,
+  p.id,
+  v.author_id,
+  'ai',
+  v.prompt_text,
+  v.stance_text,
+  v.ideology_x,
+  v.ideology_y,
+  'open'
+from (
+  values
+    (
+      'd3b70001-0001-4000-8000-000000000001'::uuid,
+      'tx-senate-dem',
+      'b07a0001-0002-4000-8000-000000000002'::uuid,
+      'Should the Democratic nominee for U.S. Senate in Texas campaign on a public option and a secure border?',
+      'I want a Democratic primary that can win suburban counties: a public option, a secure border, and a narrow path to legal status.',
+      -0.30::double precision,
+      0.16::double precision
+    ),
+    (
+      'd3b70001-0002-4000-8000-000000000002'::uuid,
+      'tx-senate-rep',
+      'b07a0001-0004-4000-8000-000000000004'::uuid,
+      'Should the Republican nominee for U.S. Senate in Texas cut taxes for small employers and leave abortion policy to the states?',
+      'I want lower taxes for small employers, a secure border, and abortion policy left to the states.',
+      0.26::double precision,
+      0.14::double precision
+    ),
+    (
+      'd3b70001-0003-4000-8000-000000000003'::uuid,
+      'ny-mayor-dem',
+      'b07a0001-0001-4000-8000-000000000001'::uuid,
+      'Should the Democratic nominee for mayor of New York City replace private insurance for city workers with a public plan?',
+      'I want a public health plan for city workers, sector-wide bargaining, and civil-rights rules the city actually enforces.',
+      -0.82::double precision,
+      -0.66::double precision
+    ),
+    (
+      'd3b70001-0004-4000-8000-000000000004'::uuid,
+      'fl-governor-rep',
+      'b07a0001-0003-4000-8000-000000000003'::uuid,
+      'Should the Republican nominee for governor of Florida cut the state budget and set traditional standards in public schools?',
+      'I want deep spending cuts, traditional standards in public schools, and a much smaller state code.',
+      0.82::double precision,
+      0.68::double precision
+    )
+) as v(id, slug, author_id, prompt_text, stance_text, ideology_x, ideology_y)
+join public.primaries p on p.slug = v.slug
+on conflict (id) do update
+set
+  primary_id = excluded.primary_id,
+  author_id = excluded.author_id,
+  author_kind = excluded.author_kind,
+  prompt_text = excluded.prompt_text,
+  stance_text = excluded.stance_text,
+  ideology_x = excluded.ideology_x,
+  ideology_y = excluded.ideology_y,
+  status = excluded.status;
+
+insert into public.arena_debates (
+  id,
+  primary_id,
+  prompt_id,
+  candidate_a_id,
+  stance_a,
+  status
+)
+select
+  v.id,
+  p.id,
+  v.prompt_id,
+  v.author_id,
+  v.stance_text,
+  'open_challenge'
+from (
+  values
+    (
+      'a4e40001-0001-4000-8000-000000000001'::uuid,
+      'd3b70001-0001-4000-8000-000000000001'::uuid,
+      'tx-senate-dem',
+      'b07a0001-0002-4000-8000-000000000002'::uuid,
+      'I want a Democratic primary that can win suburban counties: a public option, a secure border, and a narrow path to legal status.'
+    ),
+    (
+      'a4e40001-0002-4000-8000-000000000002'::uuid,
+      'd3b70001-0002-4000-8000-000000000002'::uuid,
+      'tx-senate-rep',
+      'b07a0001-0004-4000-8000-000000000004'::uuid,
+      'I want lower taxes for small employers, a secure border, and abortion policy left to the states.'
+    ),
+    (
+      'a4e40001-0003-4000-8000-000000000003'::uuid,
+      'd3b70001-0003-4000-8000-000000000003'::uuid,
+      'ny-mayor-dem',
+      'b07a0001-0001-4000-8000-000000000001'::uuid,
+      'I want a public health plan for city workers, sector-wide bargaining, and civil-rights rules the city actually enforces.'
+    ),
+    (
+      'a4e40001-0004-4000-8000-000000000004'::uuid,
+      'd3b70001-0004-4000-8000-000000000004'::uuid,
+      'fl-governor-rep',
+      'b07a0001-0003-4000-8000-000000000003'::uuid,
+      'I want deep spending cuts, traditional standards in public schools, and a much smaller state code.'
+    )
+) as v(id, prompt_id, slug, author_id, stance_text)
+join public.primaries p on p.slug = v.slug
+on conflict (id) do update
+set
+  primary_id = excluded.primary_id,
+  prompt_id = excluded.prompt_id,
+  candidate_a_id = excluded.candidate_a_id,
+  candidate_b_id = null,
+  stance_a = excluded.stance_a,
+  stance_b = null,
+  seat_locked_until = null,
+  status = 'open_challenge',
+  winner_id = null,
+  is_tie = false,
+  candidate_a_score = null,
+  candidate_b_score = null,
+  updated_at = now();
