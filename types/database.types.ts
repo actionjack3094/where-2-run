@@ -22,6 +22,7 @@ export type DebateStatus =
   | "matching"
   | "in_progress"
   | "active"
+  | "live"
   | "voting"
   | "concluded"
   | "completed"

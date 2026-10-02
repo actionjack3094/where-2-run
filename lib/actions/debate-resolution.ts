@@ -1,5 +1,5 @@
 import { calculateDebateElo } from "@/lib/actions/elo";
-import { evaluateDebateTranscript } from "@/lib/ai/judge";
+import { evaluateDebateTranscript, type DebateVerdict } from "@/lib/ai/judge";
 import { lookupUserEmail } from "@/lib/actions/email";
 import { parseElo } from "@/lib/arena/elo";
 import { normalizeOcdId } from "@/lib/civic-fencing";
@@ -437,6 +437,7 @@ async function emailResolvedDebaters(
  */
 export async function resolveDebateWithTally(
   debateId: string,
+  preparedVerdict?: DebateVerdict | null,
 ): Promise<DebateResolution | null> {
   const admin = createAdminClient();
 
@@ -463,7 +464,7 @@ export async function resolveDebateWithTally(
   let judgeReasoning: string | null = null;
 
   if (!debate.winner_id) {
-    const verdict = await evaluateDebateTranscript(debate.id);
+    const verdict = preparedVerdict ?? (await evaluateDebateTranscript(debate.id));
     judgeReasoning = verdict.judge_reasoning;
     winnerId =
       verdict.winner_id === candidateAId || verdict.winner_id === candidateBId
