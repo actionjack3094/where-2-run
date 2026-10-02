@@ -36,7 +36,9 @@ export function CandidateProfile({
   const selected = lockedTargets.find((target) => target.id === targetId) ?? lockedTargets[0];
   const pledged = balances[selected.id] ?? selected.pledgedEscrow;
   const donationHref = officialDonationHref(selected.donationUrl);
-  const canClaim = viewingOwnProfile && pledged > 0 && selected.escrowStatus !== "released";
+  const showPledge = !viewingOwnProfile && selected.escrowStatus === "accumulating";
+  const showClaim = viewingOwnProfile && pledged > 0 && selected.escrowStatus === "accumulating";
+  const showDonate = selected.escrowStatus === "released";
 
   async function pledge() {
     const dollars = Number(amount);
@@ -65,7 +67,7 @@ export function CandidateProfile({
         Escrow wallet
       </p>
       <h2 className="mt-2 font-display text-xl font-semibold tracking-tight text-parchment">
-        {selected.escrowStatus === "released" ? "Donate" : "Pledge to Campaign"}
+        {showDonate ? "Donate" : "Escrow"}
       </h2>
       <p className="mt-2 text-sm leading-6 text-zinc-400">
         {candidateName} has locked {selected.label}. Escrow on this race is ${pledged.toFixed(2)}.
@@ -91,9 +93,9 @@ export function CandidateProfile({
           </select>
         </label>
       ) : null}
-      {selected.escrowStatus === "accumulating" || selected.escrowStatus === "released" || canClaim ? (
+      {showPledge || showDonate || showClaim ? (
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
-          {selected.escrowStatus === "accumulating" ? (
+          {showPledge ? (
             <>
               <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
                 Amount
@@ -117,7 +119,7 @@ export function CandidateProfile({
               </button>
             </>
           ) : null}
-          {selected.escrowStatus === "released" && donationHref ? (
+          {showDonate && donationHref ? (
             <a
               href={donationHref}
               target="_blank"
@@ -127,9 +129,9 @@ export function CandidateProfile({
               Donate
             </a>
           ) : null}
-          {canClaim ? (
+          {showClaim ? (
             <Link
-              href={`/claim?target=${selected.id}`}
+              href="/claim"
               className="inline-flex h-10 items-center justify-center rounded-md border border-brass/50 px-4 text-xs font-medium uppercase tracking-widest text-parchment transition-colors hover:border-brass hover:text-brass"
             >
               Claim Escrow

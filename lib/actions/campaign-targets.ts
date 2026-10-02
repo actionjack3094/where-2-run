@@ -238,3 +238,50 @@ export async function declareCandidacy(electionId: string): Promise<DeclareCandi
     return { ok: false, error: "We couldn't declare that race. Please try again." };
   }
 }
+
+const TARGET_UNLOCK_STREAK = 10;
+
+/**
+ * Lock one exploring race once its alignment streak reaches 10.
+ * Sets `campaign_targets.is_locked` for the signed-in candidate.
+ */
+export async function lockCampaignTarget(electionId: string) {
+  if (!isUuid(electionId)) throw new Error("Choose a valid race to target.");
+
+  const userId = await requireActionUserId();
+  if (!userId) throw new Error("Sign in to target a race.");
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("campaign_targets")
+    .select("id, alignment_streak, is_locked")
+    .eq("user_id", userId)
+    .eq("election_id", electionId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+
+  const target = data as {
+    id: string;
+    alignment_streak: number | null;
+    is_locked: boolean | null;
+  } | null;
+  if (!target) throw new Error("Declare this race before locking it.");
+  if ((target.alignment_streak ?? 0) < TARGET_UNLOCK_STREAK) {
+    throw new Error("Survive 10 ideological challenges to unlock targeting");
+  }
+  if (target.is_locked) return { locked: true as const };
+
+  const { error: updateError } = await admin
+    .from("campaign_targets")
+    .update({ is_locked: true })
+    .eq("id", target.id)
+    .eq("user_id", userId);
+
+  if (updateError) throw new Error(updateError.message);
+
+  revalidatePath("/profile");
+  revalidatePath(`/candidate/${userId}`);
+  revalidatePath("/leaderboards");
+  return { locked: true as const };
+}

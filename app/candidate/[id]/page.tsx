@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { cache } from "react";
 import { CandidateProfile, type LockedCampaignTarget } from "@/app/components/CandidateProfile";
+import { TargetRaceButton } from "@/app/components/TargetRaceButton";
 import { type PledgeRaceOption } from "@/app/components/PledgeModal";
 import { DebateHistory, type MatchOutcome, type ProfileMatch } from "@/components/candidate/DebateHistory";
 import { EscrowTracker } from "@/components/candidate/EscrowTracker";
@@ -25,6 +26,7 @@ import { isMissingSchema } from "@/lib/db/schema-errors";
 import { createServerSupabase, getServerUser } from "@/lib/db/supabase-server";
 import { normalizeEscrowStatus, officialDonationHref } from "@/lib/escrow/candidacy";
 import { formatRecord, recordFromStats } from "@/lib/leaderboard";
+import { resolveHomeLeaderboardElection } from "@/lib/queries/leaderboard";
 
 type CandidatePageProps = {
   params: Promise<{ id: string }>;
@@ -394,6 +396,47 @@ async function loadPledgeRaces(candidateId: string): Promise<PledgeRaceOption[]>
   }
 }
 
+async function loadOwnTargetRaces(userId: string) {
+  try {
+    const admin = createAdminClient();
+    const { data: targets, error } = await admin
+      .from("campaign_targets")
+      .select("election_id")
+      .eq("user_id", userId);
+    if (error && !isMissingRelation(error) && !isMissingSchema(error)) return [];
+
+    let electionIds = [
+      ...new Set(
+        ((targets ?? []) as { election_id: string }[])
+          .map((row) => row.election_id)
+          .filter(Boolean),
+      ),
+    ];
+    if (electionIds.length === 0) {
+      const home = await resolveHomeLeaderboardElection(userId);
+      if (home) electionIds = [home.id];
+    }
+    if (electionIds.length === 0) return [];
+
+    const { data: elections } = await admin
+      .from("elections")
+      .select("id, office_name, ocd_id, election_date")
+      .in("id", electionIds);
+
+    return ((elections ?? []) as {
+      id: string;
+      office_name: string;
+      ocd_id?: string | null;
+      election_date?: string | null;
+    }[]).map((row) => ({
+      id: row.id,
+      label: formatCandidacyLabel(row.office_name, row.ocd_id, row.election_date),
+    }));
+  } catch {
+    return [];
+  }
+}
+
 async function ownStanceIsEmpty(userId: string) {
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
@@ -420,6 +463,7 @@ export default async function CandidatePage({ params }: CandidatePageProps) {
     isUuid(candidateId) ? loadPledgeRaces(candidateId) : Promise.resolve([]),
   ]);
   const viewingOwnProfile = user != null && user.id === candidateId;
+  const targetRaces = viewingOwnProfile ? await loadOwnTargetRaces(user.id) : [];
   const showStanceCta = viewingOwnProfile && (await ownStanceIsEmpty(user.id));
 
   const error = candidate.error ?? loaded.error;
@@ -449,6 +493,24 @@ export default async function CandidatePage({ params }: CandidatePageProps) {
                   Your ideological profile is empty. Complete the Stance Questionnaire to appear in Voter Matchmaking.
                 </p>
               </Link>
+            ) : null}
+            {viewingOwnProfile && targetRaces.length > 0 ? (
+              <section className="rounded-xl border border-gold/40 bg-zinc-900 px-5 py-5">
+                <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+                  Targeting
+                </p>
+                <h2 className="mt-2 font-display text-xl font-semibold tracking-tight text-parchment">
+                  Lock a race
+                </h2>
+                <ul className="mt-4 flex flex-col gap-4">
+                  {targetRaces.map((race) => (
+                    <li key={race.id}>
+                      <p className="text-sm text-zinc-400">{race.label}</p>
+                      <TargetRaceButton className="mt-2" election_id={race.id} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
             ) : null}
             <CandidateProfile
               candidateName={candidate.found ? candidate.name : (profile?.username ?? "Candidate")}
