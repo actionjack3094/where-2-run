@@ -756,22 +756,28 @@ export type Database = {
         Row: {
           created_at: string | null
           debate_id: string
+          district_id: string | null
           id: string
           spectator_id: string
+          topic_id: string | null
           voted_for_user_id: string
         }
         Insert: {
           created_at?: string | null
           debate_id: string
+          district_id?: string | null
           id?: string
           spectator_id: string
+          topic_id?: string | null
           voted_for_user_id: string
         }
         Update: {
           created_at?: string | null
           debate_id?: string
+          district_id?: string | null
           id?: string
           spectator_id?: string
+          topic_id?: string | null
           voted_for_user_id?: string
         }
         Relationships: []
