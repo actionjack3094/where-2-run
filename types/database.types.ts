@@ -305,6 +305,7 @@ export interface Pledge {
 
 export type CampaignPledgeStatus =
   | "pending"
+  | "held"
   | "released"
   | "disbursed"
   | "captured"
@@ -313,9 +314,13 @@ export type CampaignPledgeStatus =
 
 export interface CampaignPledge {
   id: string;
+  /** Constituent who authorized the hold. */
+  user_id?: string | null;
   donor_id: string;
   candidate_id: string;
   election_id: string;
+  /** Locked campaign_targets row funded by this hold. */
+  target_id?: string | null;
   amount: number | string;
   unlock_condition: string | null;
   debate_id?: string | null;

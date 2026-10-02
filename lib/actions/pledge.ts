@@ -1,12 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+import Stripe from "stripe";
 import { requireActionUserId } from "@/lib/arena/auth";
 import { isUuid } from "@/lib/arena/display";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 import { ALIGNMENT_STREAK_UNLOCK_CONDITION } from "@/lib/escrow";
 import { notifyPledgeReceived } from "@/lib/notifications/inbox";
 import { formatUsd, MAX_PLEDGE_AMOUNT } from "@/lib/pledges";
+import { dollarsToCents, getStripe } from "@/lib/stripe";
 
 export type SubmitPledgeResult =
   | { ok: true; pledgeId: string; amount: number; alreadyPledged: boolean }
@@ -141,4 +144,108 @@ export async function submitPledge(
     console.error("submitPledge failed.", caught);
     return { ok: false, error: GENERIC_ERROR };
   }
+}
+
+const MIN_STRIPE_CENTS = 50;
+
+async function requestOrigin() {
+  const headerList = await headers();
+  const host = headerList.get("x-forwarded-host") ?? headerList.get("host");
+  const proto = headerList.get("x-forwarded-proto") ?? "http";
+  if (!host) return "http://localhost:3000";
+  return `${proto.split(",")[0]!.trim()}://${host.split(",")[0]!.trim()}`;
+}
+
+export type PledgeFundsResult = {
+  url: string;
+  sessionId: string;
+};
+
+/**
+ * Open Stripe Checkout for a locked campaign target. The session authorizes
+ * the card and leaves capture manual, so the charge stays in escrow until a
+ * later capture. `checkout.session.completed` writes the ledger row.
+ */
+export async function pledgeFunds(targetId: string, amount: number): Promise<PledgeFundsResult> {
+  const userId = await requireActionUserId();
+  if (!userId) throw new Error("Sign in to pledge.");
+
+  const id = targetId.trim();
+  if (!isUuid(id)) throw new Error("A campaign target is required.");
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error("Enter an amount greater than zero.");
+  }
+  if (amount > MAX_PLEDGE_AMOUNT) {
+    throw new Error(`Pledges are capped at ${formatUsd(MAX_PLEDGE_AMOUNT)}.`);
+  }
+
+  const amountCents = dollarsToCents(amount);
+  if (amountCents < MIN_STRIPE_CENTS) {
+    throw new Error("Stripe requires a minimum authorization of $0.50.");
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("campaign_targets")
+    .select("id, user_id, election_id, is_locked, escrow_status")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+
+  const target = data as {
+    id: string;
+    user_id: string;
+    election_id: string;
+    is_locked: boolean | null;
+    escrow_status: string | null;
+  } | null;
+
+  if (!target) throw new Error("That campaign target is not on the ledger.");
+  if (!target.is_locked) throw new Error("This campaign is not open for pledges.");
+  if (target.escrow_status && target.escrow_status !== "accumulating") {
+    throw new Error("This campaign is not accepting escrow pledges.");
+  }
+  if (target.user_id === userId) throw new Error("You cannot pledge to your own campaign.");
+  if (!isUuid(target.election_id)) throw new Error("That campaign is not tied to a race.");
+
+  const metadata: Stripe.MetadataParam = {
+    target_id: target.id,
+    user_id: userId,
+  };
+  const origin = await requestOrigin();
+
+  let session: Stripe.Checkout.Session;
+  try {
+    session = await getStripe().checkout.sessions.create({
+      mode: "payment",
+      submit_type: "donate",
+      client_reference_id: userId,
+      metadata,
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: "usd",
+            unit_amount: amountCents,
+            product_data: {
+              name: "Campaign escrow pledge",
+              description: "Card authorization only. Funds stay held until the campaign captures them.",
+            },
+          },
+        },
+      ],
+      payment_intent_data: {
+        capture_method: "manual",
+        metadata,
+      },
+      success_url: `${origin}/candidate/${target.user_id}?pledge=held`,
+      cancel_url: `${origin}/candidate/${target.user_id}`,
+    });
+  } catch (caught) {
+    if (caught instanceof Stripe.errors.StripeError) throw new Error(caught.message);
+    throw caught;
+  }
+
+  if (!session.url) throw new Error("Stripe did not return a checkout URL.");
+  return { url: session.url, sessionId: session.id };
 }

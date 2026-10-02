@@ -88,6 +88,96 @@ async function dispatchPledgeFundedEmail(
 }
 
 /**
+ * A manual-capture Checkout Session becomes one held `campaign_pledges` row
+ * and adds that amount to campaign_targets.pledged_escrow. The session id is
+ * unique, so a retried webhook does not hold the funds twice.
+ */
+async function recordHeldEscrowPledge(session: Stripe.Checkout.Session) {
+  if (session.mode !== "payment") return;
+
+  const targetId = metadataValue(session.metadata, "target_id");
+  const userId = metadataValue(session.metadata, "user_id");
+  if (!isUuid(targetId) || !isUuid(userId)) {
+    console.error("checkout.session.completed is missing escrow metadata.", session.id);
+    return;
+  }
+
+  const amountCents = session.amount_total;
+  if (amountCents == null || amountCents <= 0 || session.currency !== "usd") {
+    throw new Error(`Checkout session ${session.id} has no USD amount.`);
+  }
+
+  const admin = createAdminClient();
+  const { data: target, error: targetError } = await admin
+    .from("campaign_targets")
+    .select("id, user_id, election_id, pledged_escrow")
+    .eq("id", targetId)
+    .maybeSingle();
+  if (targetError) throw new Error(targetError.message);
+  if (!target) {
+    console.error("Escrow checkout names a missing campaign target.", session.id);
+    return;
+  }
+  if (target.user_id === userId) return;
+
+  const dollars = amountCents / 100;
+  const existing = await admin
+    .from("campaign_pledges")
+    .select("id")
+    .eq("stripe_session_id", session.id)
+    .maybeSingle();
+  if (existing.error && !isMissingRelation(existing.error)) {
+    throw new Error(existing.error.message);
+  }
+  if (existing.data) return;
+
+  const { data: inserted, error: insertError } = await admin
+    .from("campaign_pledges")
+    .insert({
+      user_id: userId,
+      donor_id: userId,
+      candidate_id: target.user_id,
+      election_id: target.election_id,
+      target_id: target.id,
+      amount: dollars,
+      stripe_customer_id: customerIdOf(session.customer),
+      stripe_session_id: session.id,
+      status: "held",
+    })
+    .select("id")
+    .single();
+
+  if (insertError?.code === "23505") return;
+  if (insertError?.code === "23503") {
+    console.error("Held pledge references a missing donor, candidate, or race.", insertError);
+    return;
+  }
+  if (insertError || !inserted) {
+    throw new Error(insertError?.message ?? "Held pledge insert returned no row.");
+  }
+
+  const current = Number(target.pledged_escrow ?? 0);
+  const pledgedEscrow = Math.round((current + dollars) * 100) / 100;
+  const { error: updateError } = await admin
+    .from("campaign_targets")
+    .update({ pledged_escrow: pledgedEscrow })
+    .eq("id", target.id);
+
+  if (updateError) {
+    await admin.from("campaign_pledges").delete().eq("id", inserted.id);
+    throw new Error(updateError.message);
+  }
+
+  try {
+    revalidatePath(`/candidate/${target.user_id}`);
+    revalidatePath("/leaderboards");
+    revalidatePath("/profile");
+  } catch {
+    // The hold is already saved. A cache refresh failure must not make Stripe retry.
+  }
+}
+
+/**
  * A paid Checkout Session becomes one pending `campaign_pledges` row.
  * `stripe_session_id` is unique, so a retried webhook does not insert twice
  * or alert the candidate twice.
@@ -261,7 +351,13 @@ export async function POST(request: Request) {
     if (SETUP_INTENT_EVENTS.has(event.type)) {
       await applySetupIntent(event.data.object as Stripe.SetupIntent);
     } else if (event.type === "checkout.session.completed") {
-      await recordFundedPledge(event.data.object as Stripe.Checkout.Session);
+      const session = event.data.object as Stripe.Checkout.Session;
+      const targetId = metadataValue(session.metadata, "target_id");
+      if (targetId) {
+        await recordHeldEscrowPledge(session);
+      } else {
+        await recordFundedPledge(session);
+      }
     } else if (event.type === "identity.verification_session.verified") {
       await applyIdentityVerified(event.data.object as Stripe.Identity.VerificationSession);
     }

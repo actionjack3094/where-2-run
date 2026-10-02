@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { pledgeFunds } from "@/app/actions/escrow/pledge-funds";
+import { pledgeFunds } from "@/lib/actions/pledge";
 import { type EscrowStatus, officialDonationHref } from "@/lib/escrow/candidacy";
 
 export type LockedCampaignTarget = {
@@ -24,7 +24,7 @@ export function CandidateProfile({
 }) {
   const [targetId, setTargetId] = useState(lockedTargets[0]?.id ?? "");
   const [amount, setAmount] = useState("");
-  const [balances, setBalances] = useState(() =>
+  const [balances] = useState(() =>
     Object.fromEntries(lockedTargets.map((target) => [target.id, target.pledgedEscrow])),
   );
   const [pending, setPending] = useState(false);
@@ -51,9 +51,7 @@ export function CandidateProfile({
     setNotice(null);
     try {
       const result = await pledgeFunds(selected.id, dollars);
-      setBalances((current) => ({ ...current, [selected.id]: result.pledgedEscrow }));
-      setAmount("");
-      setNotice(`Pledged $${dollars.toFixed(2)} to ${candidateName}.`);
+      window.location.assign(result.url);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not pledge those funds.");
     } finally {
