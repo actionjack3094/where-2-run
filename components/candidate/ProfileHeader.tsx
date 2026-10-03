@@ -80,10 +80,10 @@ export function ProfileHeader({
         <div className="flex items-center gap-3">
           <div
             className="flex h-32 min-w-32 shrink-0 flex-col items-center justify-center rounded-full border-2 border-gold bg-gold/15 px-5 text-center shadow-[0_0_32px_rgba(212,175,55,0.18)]"
-            aria-label={`${eloLocked ? "Locked ELO" : "ELO"} ${eloRating}`}
+            aria-label={`${eloLocked ? "Locked Civic Standing" : "Civic Standing"} ${eloRating}`}
           >
             <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-gold">
-              {eloLocked ? "Locked ELO" : "ELO"}
+              {eloLocked ? "Locked Civic Standing" : "Civic Standing"}
             </p>
             <p className="mt-1 font-display text-4xl font-semibold tabular-nums leading-none tracking-tight text-gold">
               {eloRating}
@@ -96,13 +96,16 @@ export function ProfileHeader({
           </div>
           <div
             className="flex h-32 min-w-32 shrink-0 flex-col items-center justify-center rounded-2xl border-2 border-gold/70 bg-zinc-900 px-5 text-center"
-            aria-label={`Win-loss record ${record}`}
+            aria-label={`${record} Debates Logged, 100% Policy Consistency`}
           >
             <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-gold">
-              Win–Loss
+              Debates Logged
             </p>
             <p className="mt-1 font-display text-4xl font-semibold tabular-nums leading-none tracking-tight text-parchment">
               {record}
+            </p>
+            <p className="mt-1.5 text-[10px] font-medium uppercase tracking-widest text-zinc-400">
+              100% Policy Consistency
             </p>
           </div>
         </div>

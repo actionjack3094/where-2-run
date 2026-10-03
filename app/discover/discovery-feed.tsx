@@ -214,7 +214,7 @@ function DiscoveryCard({
   const bucket = discoveryBucket({ ...debate, status });
   const winner = winnerName(debate, winnerId);
   const districtHref = debate.electionSlug
-    ? `/elections/${debate.electionSlug}/profile`
+    ? `/elections/district/${debate.electionSlug}/profile`
     : null;
 
   return (
@@ -301,7 +301,7 @@ function Seat({
               {seat.username}
             </span>
             <span className="mt-1 block font-mono text-xs tabular-nums text-primary">
-              Elo {seat.elo}
+              Civic Standing {seat.elo}
             </span>
           </span>
         </Link>

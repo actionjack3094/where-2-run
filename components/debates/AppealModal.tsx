@@ -101,7 +101,7 @@ export function AppealModal({
               {evaluation.rubric_flag?.replace(/_/g, " ") ?? "the flagged item"}
             </span>
             . Answer the Clarification Addendum with district-specific policy. Three models
-            vote pass or fail; majority locks your ELO.
+            vote pass or fail; majority locks your Civic Standing.
           </CardDescription>
         </CardHeader>
         <CardContent>

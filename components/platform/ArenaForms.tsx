@@ -12,7 +12,7 @@ import { formatCoordinate, type PublicJudgment } from "@/lib/platform/types";
 
 function outcomeLine(judgment: PublicJudgment) {
   const label = judgment.outcome === "tie" ? "Tie" : judgment.outcome === "win" ? "Win" : "Loss";
-  const delta = `${judgment.eloDelta >= 0 ? "+" : ""}${judgment.eloDelta} Elo`;
+  const delta = `${judgment.eloDelta >= 0 ? "+" : ""}${judgment.eloDelta} Civic Standing`;
   return `${label}. ${delta}. ${formatCoordinate(judgment.coordinate.x, judgment.coordinate.y)}`;
 }
 

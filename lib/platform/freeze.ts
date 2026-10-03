@@ -23,7 +23,7 @@ export async function closedPrimaryIds(admin: PlatformAdmin, primaryIds: string[
 async function crownNominee(admin: PlatformAdmin, primaryId: string) {
   const { data, error } = await admin
     .from("primary_standings")
-    .select("id, user_id, elo, debates_count")
+    .select("id, user_id, civic_standing, debates_count")
     .eq("primary_id", primaryId);
   if (error) {
     if (isMissingSchema(error)) return null;
@@ -32,7 +32,7 @@ async function crownNominee(admin: PlatformAdmin, primaryId: string) {
   const standings = (data ?? []) as {
     id: string;
     user_id: string;
-    elo: number;
+    civic_standing: number;
     debates_count: number;
   }[];
   if (standings.length === 0) return null;
@@ -53,7 +53,7 @@ async function crownNominee(admin: PlatformAdmin, primaryId: string) {
       (row): NomineeCandidate => ({
         id: row.id,
         userId: row.user_id,
-        elo: row.elo,
+        elo: row.civic_standing,
         debatesCount: row.debates_count,
         verified: verified.has(row.user_id),
       }),

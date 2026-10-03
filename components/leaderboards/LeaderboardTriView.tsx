@@ -10,7 +10,6 @@ import { ensureArenaUser } from "@/lib/arena/identity";
 import { supabase } from "@/lib/db/supabase";
 import { formatElectability, zipMatches } from "@/lib/electability";
 import {
-  formatRecord,
   mergeLeaderboardEntries,
   NATIONAL_STANDING_LIMIT,
   type LeaderboardEntry,
@@ -46,7 +45,7 @@ const BOARDS: {
     id: "contests",
     title: "My Contests",
     hint: () =>
-      "Recommended races scored by primary alignment, general viability, and debate ELO.",
+      "Recommended races scored by primary alignment, general viability, and Civic Standing.",
     empty: () =>
       "No recommended races yet. File a district or take a stance to open this board.",
   },
@@ -369,7 +368,7 @@ function RankingTable({
               <tr className="border-b border-gold/30 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
                 <th className="px-5 py-3 pl-6 font-medium">Rank</th>
                 <th className="px-5 py-3 font-medium">Candidate</th>
-                <th className="px-5 py-3 font-medium">Record</th>
+                <th className="px-5 py-3 font-medium">Debates Logged</th>
                 <th className="px-5 py-3 font-medium">Electability</th>
                 <th className="px-5 py-3 font-medium">
                   <span className="sr-only">Donate</span>
@@ -393,7 +392,7 @@ function RankingTable({
                       />
                       {showDistrict && entry.districtName && entry.electionSlug ? (
                         <Link
-                          href={`/elections/${entry.electionSlug}/profile`}
+                          href={`/elections/district/${entry.electionSlug}/profile`}
                           className="block pl-11 text-[11px] uppercase tracking-widest text-zinc-500 transition-colors hover:text-gold"
                         >
                           {entry.districtName}
@@ -406,7 +405,7 @@ function RankingTable({
                     </div>
                   </td>
                   <td className="px-5 py-4 align-middle text-sm font-medium tabular-nums text-zinc-100">
-                    {formatRecord(entry.wins, entry.losses)}
+                    {entry.wins + entry.losses} logged
                   </td>
                   <td className="px-5 py-4 align-middle text-sm font-medium tabular-nums text-gold">
                     {formatElectability(entry.electability)}

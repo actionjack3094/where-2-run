@@ -88,7 +88,7 @@ function TrackDebateCard({ item, viewerId }: { item: OcdTrackDebate; viewerId: s
         </Link>
         {item.electionSlug ? (
           <Link
-            href={`/elections/${item.electionSlug}/profile`}
+            href={`/elections/district/${item.electionSlug}/profile`}
             className={cn(
               "shrink-0 text-[11px] font-medium uppercase tracking-widest",
               backyard ? "text-blue-200" : "text-red-200",
@@ -258,7 +258,7 @@ function CandidateQuestionCard({ item }: { item: RedFeedQuestion }) {
         )}
         {item.electionSlug ? (
           <Link
-            href={`/elections/${item.electionSlug}/profile`}
+            href={`/elections/district/${item.electionSlug}/profile`}
             className="shrink-0 text-[11px] font-medium uppercase tracking-widest text-red-300 hover:text-red-200"
           >
             {item.districtName}
@@ -332,7 +332,7 @@ function JuryDebateCard({ item }: { item: BlueFeedDebate }) {
         </Link>
         {item.electionSlug ? (
           <Link
-            href={`/elections/${item.electionSlug}/profile`}
+            href={`/elections/district/${item.electionSlug}/profile`}
             className="shrink-0 text-[11px] font-medium uppercase tracking-widest text-blue-300 hover:text-blue-200"
           >
             {item.districtName}

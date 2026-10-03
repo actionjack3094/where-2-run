@@ -5,7 +5,7 @@ import { getServerUser } from "@/lib/db/supabase-server";
 export const metadata: Metadata = {
   title: "War Room · WHERE 2 RUN",
   description:
-    "Private campaign desk: escrow raised, locked ELO, matched districts, and uncaptured SetupIntents.",
+    "Private campaign desk: escrow raised, locked Civic Standing, matched districts, and uncaptured SetupIntents.",
 };
 
 export default async function MyCampaignLayout({

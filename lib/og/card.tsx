@@ -103,14 +103,14 @@ export function OgCardImage({ card }: { card: OgCard }) {
           <div style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ display: "flex" }}>{clip(card.leftName, 28)}</div>
             <div style={{ display: "flex", marginTop: 8, color: "#e8d5a3", fontSize: 22 }}>
-              {`ELO ${card.leftElo}`}
+              {`Civic Standing ${card.leftElo}`}
             </div>
           </div>
           <div style={{ display: "flex", color: "#a1a1aa" }}>vs</div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
             <div style={{ display: "flex" }}>{clip(card.rightName, 28)}</div>
             <div style={{ display: "flex", marginTop: 8, color: "#e8d5a3", fontSize: 22 }}>
-              {`ELO ${card.rightElo}`}
+              {`Civic Standing ${card.rightElo}`}
             </div>
           </div>
         </div>
@@ -122,7 +122,7 @@ export function OgCardImage({ card }: { card: OgCard }) {
     return (
       <Frame eyebrow={clip(card.office || "Candidate", 48)} title={clip(card.name, 32)}>
         <div style={{ display: "flex", marginTop: 48, fontSize: 42, color: "#e8d5a3" }}>
-          {`ELO ${card.elo}`}
+          {`Civic Standing ${card.elo}`}
         </div>
       </Frame>
     );
@@ -130,7 +130,7 @@ export function OgCardImage({ card }: { card: OgCard }) {
 
   const rows = card.rows.slice(0, 5);
   return (
-    <Frame eyebrow="Live ELO" title="Rankings">
+    <Frame eyebrow="Live Civic Standing" title="Rankings">
       <div style={{ display: "flex", flexDirection: "column", marginTop: 36, fontSize: 28 }}>
         {rows.length === 0 ? (
           <div style={{ display: "flex", color: "#a1a1aa" }}>No ranked candidates yet.</div>

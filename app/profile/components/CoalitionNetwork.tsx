@@ -284,13 +284,13 @@ export function CoalitionNetwork({
                   <CandidateIdentity id={card.id} username={card.name} />
                   <p
                     className="shrink-0 text-right"
-                    aria-label={`ELO ${card.eloRating}`}
+                    aria-label={`Civic Standing ${card.eloRating}`}
                   >
                     <span className="block font-display text-3xl font-semibold tabular-nums tracking-tight text-gold">
                       {card.eloRating}
                     </span>
                     <span className="mt-1 block text-[10px] font-medium uppercase tracking-widest text-zinc-500">
-                      ELO
+                      Civic Standing
                     </span>
                   </p>
                 </div>

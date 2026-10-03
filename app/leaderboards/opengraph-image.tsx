@@ -2,7 +2,7 @@ import { ImageResponse } from "@vercel/og";
 import { OG_SIZE, OgCardImage } from "@/lib/og/card";
 import { loadRankingsCard } from "@/lib/og/load";
 
-export const alt = "WHERE 2 RUN ELO rankings";
+export const alt = "WHERE 2 RUN Civic Standing rankings";
 export const size = OG_SIZE;
 export const contentType = "image/png";
 

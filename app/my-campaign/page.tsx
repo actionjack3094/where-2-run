@@ -29,7 +29,7 @@ export default async function MyCampaignPage() {
             War Room
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
-            Escrow, ELO, and the three districts whose median voter sits closest
+            Escrow, Civic Standing, and the three districts whose median voter sits closest
             to this ticket.
           </p>
         </header>

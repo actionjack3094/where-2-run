@@ -50,7 +50,7 @@ export function WarRoomMetrics({ metrics }: { metrics: Metrics }) {
           <CardTitle className="mt-2 font-display text-3xl font-semibold tabular-nums tracking-tight text-gold sm:text-4xl">
             {metrics.eloRating}
           </CardTitle>
-          <CardDescription>ELO Rating</CardDescription>
+          <CardDescription>Civic Standing</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm leading-6 text-zinc-400">{eloCaption}</p>

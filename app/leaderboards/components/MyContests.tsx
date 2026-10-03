@@ -10,7 +10,6 @@ import {
   type ContestRow,
   type ContestSortId,
 } from "@/lib/leaderboards/contests";
-import { formatRecord } from "@/lib/leaderboard";
 import { formatViabilityScore } from "@/lib/math/viability";
 import { parseElo } from "@/lib/arena/elo";
 import { formatUsd } from "@/lib/pledges";
@@ -120,10 +119,10 @@ export function MyContests({
                     </span>
                     <span className="grid grid-cols-2 gap-4 sm:flex sm:shrink-0 sm:items-stretch sm:gap-6">
                       <Stat
-                        label="Record"
-                        value={formatRecord(contest.wins, contest.losses)}
+                        label="Debates Logged"
+                        value={String(contest.wins + contest.losses)}
                       />
-                      <Stat label="ELO" value={String(parseElo(contest.eloRating))} />
+                      <Stat label="Civic Standing" value={String(parseElo(contest.eloRating))} />
                       <Stat
                         label="Viability"
                         value={formatViabilityScore(contest.draftViability)}

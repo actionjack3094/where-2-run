@@ -13,7 +13,7 @@ const RANK_MATCHES = 5;
 
 export const metadata: Metadata = {
   title: "Leaderboards · WHERE 2 RUN",
-  description: "Active district races ranked by Elo, alignment streak, and pledged escrow.",
+  description: "Active district races ranked by Civic Standing, alignment streak, and pledged escrow.",
 };
 
 async function resolvedMatchCount(userId: string) {
@@ -80,7 +80,7 @@ export default async function LeaderboardsIndexPage() {
               <p className="font-display text-3xl font-semibold tabular-nums text-gold">
                 #{dashboard.matched.rank}
                 <span className="ml-2 text-base font-medium text-zinc-400">
-                  of {dashboard.matched.fieldSize} · {dashboard.matched.elo} Elo
+                  of {dashboard.matched.fieldSize} · {dashboard.matched.elo} Civic Standing
                 </span>
               </p>
             ) : null}
@@ -129,7 +129,7 @@ export default async function LeaderboardsIndexPage() {
           </Panel>
 
           <Panel
-            kicker="Elo spread"
+            kicker="Civic Standing spread"
             title="Tightest arenas"
             error={dashboard.arenas.error}
             empty={
@@ -144,7 +144,7 @@ export default async function LeaderboardsIndexPage() {
                   <Link href={`/leaderboards/${race.id}`} className="block hover:text-gold">
                     <p className="text-sm font-medium text-parchment">{race.name}</p>
                     <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
-                      {race.spread} Elo between the top three
+                      {race.spread} Civic Standing between the top three
                     </p>
                   </Link>
                 </li>

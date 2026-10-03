@@ -18,6 +18,7 @@ import {
   MARGINAL_CONFIDENCE_MIN,
   parseScore,
 } from "@/lib/arena/evaluations";
+import { CIVIC_STANDING_TIP, InfoTooltip } from "@/components/InfoTooltip";
 import { parseElo } from "@/lib/arena/elo";
 import { cn } from "@/lib/utils";
 import type { ArenaFeedCandidate, ArenaFeedDebate } from "@/lib/arena/feed-types";
@@ -166,7 +167,7 @@ export function DebateCard({ debate }: { debate: ArenaFeedDebate }) {
           </span>
           {debate.districtName && debate.electionSlug ? (
             <Link
-              href={`/elections/${debate.electionSlug}/profile`}
+              href={`/elections/district/${debate.electionSlug}/profile`}
               className="rounded-full border border-border px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground transition-colors hover:border-primary hover:text-primary"
             >
               {debate.districtName}
@@ -281,9 +282,10 @@ function CandidatePane({
         <p className="font-serif text-base text-muted-foreground">Open seat</p>
       )}
       <div>
-        <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          ELO
-        </p>
+        <div className="inline-flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+          Civic Standing
+          <InfoTooltip label="Civic Standing" text={CIVIC_STANDING_TIP} />
+        </div>
         <p className="mt-1 font-serif text-3xl font-semibold tabular-nums tracking-tight text-primary">
           {candidate ? parseElo(candidate.elo_rating) : "—"}
         </p>

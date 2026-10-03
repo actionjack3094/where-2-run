@@ -8,7 +8,7 @@ export type ElectionLinkRow = {
 export const ELECTION_LINK_COLUMNS = "id, slug, office_name, district_id" as const;
 
 export function electionProfileHref(slug: string) {
-  return `/elections/${slug}/profile`;
+  return `/elections/district/${slug}/profile`;
 }
 
 export function resolveElectionLink(

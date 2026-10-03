@@ -3,7 +3,7 @@ import Link from "next/link";
 const links = [
   { href: "/ballot", label: "My Ballot" },
   { href: "/debates", label: "Debates" },
-  { href: "/primaries", label: "Primary Hubs" },
+  { href: "/elections", label: "Elections" },
   { href: "/profile", label: "Profile" },
   { href: "/verify", label: "Verification" },
   { href: "/about", label: "About Us" },

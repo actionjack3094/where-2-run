@@ -12,10 +12,12 @@ import {
   eloDelta,
   movingAverageDrift,
   nextElo,
+  policyConsistency,
   withinAdherencePoints,
   withinTieMargin,
   type AxisPoint,
 } from "@/lib/platform/scoring";
+import { incrementDebatesLogged } from "@/lib/platform/standings";
 import { notifyDebateConcluded } from "@/lib/actions/notifications";
 import {
   loadArenaById,
@@ -316,15 +318,14 @@ async function writeStanding(
   admin: PlatformAdmin,
   userId: string,
   primaryId: string,
-  next: { elo: number; debates: number; wins: number; losses: number; ties: number },
+  next: { civicStanding: number; debates: number; ties: number; consistency: number },
 ) {
   const existing = await loadStanding(admin, userId, primaryId);
   const patch = {
-    elo: next.elo,
+    civic_standing: next.civicStanding,
     debates_count: next.debates,
-    wins: next.wins,
-    losses: next.losses,
     ties: next.ties,
+    policy_consistency: next.consistency,
     updated_at: new Date().toISOString(),
   };
   if (!existing) {
@@ -375,8 +376,8 @@ async function settleArena(input: {
 
   const standingA = await loadStanding(admin, debate.candidate_a_id, debate.primary_id);
   const standingB = await loadStanding(admin, debate.candidate_b_id, debate.primary_id);
-  const ratingA = standingA?.elo ?? 1200;
-  const ratingB = standingB?.elo ?? 1200;
+  const ratingA = standingA?.civic_standing ?? 1200;
+  const ratingB = standingB?.civic_standing ?? 1200;
   const baseline = { x: primary.baseline_x, y: primary.baseline_y };
   const currentA = pointOf(profileA);
   const currentB = pointOf(profileB);
@@ -400,23 +401,26 @@ async function settleArena(input: {
       ? driftCoordinate(currentB, baseline, input.scores.b, standingB?.debates_count ?? 0)
       : currentB;
 
-  const bump = (standing: typeof standingA, won: boolean) => ({
+  const bump = (standing: typeof standingA, before: AxisPoint, after: AxisPoint) => ({
     debates: (standing?.debates_count ?? 0) + 1,
-    wins: (standing?.wins ?? 0) + (winner !== "tie" && won ? 1 : 0),
-    losses: (standing?.losses ?? 0) + (winner !== "tie" && !won ? 1 : 0),
     ties: (standing?.ties ?? 0) + (winner === "tie" ? 1 : 0),
+    consistency: policyConsistency(standing?.policy_consistency, before, after),
   });
-  const nextA = bump(standingA, winner === "a");
-  const nextB = bump(standingB, winner === "b");
+  const nextA = bump(standingA, currentA, coordinateA);
+  const nextB = bump(standingB, currentB, coordinateB);
 
   await writeStanding(admin, debate.candidate_a_id, debate.primary_id, {
-    elo: nextElo(ratingA, deltaA),
+    civicStanding: nextElo(ratingA, deltaA),
     ...nextA,
   });
   await writeStanding(admin, debate.candidate_b_id, debate.primary_id, {
-    elo: nextElo(ratingB, deltaB),
+    civicStanding: nextElo(ratingB, deltaB),
     ...nextB,
   });
+  await incrementDebatesLogged(admin, debate.primary_id, [
+    debate.candidate_a_id,
+    debate.candidate_b_id,
+  ]);
 
   if (input.drift) {
     const now = new Date().toISOString();
@@ -467,7 +471,7 @@ async function settleArena(input: {
 
 /**
  * Score both stances against the primary baseline.
- * Returns only the public outcome, Elo delta, and updated coordinate.
+ * Returns only the public outcome, civic-standing delta, and updated coordinate.
  * Adherence scores and any model text stay on the server.
  */
 export async function adjudicateDebate(debateId: string): Promise<SideJudgments> {
@@ -536,8 +540,8 @@ export async function adjudicateDebate(debateId: string): Promise<SideJudgments>
 
   const standingA = await loadStanding(admin, debate.candidate_a_id, debate.primary_id);
   const standingB = await loadStanding(admin, debate.candidate_b_id, debate.primary_id);
-  const ratingA = standingA?.elo ?? DEFAULT_ELO;
-  const ratingB = standingB?.elo ?? DEFAULT_ELO;
+  const ratingA = standingA?.civic_standing ?? DEFAULT_ELO;
+  const ratingB = standingB?.civic_standing ?? DEFAULT_ELO;
   const outcomeA = winner === "tie" ? 0.5 : winner === "a" ? 1 : 0;
   const outcomeB = 1 - outcomeA;
   const deltaA = eloDelta(ratingA, ratingB, outcomeA);
@@ -545,23 +549,26 @@ export async function adjudicateDebate(debateId: string): Promise<SideJudgments>
   const coordinateA = movingAverageDrift(currentA, plotted.a.coordinate);
   const coordinateB = movingAverageDrift(currentB, plotted.b.coordinate);
 
-  const bump = (standing: typeof standingA, won: boolean) => ({
+  const bump = (standing: typeof standingA, before: AxisPoint, after: AxisPoint) => ({
     debates: (standing?.debates_count ?? 0) + 1,
-    wins: (standing?.wins ?? 0) + (winner !== "tie" && won ? 1 : 0),
-    losses: (standing?.losses ?? 0) + (winner !== "tie" && !won ? 1 : 0),
     ties: (standing?.ties ?? 0) + (winner === "tie" ? 1 : 0),
+    consistency: policyConsistency(standing?.policy_consistency, before, after),
   });
-  const nextA = bump(standingA, winner === "a");
-  const nextB = bump(standingB, winner === "b");
+  const nextA = bump(standingA, currentA, coordinateA);
+  const nextB = bump(standingB, currentB, coordinateB);
 
   await writeStanding(admin, debate.candidate_a_id, debate.primary_id, {
-    elo: nextElo(ratingA, deltaA),
+    civicStanding: nextElo(ratingA, deltaA),
     ...nextA,
   });
   await writeStanding(admin, debate.candidate_b_id, debate.primary_id, {
-    elo: nextElo(ratingB, deltaB),
+    civicStanding: nextElo(ratingB, deltaB),
     ...nextB,
   });
+  await incrementDebatesLogged(admin, debate.primary_id, [
+    debate.candidate_a_id,
+    debate.candidate_b_id,
+  ]);
 
   const now = new Date().toISOString();
   const { error: errorA } = await admin

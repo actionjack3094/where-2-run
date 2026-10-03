@@ -27,7 +27,7 @@ export function DraftLeaderboard({
           Draft leaderboard
         </h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
-          Prospective candidates ranked by debate ELO. Primary match is cosine
+          Prospective candidates ranked by Civic Standing. Primary match is cosine
           alignment with this district&apos;s median voter.
         </p>
       </header>
@@ -38,7 +38,7 @@ export function DraftLeaderboard({
             <CardTitle>No one has filed this seat</CardTitle>
             <CardDescription>
               Candidates who target this district, or take a lectern on its
-              prompts, appear here with W-L, ELO, and primary match.
+              prompts, appear here with debates logged, Civic Standing, and primary match.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -59,11 +59,11 @@ export function DraftLeaderboard({
                     {candidate.username}
                   </span>
                   <span className="mt-1 block text-[11px] font-medium uppercase tracking-widest text-zinc-500">
-                    {candidate.record} debate record
+                    {candidate.wins + candidate.losses} Debates Logged
                   </span>
                 </span>
-                <Stat label="W-L" value={candidate.record} />
-                <Stat label="ELO" value={String(parseElo(candidate.eloRating))} />
+                <Stat label="Debates Logged" value={String(candidate.wins + candidate.losses)} />
+                <Stat label="Civic Standing" value={String(parseElo(candidate.eloRating))} />
                 <Stat label="Primary match" value={`${candidate.primaryMatch}%`} accent />
               </Link>
             </li>

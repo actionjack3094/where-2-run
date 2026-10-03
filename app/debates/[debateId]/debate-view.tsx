@@ -508,7 +508,7 @@ export function DebateView({
     <div className="mx-auto flex min-h-full w-full max-w-3xl flex-1 flex-col px-6 py-10">
       <div className="flex flex-wrap items-center gap-4">
         <Link
-          href={electionSlug ? `/elections/${electionSlug}/profile` : "/feed"}
+          href={electionSlug ? `/elections/district/${electionSlug}/profile` : "/feed"}
           className="text-xs font-medium uppercase tracking-widest text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-50"
         >
           {electionSlug ? "← Race profile" : "← Feed"}
@@ -761,8 +761,8 @@ function JudgeSeat({
             <dd>
               {evaluation.status === "locked"
                 ? evaluation.ensemble_result
-                  ? "Pass · ELO locked"
-                  : "Fail · ELO locked"
+                  ? "Pass · Civic Standing locked"
+                  : "Fail · Civic Standing locked"
                 : evaluation.status}
             </dd>
           </div>

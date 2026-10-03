@@ -102,7 +102,7 @@ function CreateDebateModal({
         throw new Error(payload.error ?? "Could not post the debate.");
       }
       router.push(
-        electionSlug ? `/elections/${electionSlug}/profile` : `/debates/${payload.id}`,
+        electionSlug ? `/elections/district/${electionSlug}/profile` : `/debates/${payload.id}`,
       );
       router.refresh();
     } catch (err) {

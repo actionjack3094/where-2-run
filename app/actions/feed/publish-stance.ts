@@ -382,7 +382,7 @@ async function publishStanceUnsafe(
   if (!vectorUpdated) await applyVectorEma(admin, userId, stanceVector);
 
   revalidatePath("/feed");
-  if (election?.slug) revalidatePath(`/elections/${election.slug}/profile`);
+  if (election?.slug) revalidatePath(`/elections/district/${election.slug}/profile`);
   if (debateId) revalidatePath(`/debates/${debateId}`);
   revalidatePath(`/profile/${userId}`);
 

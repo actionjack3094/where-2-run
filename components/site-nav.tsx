@@ -20,9 +20,9 @@ const links = [
     match: (path: string) => path.startsWith("/debates") || path.startsWith("/discover"),
   },
   {
-    href: "/primaries",
-    label: "Primary Hubs",
-    match: (path: string) => path.startsWith("/primaries"),
+    href: "/elections",
+    label: "Elections",
+    match: (path: string) => path.startsWith("/elections") || path.startsWith("/primaries"),
   },
   {
     href: "/profile",

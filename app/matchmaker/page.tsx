@@ -123,7 +123,7 @@ export default async function MatchmakerPage() {
                 "Open primary";
               return (
                 <li key={election.id}>
-                  <Link href={`/elections/${election.id}`} className="group block h-full">
+                  <Link href={`/elections/district/${election.id}`} className="group block h-full">
                     <Card className="h-full transition-all group-hover:border-zinc-500">
                       <CardContent className="flex items-center gap-4 px-5 py-5">
                         <span className="w-10 shrink-0 font-display text-lg tabular-nums text-gold">

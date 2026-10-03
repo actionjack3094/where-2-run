@@ -7,7 +7,6 @@ import { IdeologyRadar } from "@/app/profile/components/IdeologyRadar";
 import { StanceModal } from "@/components/debate/StanceModal";
 import { QUIZ_QUESTIONS, type PolicyOption } from "@/lib/ideology/questions";
 import { SIX_AXIS_IDS, SIX_AXIS_LABELS, type SixAxisId } from "@/lib/ideology/six-axis";
-import { formatRecord } from "@/lib/leaderboard";
 import type { ProfileHubData } from "@/lib/profile/hub";
 import { cn } from "@/lib/utils";
 
@@ -67,18 +66,17 @@ export function AboutMe({
 
       <section aria-labelledby="about-record-heading" className="grid grid-cols-2 gap-3">
         <h2 id="about-record-heading" className="sr-only">
-          Debate record and ELO
+          Debates logged and policy consistency
         </h2>
-        <Stat
-          label="Win / Loss"
-          value={formatRecord(profile.wins, profile.losses)}
-        />
-        <Stat label="ELO" value={String(profile.eloRating)} />
+        <Stat label="Debates Logged" value={String(profile.wins + profile.losses)} />
+        <Stat label="Policy Consistency" value="100%" />
+        <Stat label="Civic Standing" value={String(profile.eloRating)} />
       </section>
 
       <IdeologyRadar
         key={profile.ideologyVector.join(",")}
         candidateId={profile.userId}
+        name={profile.username}
         vector={profile.ideologyVector}
       />
     </div>

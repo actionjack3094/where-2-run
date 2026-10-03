@@ -25,7 +25,7 @@ import { createAdminClient } from "@/lib/db/supabase-admin";
 import { isMissingSchema } from "@/lib/db/schema-errors";
 import { createServerSupabase, getServerUser } from "@/lib/db/supabase-server";
 import { normalizeEscrowStatus, officialDonationHref } from "@/lib/escrow/candidacy";
-import { formatRecord, recordFromStats } from "@/lib/leaderboard";
+import { recordFromStats } from "@/lib/leaderboard";
 import { resolveHomeLeaderboardElection } from "@/lib/queries/leaderboard";
 
 type CandidatePageProps = {
@@ -145,7 +145,7 @@ const loadCandidate = cache(async (id: string): Promise<LoadedCandidate> => {
     name: "Candidate",
     demographics: null,
     eloRating: DEFAULT_ELO,
-    record: formatRecord(0, 0),
+    record: "0",
     matches: [],
     error: null,
     found: false,
@@ -244,7 +244,7 @@ const loadCandidate = cache(async (id: string): Promise<LoadedCandidate> => {
     name,
     demographics: formatDemographics(demographics, account?.created_at ?? null),
     eloRating: parseElo(stats?.elo_rating) || DEFAULT_ELO,
-    record: formatRecord(record.wins, record.losses),
+    record: String(record.wins + record.losses),
     matches,
     error: null,
     found: true,
@@ -262,7 +262,7 @@ export async function generateMetadata({
       ? `${candidate.name} · Candidate · WHERE 2 RUN`
       : "Candidate · WHERE 2 RUN",
     description: candidate.found
-      ? `ELO, win-loss record, and match history for ${candidate.name}.`
+      ? `Civic Standing, debates logged, and match history for ${candidate.name}.`
       : "Public candidate profile on WHERE 2 RUN.",
   };
 }

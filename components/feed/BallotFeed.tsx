@@ -320,7 +320,7 @@ export function BallotFeed() {
               </p>
             ) : item.electionSlug ? (
               <Link
-                href={`/elections/${item.electionSlug}/profile`}
+                href={`/elections/district/${item.electionSlug}/profile`}
                 className="shrink-0 text-[11px] font-medium uppercase tracking-widest text-accent-ring hover:text-gold"
               >
                 {item.districtName}

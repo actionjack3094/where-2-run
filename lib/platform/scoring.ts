@@ -40,6 +40,19 @@ export function euclidean(a: AxisPoint, b: AxisPoint): number {
   return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
 }
 
+/** 100 when a stance stays put. Drift across the plane pulls the score down. */
+export function policyConsistency(
+  previous: number | null | undefined,
+  before: AxisPoint,
+  after: AxisPoint,
+) {
+  const drift = euclidean(before, after);
+  const reading = Math.round(100 - Math.min(1, drift / 2) * 100);
+  const prior =
+    previous == null || !Number.isFinite(previous) ? 100 : Math.min(100, Math.max(0, previous));
+  return Math.max(0, Math.min(100, Math.round(prior * 0.75 + reading * 0.25)));
+}
+
 /** Economic below 0 debates in Democratic primaries. */
 export function partyFromCoordinate(point: AxisPoint): Party {
   return point.x < 0 ? "democrat" : "republican";

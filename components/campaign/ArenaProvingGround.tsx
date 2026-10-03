@@ -192,7 +192,7 @@ export function ArenaProvingGround() {
                   <span className="mx-2 text-zinc-600">·</span>
                   cosine distance {opponent.cosine_distance.toFixed(3)}
                   <span className="mx-2 text-zinc-600">·</span>
-                  ELO {opponent.elo_rating}
+                  Civic Standing {opponent.elo_rating}
                 </p>
                 <EndorsementBadge count={opponent.endorsements} className="mt-3" />
               </div>

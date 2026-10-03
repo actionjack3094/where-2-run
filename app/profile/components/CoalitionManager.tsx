@@ -315,7 +315,7 @@ export function CoalitionManager({ onChanged }: { onChanged?: () => void }) {
                         <span className="shrink-0 text-right font-display text-2xl font-semibold tabular-nums text-gold">
                           {rival.eloRating}
                           <span className="block text-[10px] font-medium uppercase tracking-widest text-zinc-500">
-                            ELO
+                            Civic Standing
                           </span>
                         </span>
                       </div>

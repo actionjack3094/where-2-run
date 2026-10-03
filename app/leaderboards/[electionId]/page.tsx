@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       ? `${board.election.label} · Leaderboard · WHERE 2 RUN`
       : "Leaderboard · WHERE 2 RUN",
     description: board.election
-      ? `Declared candidates in ${board.election.label}, ranked by Elo, alignment streak, and pledged escrow.`
+      ? `Declared candidates in ${board.election.label}, ranked by Civic Standing, alignment streak, and pledged escrow.`
       : "District leaderboard on WHERE 2 RUN.",
   };
 }
@@ -48,7 +48,7 @@ export default async function DistrictLeaderboardPage({ params }: PageProps) {
             {board.election.label}
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-400">
-            Declared candidates in {board.election.officeName}, ranked by Elo. Escrow and
+            Declared candidates in {board.election.officeName}, ranked by Civic Standing. Escrow and
             alignment streak show current campaign momentum.
           </p>
           <Link
@@ -99,7 +99,7 @@ function CandidateRow({ entry }: { entry: DistrictLeaderboardEntry }) {
                 {entry.name}
               </Link>
               <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
-                {entry.elo} ELO
+                {entry.elo} Civic Standing
               </p>
             </div>
             <div className="text-right">

@@ -54,7 +54,7 @@ export function CandidateCoalitionSummary({
               >
                 <span className="truncate">{endorsement.username}</span>
                 <span className="ml-3 shrink-0 text-xs tabular-nums text-gold">
-                  {endorsement.eloRating} ELO
+                  {endorsement.eloRating} Civic Standing
                 </span>
               </Link>
             </li>

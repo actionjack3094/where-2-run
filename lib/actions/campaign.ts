@@ -55,11 +55,11 @@ async function tierForUserPrimary(admin: PlatformAdmin, userId: string, primaryI
   const field = await rankedField(admin, primaryId);
   const row: StandingRow = {
     user_id: standing.user_id,
-    elo: standing.elo,
-    wins: standing.wins,
-    losses: standing.losses,
+    civic_standing: standing.civic_standing,
     ties: standing.ties,
     debates_count: standing.debates_count,
+    debates_logged: standing.debates_logged,
+    policy_consistency: standing.policy_consistency,
   };
   return { profile, tier: tierForPrimaryStanding(row, profile, field) };
 }
@@ -170,7 +170,7 @@ export async function loadCampaignRaces(userId: string): Promise<CampaignRace[]>
   const admin = platformAdmin();
   const { data, error } = await admin
     .from("primary_standings")
-    .select("primary_id, elo, debates_count, wins, losses, ties")
+    .select("primary_id, civic_standing, debates_count, debates_logged, policy_consistency, ties")
     .eq("user_id", userId)
     .gt("debates_count", 0);
   if (error) {
@@ -179,10 +179,10 @@ export async function loadCampaignRaces(userId: string): Promise<CampaignRace[]>
   }
   const rows = (data ?? []) as {
     primary_id: string;
-    elo: number;
+    civic_standing: number;
     debates_count: number;
-    wins: number;
-    losses: number;
+    debates_logged: number;
+    policy_consistency: number;
     ties: number;
   }[];
   const races: CampaignRace[] = [];

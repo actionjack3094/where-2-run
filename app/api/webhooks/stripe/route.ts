@@ -340,6 +340,7 @@ async function applyIdentityVerified(session: Stripe.Identity.VerificationSessio
     revalidatePath("/verify");
     revalidatePath("/inbox");
     revalidatePath("/debates");
+    revalidatePath("/elections");
     revalidatePath("/primaries");
     revalidatePath("/ballot");
   } catch {
