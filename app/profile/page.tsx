@@ -65,6 +65,12 @@ export default function MyProfilePage() {
           {hub ? (
             <div className="flex flex-wrap gap-4">
               <Link
+                href="/profile/settings"
+                className="text-[11px] font-medium uppercase tracking-widest text-gold hover:text-parchment"
+              >
+                Photo
+              </Link>
+              <Link
                 href="/profile/settings/volunteers"
                 className="text-[11px] font-medium uppercase tracking-widest text-gold hover:text-parchment"
               >

@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BallotEngage } from "@/components/platform/ArenaForms";
+import { ReportDebateButton } from "@/components/platform/ReportDebateButton";
+import { TownHall } from "@/components/platform/TownHall";
+import { CandidateAvatar } from "@/components/profile/CandidateAvatar";
 import { isMissingSchema } from "@/lib/db/schema-errors";
 import { getServerUser } from "@/lib/db/supabase-server";
 import { loadBallot } from "@/lib/platform/queries";
+import { loadProfile, platformAdmin } from "@/lib/platform/records";
+import { loadTownHalls } from "@/lib/platform/town-hall";
 import { tierLabel } from "@/lib/platform/types";
 
 export const dynamic = "force-dynamic";
@@ -22,12 +27,26 @@ export default async function BallotPage() {
   const user = await getServerUser();
   let board: Awaited<ReturnType<typeof loadBallot>> | null = null;
   let setup: string | null = null;
+  let verified = false;
   try {
     board = await loadBallot(user?.id ?? null);
   } catch (caught) {
     const message = caught instanceof Error ? caught.message : "Could not load My Ballot.";
     setup = isMissingSchema({ message }) ? "Apply the platform architecture migration, then reload." : message;
   }
+  if (user && board) {
+    try {
+      const profile = await loadProfile(platformAdmin(), user.id);
+      verified = Boolean(profile?.is_verified);
+    } catch {
+      verified = false;
+    }
+  }
+  const halls = board
+    ? await loadTownHalls(
+        board.matches.filter((match) => match.status === "concluded").map((match) => match.id),
+      ).catch(() => new Map())
+    : new Map();
 
   return (
     <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
@@ -90,12 +109,23 @@ export default async function BallotPage() {
                     Crowd Favorite {match.crowd.percent}% · {match.crowd.name}
                   </span>
                 ) : null}
+                <span className="ml-auto">
+                  <ReportDebateButton
+                    debateId={match.id}
+                    viewerId={user?.id ?? null}
+                    participants={[
+                      { id: match.sideA.id, name: match.sideA.name },
+                      { id: match.sideB.id, name: match.sideB.name },
+                    ]}
+                  />
+                </span>
               </div>
               <h2 className="mt-3 font-display text-xl text-parchment">{match.prompt}</h2>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 {[match.sideA, match.sideB].map((side, index) => (
                   <div key={side.id} className="rounded-lg border border-zinc-800 px-3 py-3">
-                    <p className="text-sm font-medium text-parchment">
+                    <p className="flex items-center gap-2 text-sm font-medium text-parchment">
+                      <CandidateAvatar name={side.name} avatarUrl={side.avatarUrl} size="sm" />
                       <Link href={`/profile/${side.id}`} className="hover:text-gold">
                         {side.name}
                       </Link>
@@ -141,6 +171,16 @@ export default async function BallotPage() {
                 <p className="mt-4 text-sm text-zinc-300">
                   Result recorded for {match.winnerId === match.sideA.id ? match.sideA.name : match.sideB.name}.
                 </p>
+              ) : null}
+              {match.status === "concluded" ? (
+                <TownHall
+                  debateId={match.id}
+                  questions={halls.get(match.id) ?? []}
+                  viewerId={user?.id ?? null}
+                  verified={verified}
+                  candidateAId={match.sideA.id}
+                  candidateBId={match.sideB.id || null}
+                />
               ) : null}
               <BallotEngage
                 debateId={match.id}

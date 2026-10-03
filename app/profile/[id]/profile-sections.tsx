@@ -6,10 +6,24 @@ import { registerAsVolunteer } from "@/lib/actions/campaign";
 import type { PublishedPlatform } from "@/lib/actions/campaign";
 import type { ProfileDebate } from "@/lib/platform/public-profile";
 import { tierLabel } from "@/lib/platform/types";
+import { ReportDebateButton } from "@/components/platform/ReportDebateButton";
+import { TownHall } from "@/components/platform/TownHall";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-function DebateHistory({ history }: { history: ProfileDebate[] }) {
+function DebateHistory({
+  history,
+  profileId,
+  profileName,
+  viewerId,
+  viewerVerified,
+}: {
+  history: ProfileDebate[];
+  profileId: string;
+  profileName: string;
+  viewerId: string | null;
+  viewerVerified: boolean;
+}) {
   if (history.length === 0) {
     return <p className="mt-3 text-sm text-zinc-400">No concluded debates yet.</p>;
   }
@@ -17,11 +31,26 @@ function DebateHistory({ history }: { history: ProfileDebate[] }) {
     <ul className="mt-4 grid gap-4">
       {history.map((debate) => (
         <li key={debate.id} className="rounded-xl border border-zinc-800 px-4 py-4">
-          <p className="text-[11px] uppercase tracking-widest text-zinc-500">
-            {debate.office} · {debate.result} · vs {debate.opponentName}
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-[11px] uppercase tracking-widest text-zinc-500">
+              {debate.office} · {debate.result} · vs {debate.opponentName}
+            </p>
+            <ReportDebateButton
+              debateId={debate.id}
+              viewerId={viewerId}
+              participants={[{ id: profileId, name: profileName }]}
+            />
+          </div>
           <h3 className="mt-2 text-sm font-medium text-parchment">{debate.prompt}</h3>
           {debate.ownStance ? <p className="mt-2 text-sm leading-6 text-zinc-300">{debate.ownStance}</p> : null}
+          <TownHall
+            debateId={debate.id}
+            questions={debate.questions}
+            viewerId={viewerId}
+            verified={viewerVerified}
+            candidateAId={debate.candidateAId}
+            candidateBId={debate.candidateBId}
+          />
         </li>
       ))}
     </ul>
@@ -82,13 +111,17 @@ export function ProfileSections({
   history,
   platforms,
   campaignUserId,
+  profileName,
   viewerId,
+  viewerVerified,
   volunteeredPrimaryIds,
 }: {
   history: ProfileDebate[];
   platforms: PublishedPlatform[];
   campaignUserId: string;
+  profileName: string;
   viewerId: string | null;
+  viewerVerified: boolean;
   volunteeredPrimaryIds: string[];
 }) {
   const [tab, setTab] = useState<"history" | "platform">("history");
@@ -124,7 +157,13 @@ export function ProfileSections({
       {tab === "history" ? (
         <div className="mt-6">
           <h2 className="font-display text-xl text-parchment">Debate history</h2>
-          <DebateHistory history={history} />
+          <DebateHistory
+            history={history}
+            profileId={campaignUserId}
+            profileName={profileName}
+            viewerId={viewerId}
+            viewerVerified={viewerVerified}
+          />
         </div>
       ) : (
         <div className="mt-6 grid gap-4">

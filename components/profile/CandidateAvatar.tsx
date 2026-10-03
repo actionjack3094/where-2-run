@@ -1,11 +1,19 @@
+import Image from "next/image";
 import Link from "next/link";
 import { VerificationBadge } from "@/components/verification/VerificationBadge";
+import { publicAvatarUrl } from "@/lib/platform/avatar";
 import { cn } from "@/lib/utils";
 
 const SIZE_CLASS = {
   sm: "h-8 w-8 text-[11px]",
   md: "h-11 w-11 text-sm",
   lg: "h-20 w-20 text-xl",
+} as const;
+
+const SIZE_PX = {
+  sm: "32px",
+  md: "44px",
+  lg: "80px",
 } as const;
 
 export function candidateInitials(name: string) {
@@ -19,22 +27,30 @@ export function candidateInitials(name: string) {
 
 export function CandidateAvatar({
   name,
+  avatarUrl = null,
   size = "md",
   className,
 }: {
   name: string;
+  avatarUrl?: string | null;
   size?: keyof typeof SIZE_CLASS;
   className?: string;
 }) {
+  const frame = cn(
+    "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-gold/60 bg-zinc-800 font-display font-semibold text-gold shadow-[inset_0_0_0_1px_rgba(212,175,55,0.15)]",
+    SIZE_CLASS[size],
+    className,
+  );
+  const photo = publicAvatarUrl(avatarUrl);
+  if (photo) {
+    return (
+      <span aria-hidden className={frame}>
+        <Image src={photo} alt="" fill sizes={SIZE_PX[size]} className="object-cover" />
+      </span>
+    );
+  }
   return (
-    <span
-      aria-hidden
-      className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full border border-gold/60 bg-zinc-800 font-display font-semibold text-gold shadow-[inset_0_0_0_1px_rgba(212,175,55,0.15)]",
-        SIZE_CLASS[size],
-        className,
-      )}
-    >
+    <span aria-hidden className={frame}>
       {candidateInitials(name)}
     </span>
   );
@@ -43,12 +59,14 @@ export function CandidateAvatar({
 export function CandidateIdentity({
   id,
   username,
+  avatarUrl = null,
   size = "md",
   nameClassName,
   verificationTier,
 }: {
   id: string;
   username: string;
+  avatarUrl?: string | null;
   size?: keyof typeof SIZE_CLASS;
   nameClassName?: string;
   verificationTier?: string | null;
@@ -58,7 +76,7 @@ export function CandidateIdentity({
       href={`/profile/${id}`}
       className="flex min-w-0 items-center gap-3 rounded-md outline-none transition-colors hover:text-gold focus-visible:ring-2 focus-visible:ring-gold/70"
     >
-      <CandidateAvatar name={username} size={size} />
+      <CandidateAvatar name={username} avatarUrl={avatarUrl} size={size} />
       <span className="flex min-w-0 items-center gap-1.5">
         <span
           className={cn(
