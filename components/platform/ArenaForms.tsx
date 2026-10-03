@@ -27,13 +27,20 @@ function Status({ state }: { state: PlatformFormState }) {
   );
 }
 
-export function OpeningForm({ primaryId }: { primaryId: string }) {
+export function OpeningForm({
+  primaryId,
+  botSparGraceMinutes = null,
+}: {
+  primaryId: string;
+  botSparGraceMinutes?: number | null;
+}) {
   const [state, action, pending] = useActionState(
     async (_prev: PlatformFormState, formData: FormData) =>
       createPrimaryDebatePrompt(
         primaryId,
         String(formData.get("prompt") ?? ""),
         String(formData.get("stance") ?? ""),
+        formData.get("sparWithAi") === "on",
       ),
     null,
   );
@@ -59,6 +66,18 @@ export function OpeningForm({ primaryId }: { primaryId: string }) {
           className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-parchment"
         />
       </label>
+      {botSparGraceMinutes != null ? (
+        <label className="flex items-start gap-2 text-sm text-zinc-300">
+          <input type="checkbox" name="sparWithAi" className="mt-1" />
+          <span>
+            Spar with AI
+            <span className="mt-1 block text-zinc-500">
+              A same-party partner answers immediately. Leave this off and a partner engages after{" "}
+              {botSparGraceMinutes} minutes if nobody accepts.
+            </span>
+          </span>
+        </label>
+      ) : null}
       <Button type="submit" variant="gold" disabled={pending}>
         {pending ? "Posting…" : "Post question"}
       </Button>

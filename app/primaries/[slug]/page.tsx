@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BOT_SPAR_GRACE_MS } from "@/lib/ai/bots";
 import { ChallengeForm, OpeningForm } from "@/components/platform/ArenaForms";
 import { getServerUser } from "@/lib/db/supabase-server";
 import { isMissingSchema } from "@/lib/db/schema-errors";
@@ -175,7 +176,12 @@ export default async function PrimaryHubPage(props: HubPageProps) {
             <section className="mt-10">
               <h2 className="font-display text-xl text-parchment">Post a question</h2>
               {canPost ? (
-                <OpeningForm primaryId={hub.id} />
+                <OpeningForm
+                  primaryId={hub.id}
+                  botSparGraceMinutes={
+                    process.env.NODE_ENV === "production" ? null : BOT_SPAR_GRACE_MS / 60000
+                  }
+                />
               ) : (
                 <p className="mt-3 text-sm leading-6 text-zinc-400">
                   {user ? (

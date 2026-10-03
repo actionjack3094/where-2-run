@@ -35,11 +35,22 @@ export async function notifyChallengeAccepted(debateId: string, candidateAId: st
   ]);
 }
 
-export async function notifyDebateConcluded(debateId: string, candidateAId: string, candidateBId: string) {
-  await insertArenaNotifications(platformAdmin(), [
+export function debateConcludedNotices(
+  debateId: string,
+  candidateAId: string,
+  candidateBId: string,
+): Notice[] {
+  return [
     { userId: candidateAId, type: "debate_concluded", debateId },
     { userId: candidateBId, type: "debate_concluded", debateId },
-  ]);
+  ];
+}
+
+export async function notifyDebateConcluded(debateId: string, candidateAId: string, candidateBId: string) {
+  await insertArenaNotifications(
+    platformAdmin(),
+    debateConcludedNotices(debateId, candidateAId, candidateBId),
+  );
 }
 
 /** Tell the seat holder once when fewer than two hours remain and no rebuttal is filed. */

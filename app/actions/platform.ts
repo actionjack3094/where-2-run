@@ -81,6 +81,7 @@ export async function postOpening(
     String(formData.get("primaryId") ?? ""),
     String(formData.get("prompt") ?? ""),
     String(formData.get("stance") ?? ""),
+    formData.get("sparWithAi") === "on",
   );
 }
 

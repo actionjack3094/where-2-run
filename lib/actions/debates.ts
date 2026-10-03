@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { notifyChallengeAccepted, notifyExpiringSeats } from "@/lib/actions/notifications";
+import { BOT_SPAR_GRACE_MS, sparDueBotSeats, triggerBotSparring } from "@/lib/ai/bots";
 import { adjudicateDebate } from "@/lib/ai/judge";
+import { isDevelopment } from "@/lib/ai/provider";
 import { isUuid } from "@/lib/arena/display";
 import { requireActionUserId } from "@/lib/arena/auth";
 import { parseElo } from "@/lib/arena/elo";
@@ -269,6 +271,14 @@ export async function releaseExpiredSeats(): Promise<{ released: number }> {
       .eq("status", "locked");
     if (promptError) throw new Error(promptError.message);
   }
+  try {
+    await sparDueBotSeats(1);
+  } catch (caught) {
+    console.error(
+      "sparDueBotSeats failed.",
+      caught instanceof Error ? caught.message : "Could not spar an open prompt.",
+    );
+  }
   return { released: rows.length };
 }
 
@@ -276,6 +286,7 @@ export async function createPrimaryDebatePrompt(
   primaryId: string,
   promptText: string,
   stanceText: string,
+  sparWithAi = false,
 ): Promise<DebateActionResult> {
   try {
     if (!isUuid(primaryId)) return { error: "That primary is not on the board." };
@@ -314,14 +325,34 @@ export async function createPrimaryDebatePrompt(
       .single();
     if (promptError) return { error: promptError.message };
 
-    const { error: debateError } = await session.admin.from("arena_debates").insert({
+    const sparNow = sparWithAi === true && isDevelopment();
+    const botSparAt = new Date(Date.now() + (sparNow ? 0 : BOT_SPAR_GRACE_MS)).toISOString();
+    const debateRow = {
       primary_id: primary.id,
       prompt_id: created.id,
       candidate_a_id: session.userId,
       stance_a: stance,
-      status: "open_challenge",
-    });
-    if (debateError) return { error: debateError.message };
+      status: "open_challenge" as const,
+      bot_spar_at: botSparAt,
+    };
+    let inserted = await session.admin.from("arena_debates").insert(debateRow).select("id").single();
+    if (inserted.error && isMissingSchema(inserted.error)) {
+      const { bot_spar_at: _schedule, ...withoutSchedule } = debateRow;
+      inserted = await session.admin.from("arena_debates").insert(withoutSchedule).select("id").single();
+    }
+    if (inserted.error) return { error: inserted.error.message };
+    const debateId = inserted.data.id;
+
+    if (sparNow) {
+      const spar = await triggerBotSparring(debateId);
+      refreshArena(primary.slug);
+      if (spar.sparred) {
+        return {
+          judgment: spar.judgment,
+          message: "A same-party sparring partner closed the exchange.",
+        };
+      }
+    }
 
     refreshArena(primary.slug);
     return { message: "Your opening stance is on the board." };
@@ -354,21 +385,34 @@ export async function acceptDebateChallenge(debateId: string): Promise<DebateAct
     if (party !== primary.party) return { error: "Challenges stay inside the party." };
 
     const lockedUntil = new Date(Date.now() + SEAT_LOCK_MS).toISOString();
-    const { data: claimed, error } = await session.admin
+    const claimPatch = {
+      candidate_b_id: session.userId,
+      status: "active" as const,
+      seat_locked_until: lockedUntil,
+      bot_spar_at: null,
+      updated_at: new Date().toISOString(),
+    };
+    let claimed = await session.admin
       .from("arena_debates")
-      .update({
-        candidate_b_id: session.userId,
-        status: "active",
-        seat_locked_until: lockedUntil,
-        updated_at: new Date().toISOString(),
-      })
+      .update(claimPatch)
       .eq("id", debate.id)
       .eq("status", "open_challenge")
       .is("candidate_b_id", null)
       .select("id")
       .maybeSingle();
-    if (error) return { error: error.message };
-    if (!claimed) return { error: "That seat is no longer open." };
+    if (claimed.error && isMissingSchema(claimed.error)) {
+      const { bot_spar_at: _schedule, ...withoutSchedule } = claimPatch;
+      claimed = await session.admin
+        .from("arena_debates")
+        .update(withoutSchedule)
+        .eq("id", debate.id)
+        .eq("status", "open_challenge")
+        .is("candidate_b_id", null)
+        .select("id")
+        .maybeSingle();
+    }
+    if (claimed.error) return { error: claimed.error.message };
+    if (!claimed.data) return { error: "That seat is no longer open." };
 
     await notifyChallengeAccepted(debate.id, debate.candidate_a_id);
 

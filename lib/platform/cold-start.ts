@@ -1,126 +1,17 @@
-import { randomUUID } from "node:crypto";
 import { judgeArenaExchange } from "@/lib/ai/judge";
+import { ensureSparringRoster, SPARRING_PERSONAS } from "@/lib/ai/bots";
 import { releaseExpiredSeats } from "@/lib/actions/debates";
 import {
   ARENA_PUBLIC_COLUMNS,
   loadPrimaries,
   platformAdmin,
   type ArenaPublic,
-  type PlatformAdmin,
 } from "@/lib/platform/records";
-import type { Party } from "@/lib/platform/scoring";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-type Persona = {
-  key: string;
-  name: string;
-  party: Party;
-  x: number;
-  y: number;
-  stance: string;
-};
-
-const PERSONAS: Persona[] = [
-  {
-    key: "blue-dog",
-    name: "Blue Dog",
-    party: "democrat",
-    x: -0.28,
-    y: 0.12,
-    stance:
-      "I want a Democratic primary that can win suburban counties: a public option, a secure border, and a narrow path to status.",
-  },
-  {
-    key: "progressive",
-    name: "Progressive",
-    party: "democrat",
-    x: -0.86,
-    y: -0.72,
-    stance:
-      "I want Medicare for All, stronger unions, and civil-rights statutes with real enforcement.",
-  },
-  {
-    key: "main-street",
-    name: "Main Street",
-    party: "republican",
-    x: 0.34,
-    y: 0.22,
-    stance:
-      "I want lower taxes for small employers, a secure border, and abortion policy set by the states.",
-  },
-  {
-    key: "movement",
-    name: "Movement Conservative",
-    party: "republican",
-    x: 0.82,
-    y: 0.74,
-    stance:
-      "I want deep spending cuts, traditional standards in schools, and a much smaller federal code.",
-  },
-];
-
-async function ensurePersona(admin: PlatformAdmin, persona: Persona) {
-  const { data, error } = await admin
-    .from("profiles")
-    .select("id")
-    .eq("synthetic_key", persona.key)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  if (data?.id) return data.id as string;
-
-  const email = `synthetic+${persona.key}@where2run.local`;
-  const created = await admin.auth.admin.createUser({
-    email,
-    password: randomUUID(),
-    email_confirm: true,
-    user_metadata: { full_name: persona.name },
-  });
-  if (created.error || !created.data.user) {
-    const listed = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-    const existing = listed.data.users.find((user) => user.email === email);
-    if (!existing) {
-      throw new Error(created.error?.message ?? "Could not seed a synthetic debater.");
-    }
-    const userId = existing.id;
-    const { error: profileError } = await admin.from("profiles").upsert({
-      id: userId,
-      email,
-      full_name: persona.name,
-      display_name: persona.name,
-      ideology_x: persona.x,
-      ideology_y: persona.y,
-      onboarding_completed: true,
-      is_verified: false,
-      is_synthetic: true,
-      synthetic_key: persona.key,
-      candidate_tier: "pundit",
-      updated_at: new Date().toISOString(),
-    });
-    if (profileError) throw new Error(profileError.message);
-    return userId;
-  }
-  const userId = created.data.user.id;
-  const { error: profileError } = await admin.from("profiles").upsert({
-    id: userId,
-    email,
-    full_name: persona.name,
-    display_name: persona.name,
-    ideology_x: persona.x,
-    ideology_y: persona.y,
-    onboarding_completed: true,
-    is_verified: false,
-    is_synthetic: true,
-    synthetic_key: persona.key,
-    candidate_tier: "pundit",
-    updated_at: new Date().toISOString(),
-  });
-  if (profileError) throw new Error(profileError.message);
-  return userId;
-}
-
 function closestPersona(party: string, x: number, y: number) {
-  const pool = PERSONAS.filter((persona) => persona.party === party);
+  const pool = SPARRING_PERSONAS.filter((persona) => persona.party === party);
   return pool.sort(
     (a, b) => (a.x - x) ** 2 + (a.y - y) ** 2 - ((b.x - x) ** 2 + (b.y - y) ** 2),
   )[0];
@@ -128,10 +19,7 @@ function closestPersona(party: string, x: number, y: number) {
 
 export async function ensureColdStart() {
   const admin = platformAdmin();
-  const ids = new Map<string, string>();
-  for (const persona of PERSONAS) {
-    ids.set(persona.key, await ensurePersona(admin, persona));
-  }
+  const ids = await ensureSparringRoster(admin);
 
   const primaries = await loadPrimaries(admin);
   for (const primary of primaries) {
@@ -182,7 +70,7 @@ export async function ensureColdStart() {
   for (const debate of (stale ?? []) as ArenaPublic[]) {
     const primary = primaries.find((row) => row.id === debate.primary_id);
     if (!primary) continue;
-    const challenger = PERSONAS.filter((persona) => persona.party === primary.party).find(
+    const challenger = SPARRING_PERSONAS.filter((persona) => persona.party === primary.party).find(
       (persona) => ids.get(persona.key) !== debate.candidate_a_id,
     );
     if (!challenger) continue;

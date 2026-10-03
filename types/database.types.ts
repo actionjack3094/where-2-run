@@ -125,6 +125,8 @@ export interface ArenaDebate {
   stance_a: string;
   stance_b: string | null;
   seat_locked_until: string | null;
+  /** When a human opening may be claimed by a same-party synthetic partner. */
+  bot_spar_at: string | null;
   status: ArenaDebateStatus | string;
   winner_id: string | null;
   is_tie: boolean;
