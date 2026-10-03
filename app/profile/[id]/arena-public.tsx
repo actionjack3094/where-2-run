@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { ProfileSections } from "@/app/profile/[id]/profile-sections";
+import type { PublishedPlatform } from "@/lib/actions/campaign";
 import type { ArenaPublicProfile } from "@/lib/platform/public-profile";
 import { tierLabel } from "@/lib/platform/types";
 
@@ -30,7 +32,17 @@ export function IdeologyCompass({ x, y }: { x: number; y: number }) {
   );
 }
 
-export function ArenaPublicProfileView({ profile }: { profile: ArenaPublicProfile }) {
+export function ArenaPublicProfileView({
+  profile,
+  platforms = [],
+  viewerId = null,
+  volunteeredPrimaryIds = [],
+}: {
+  profile: ArenaPublicProfile;
+  platforms?: PublishedPlatform[];
+  viewerId?: string | null;
+  volunteeredPrimaryIds?: string[];
+}) {
   return (
     <>
       <header>
@@ -85,26 +97,36 @@ export function ArenaPublicProfileView({ profile }: { profile: ArenaPublicProfil
         )}
       </section>
 
-      <section className="mt-10">
-        <h2 className="font-display text-xl text-parchment">Debate history</h2>
-        {profile.history.length === 0 ? (
-          <p className="mt-3 text-sm text-zinc-400">No concluded debates yet.</p>
-        ) : (
-          <ul className="mt-4 grid gap-4">
-            {profile.history.map((debate) => (
-              <li key={debate.id} className="rounded-xl border border-zinc-800 px-4 py-4">
-                <p className="text-[11px] uppercase tracking-widest text-zinc-500">
-                  {debate.office} · {debate.result} · vs {debate.opponentName}
-                </p>
-                <h3 className="mt-2 text-sm font-medium text-parchment">{debate.prompt}</h3>
-                {debate.ownStance ? (
-                  <p className="mt-2 text-sm leading-6 text-zinc-300">{debate.ownStance}</p>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {platforms.length > 0 ? (
+        <ProfileSections
+          history={profile.history}
+          platforms={platforms}
+          campaignUserId={profile.id}
+          viewerId={viewerId}
+          volunteeredPrimaryIds={volunteeredPrimaryIds}
+        />
+      ) : (
+        <section className="mt-10">
+          <h2 className="font-display text-xl text-parchment">Debate history</h2>
+          {profile.history.length === 0 ? (
+            <p className="mt-3 text-sm text-zinc-400">No concluded debates yet.</p>
+          ) : (
+            <ul className="mt-4 grid gap-4">
+              {profile.history.map((debate) => (
+                <li key={debate.id} className="rounded-xl border border-zinc-800 px-4 py-4">
+                  <p className="text-[11px] uppercase tracking-widest text-zinc-500">
+                    {debate.office} · {debate.result} · vs {debate.opponentName}
+                  </p>
+                  <h3 className="mt-2 text-sm font-medium text-parchment">{debate.prompt}</h3>
+                  {debate.ownStance ? (
+                    <p className="mt-2 text-sm leading-6 text-zinc-300">{debate.ownStance}</p>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
     </>
   );
 }

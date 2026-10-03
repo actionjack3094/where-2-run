@@ -56,7 +56,7 @@ export default async function BallotPage() {
         ) : null}
         {board?.needsAddress ? (
           <Link
-            href="/onboarding"
+            href="/onboarding/address"
             className="mt-8 block rounded-xl border border-gold bg-zinc-900 px-6 py-8"
           >
             <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">

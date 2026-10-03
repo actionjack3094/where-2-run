@@ -72,6 +72,15 @@ export type AccountProfile = {
   candidate_tier: CandidateTier | string;
   is_synthetic: boolean;
   synthetic_key: string | null;
+  /** Private ciphertext. Do not select for public pages. */
+  residential_address: string | null;
+  state_code: string | null;
+  congressional_district: string | null;
+  state_leg_district_upper: string | null;
+  state_leg_district_lower: string | null;
+  county: string | null;
+  municipality: string | null;
+  ocd_ids: string[];
   created_at: string | null;
   updated_at: string | null;
 };
@@ -101,6 +110,23 @@ export interface PrimaryStanding {
   ties: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface CandidatePlatform {
+  user_id: string;
+  primary_id: string;
+  manifesto: string;
+  key_policies: string[];
+  updated_at: string;
+}
+
+export interface VolunteerSignup {
+  id: string;
+  campaign_user_id: string;
+  volunteer_user_id: string;
+  primary_id: string;
+  status: "pending" | "accepted" | "declined" | "contacted" | string;
+  created_at: string;
 }
 
 export interface DebatePrompt {
@@ -1275,6 +1301,57 @@ export interface Database {
             columns: ["debate_id"];
             isOneToOne: false;
             referencedRelation: "arena_debates";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      candidate_platforms: {
+        Row: CandidatePlatform;
+        Insert: Partial<CandidatePlatform> &
+          Pick<CandidatePlatform, "user_id" | "primary_id" | "manifesto" | "key_policies">;
+        Update: Partial<CandidatePlatform>;
+        Relationships: [
+          {
+            foreignKeyName: "candidate_platforms_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "candidate_platforms_primary_id_fkey";
+            columns: ["primary_id"];
+            isOneToOne: false;
+            referencedRelation: "primaries";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      volunteer_signups: {
+        Row: VolunteerSignup;
+        Insert: Partial<VolunteerSignup> &
+          Pick<VolunteerSignup, "campaign_user_id" | "volunteer_user_id" | "primary_id">;
+        Update: Partial<VolunteerSignup>;
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_signups_campaign_user_id_fkey";
+            columns: ["campaign_user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "volunteer_signups_volunteer_user_id_fkey";
+            columns: ["volunteer_user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "volunteer_signups_primary_id_fkey";
+            columns: ["primary_id"];
+            isOneToOne: false;
+            referencedRelation: "primaries";
             referencedColumns: ["id"];
           },
         ];

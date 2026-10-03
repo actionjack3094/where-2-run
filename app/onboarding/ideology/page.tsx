@@ -22,12 +22,20 @@ export default function IdeologyOnboardingPage() {
             Six economic questions and six social questions. Your answers set the
             coordinate Debates uses to match primaries.
           </p>
-          <Link
-            href="/debates"
-            className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
-          >
-            Back to Debates
-          </Link>
+          <div className="mt-4 flex flex-wrap gap-4">
+            <Link
+              href="/onboarding/address"
+              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+            >
+              Confirm your address
+            </Link>
+            <Link
+              href="/debates"
+              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+            >
+              Back to Debates
+            </Link>
+          </div>
         </header>
         <DiagnosticQuiz />
       </div>

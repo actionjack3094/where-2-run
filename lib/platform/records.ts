@@ -71,7 +71,21 @@ export async function loadProfiles(admin: PlatformAdmin, ids: string[]) {
   return new Map(((data ?? []) as PlatformProfile[]).map((row) => [row.id, row]));
 }
 
+function normalizeOcdList(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.map((id) => normalizeOcdId(String(id))).filter(Boolean))];
+}
+
+/** Voter divisions from profiles.ocd_ids. Older home_ocd_ids rows fill in until an address is confirmed. */
 export async function loadHomeOcdIds(admin: PlatformAdmin, userId: string) {
+  const profile = await admin.from("profiles").select("ocd_ids").eq("id", userId).maybeSingle();
+  if (!profile.error) {
+    const ids = normalizeOcdList((profile.data as { ocd_ids?: string[] | null } | null)?.ocd_ids);
+    if (ids.length > 0) return ids;
+  } else if (!isMissingSchema(profile.error)) {
+    throw new Error(profile.error.message);
+  }
+
   const { data, error } = await admin
     .from("users")
     .select("home_ocd_ids")
@@ -81,8 +95,7 @@ export async function loadHomeOcdIds(admin: PlatformAdmin, userId: string) {
     if (isMissingSchema(error)) return [];
     throw new Error(error.message);
   }
-  const ids = (data as { home_ocd_ids?: string[] | null } | null)?.home_ocd_ids ?? [];
-  return ids.map((id) => normalizeOcdId(id)).filter(Boolean);
+  return normalizeOcdList((data as { home_ocd_ids?: string[] | null } | null)?.home_ocd_ids);
 }
 
 export function ocdMatches(homeOcdIds: string[], ocdId: string) {

@@ -17,6 +17,8 @@ import {
 import { CoalitionBadge } from "@/components/coalitions/CoalitionBadge";
 import { VerificationBadge } from "@/components/verification/VerificationBadge";
 import { isUuid } from "@/lib/arena/display";
+import { loadPublishedPlatforms, loadVolunteerPrimaryIds } from "@/lib/actions/campaign";
+import { getServerUser } from "@/lib/db/supabase-server";
 import { loadArenaPublicProfile } from "@/lib/platform/public-profile";
 import { ArenaPublicProfileView } from "@/app/profile/[id]/arena-public";
 import { hasTrustBadge, verificationLabel } from "@/lib/verification";
@@ -205,10 +207,21 @@ export default async function PublicProfilePage({
   const { id } = await params;
   const arena = isUuid(id) ? await loadArenaPublicProfile(id).catch(() => null) : null;
   if (arena) {
+    const viewer = await getServerUser().catch(() => null);
+    const platforms = await loadPublishedPlatforms(id).catch(() => []);
+    const volunteeredPrimaryIds =
+      viewer && platforms.length > 0
+        ? await loadVolunteerPrimaryIds(viewer.id, id).catch(() => [])
+        : [];
     return (
       <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
         <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
-          <ArenaPublicProfileView profile={arena} />
+          <ArenaPublicProfileView
+            profile={arena}
+            platforms={platforms}
+            viewerId={viewer?.id ?? null}
+            volunteeredPrimaryIds={volunteeredPrimaryIds}
+          />
         </div>
       </main>
     );
