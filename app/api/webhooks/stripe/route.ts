@@ -7,11 +7,13 @@ import { isMissingRelation } from "@/lib/coalitions";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 import { ALIGNMENT_STREAK_UNLOCK_CONDITION } from "@/lib/escrow";
 import { notifyPledgeFunded } from "@/lib/notifications/inbox";
+import { recomputeTier } from "@/lib/platform/records";
 import {
   customerIdOf,
   getStripe,
   getStripeWebhookSecret,
   paymentMethodIdOf,
+  verifiedLegalName,
 } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -297,11 +299,7 @@ function identityUserId(session: Stripe.Identity.VerificationSession) {
 
 function legalNameFromIdentity(session: Stripe.Identity.VerificationSession) {
   const outputs = session.verified_outputs;
-  const name = [outputs?.first_name, outputs?.last_name]
-    .map((part) => part?.trim())
-    .filter(Boolean)
-    .join(" ");
-  return name || null;
+  return verifiedLegalName(outputs?.first_name, outputs?.last_name);
 }
 
 async function applyIdentityVerified(session: Stripe.Identity.VerificationSession) {
@@ -329,9 +327,21 @@ async function applyIdentityVerified(session: Stripe.Identity.VerificationSessio
   if (error && !isMissingRelation(error)) throw new Error(error.message);
 
   try {
+    await recomputeTier(admin, userId);
+  } catch (caught) {
+    console.error(
+      "recomputeTier after identity verification failed.",
+      caught instanceof Error ? caught.message : "Could not refresh the candidate tier.",
+    );
+  }
+
+  try {
     revalidatePath("/profile");
     revalidatePath("/verify");
     revalidatePath("/inbox");
+    revalidatePath("/debates");
+    revalidatePath("/primaries");
+    revalidatePath("/ballot");
   } catch {
     // The upgrade is already saved. A cache refresh failure must not make
     // Stripe retry the webhook.

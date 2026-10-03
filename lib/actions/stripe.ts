@@ -4,9 +4,10 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import Stripe from "stripe";
 import { requireActionUserId } from "@/lib/arena/auth";
+import { isUuid } from "@/lib/arena/display";
 import { isMissingSchema } from "@/lib/db/schema-errors";
 import { createAdminClient } from "@/lib/db/supabase-admin";
-import { getStripe } from "@/lib/stripe";
+import { getStripe, getStripePublishableKey, getStripeWebhookSecret } from "@/lib/stripe";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -215,5 +216,112 @@ export async function loadStripeConnectStatus(userId: string) {
   } catch (caught) {
     console.error("loadStripeConnectStatus failed.", caught);
     return { accountId: null, complete: false };
+  }
+}
+
+export type IdentityVerificationResult =
+  | { ok: true; url: string; clientSecret: string | null }
+  | { ok: true; url: null; clientSecret: null; status: "verified" }
+  | { ok: false; error: string };
+
+const IDENTITY_ERROR = "We couldn't start identity verification. Please try again.";
+
+function identityMessage(error: unknown) {
+  if (error instanceof Stripe.errors.StripeError) return error.message;
+  if (error instanceof Error && /STRIPE_SECRET_KEY/i.test(error.message)) {
+    return "Stripe is not configured. Add STRIPE_SECRET_KEY to verify identity.";
+  }
+  if (error instanceof Error && /NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY/i.test(error.message)) {
+    return "Stripe is not configured. Add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.";
+  }
+  if (error instanceof Error && /STRIPE_WEBHOOK_SECRET/i.test(error.message)) {
+    return "Stripe webhooks are not configured. Add STRIPE_WEBHOOK_SECRET.";
+  }
+  return IDENTITY_ERROR;
+}
+
+/**
+ * Open a Stripe Identity document check for the signed-in user.
+ * `metadata.user_id` is the profile the verified webhook updates.
+ * The browser redirects to `url`. `client_secret` is included for the modal fallback.
+ */
+export async function createIdentityVerificationSession(): Promise<IdentityVerificationResult> {
+  try {
+    const userId = await requireActionUserId();
+    if (!userId || !isUuid(userId)) {
+      return { ok: false, error: "Sign in to verify your identity." };
+    }
+
+    getStripePublishableKey();
+    getStripeWebhookSecret();
+    const stripe = getStripe();
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("profiles")
+      .select("is_verified, tier2_status, stripe_identity_session_id")
+      .eq("id", userId)
+      .maybeSingle();
+    if (error && !isMissingSchema(error)) throw error;
+
+    const profile = data as {
+      is_verified: boolean | null;
+      tier2_status: string | null;
+      stripe_identity_session_id: string | null;
+    } | null;
+    if (profile?.is_verified || profile?.tier2_status === "verified") {
+      return { ok: true, url: null, clientSecret: null, status: "verified" };
+    }
+
+    const origin = await requestOrigin();
+    const existingSessionId = profile?.stripe_identity_session_id?.trim();
+    if (existingSessionId) {
+      const existing = await stripe.identity.verificationSessions.retrieve(existingSessionId);
+      if (existing.status === "verified") {
+        return { ok: true, url: null, clientSecret: null, status: "verified" };
+      }
+      if (existing.status === "processing") {
+        return { ok: false, error: "Stripe is still reviewing your documents." };
+      }
+      if (existing.status === "requires_input" && existing.url) {
+        return { ok: true, url: existing.url, clientSecret: existing.client_secret };
+      }
+    }
+
+    const session = await stripe.identity.verificationSessions.create({
+      type: "document",
+      client_reference_id: userId,
+      return_url: `${origin}/verify`,
+      metadata: { user_id: userId },
+      options: {
+        document: {
+          allowed_types: ["driving_license", "id_card", "passport"],
+        },
+      },
+    });
+
+    if (!session.url && !session.client_secret) {
+      return { ok: false, error: "Stripe did not return a verification link." };
+    }
+
+    const { error: pendingError } = await admin
+      .from("profiles")
+      .update({
+        tier2_status: "pending",
+        stripe_identity_session_id: session.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", userId);
+    if (pendingError && !isMissingSchema(pendingError)) throw pendingError;
+
+    revalidatePath("/verify");
+    revalidatePath("/profile");
+    return {
+      ok: true,
+      url: session.url ?? "",
+      clientSecret: session.client_secret,
+    };
+  } catch (caught) {
+    console.error("createIdentityVerificationSession failed.", caught);
+    return { ok: false, error: identityMessage(caught) };
   }
 }

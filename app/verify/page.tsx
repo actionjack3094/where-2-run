@@ -5,6 +5,8 @@ import { IdentityVerifyButton } from "@/app/verify/identity-button";
 import { getServerUser } from "@/lib/db/supabase-server";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 import { isMissingSchema } from "@/lib/db/schema-errors";
+import { parseTier } from "@/lib/platform/scoring";
+import { tierLabel } from "@/lib/platform/types";
 
 export const metadata: Metadata = {
   title: "Verify identity · WHERE 2 RUN",
@@ -30,23 +32,28 @@ export default async function VerifyPortalPage() {
   let claim: ClaimState | null = null;
   let loadError: string | null = null;
   let identityVerified = false;
+  let candidateTier = tierLabel("pundit");
 
   if (user) {
     try {
       const admin = createAdminClient();
-      const [candidateResult, claimResult, accountResult, profileResult] = await Promise.all([
+      const [candidateResult, claimResult, profileResult] = await Promise.all([
         admin.from("candidates").select("id, display_name, office_sought, claimed_by").limit(100),
         admin
           .from("tier3_verifications")
           .select("claim_status, ballot_name, government_id_status, claimed_candidate_id")
           .eq("user_id", user.id)
           .maybeSingle(),
-        admin.from("users").select("tier").eq("id", user.id).maybeSingle(),
-        admin.from("profiles").select("tier2_status").eq("id", user.id).maybeSingle(),
+        admin
+          .from("profiles")
+          .select("is_verified, tier2_status, candidate_tier")
+          .eq("id", user.id)
+          .maybeSingle(),
       ]);
-      identityVerified =
-        accountResult.data?.tier === "verified" ||
-        profileResult.data?.tier2_status === "verified";
+      identityVerified = Boolean(
+        profileResult.data?.is_verified || profileResult.data?.tier2_status === "verified",
+      );
+      candidateTier = tierLabel(parseTier(profileResult.data?.candidate_tier));
 
       if (candidateResult.error) {
         loadError = isMissingSchema(candidateResult.error)
@@ -94,7 +101,18 @@ export default async function VerifyPortalPage() {
           </p>
         </header>
 
-        {user ? <IdentityVerifyButton verified={identityVerified} /> : null}
+        {user && identityVerified ? (
+          <div className="mt-8 rounded-xl border border-gold/50 bg-zinc-900 px-5 py-5">
+            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+              Verification Complete
+            </p>
+            <p className="mt-2 text-sm leading-6 text-parchment">
+              Stripe confirmed this identity. Current tier: {candidateTier}.
+            </p>
+          </div>
+        ) : null}
+
+        {user && !identityVerified ? <IdentityVerifyButton /> : null}
 
         {!user ? (
           <Link

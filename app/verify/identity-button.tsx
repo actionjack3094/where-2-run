@@ -1,61 +1,53 @@
 "use client";
 
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { createIdentityVerificationSession } from "@/lib/actions/identity";
+import { createIdentityVerificationSession } from "@/lib/actions/stripe";
 import { Button } from "@/components/ui/button";
 
 let stripePromise: Promise<Stripe | null> | null = null;
 
 function browserStripe() {
-  const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+  const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim();
   if (!key) return null;
   stripePromise ??= loadStripe(key);
   return stripePromise;
 }
 
-export function IdentityVerifyButton({ verified }: { verified: boolean }) {
+export function IdentityVerifyButton() {
+  const router = useRouter();
   const [pending, setPending] = useState(false);
-  const [done, setDone] = useState(verified);
-  const [message, setMessage] = useState<string | null>(
-    verified ? "Your identity is verified." : null,
-  );
   const [error, setError] = useState<string | null>(null);
 
   async function startVerification() {
     setPending(true);
     setError(null);
-    setMessage(null);
     try {
       const result = await createIdentityVerificationSession();
       if (!result.ok) {
         setError(result.error);
         return;
       }
-      if (!result.clientSecret) {
-        setDone(true);
-        setMessage("Your identity is verified.");
+      if (("status" in result && result.status === "verified") || !result.url) {
+        if (result.clientSecret) {
+          const stripe = await browserStripe();
+          if (!stripe) {
+            setError("Stripe is not configured. Add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.");
+            return;
+          }
+          const modal = await stripe.verifyIdentity(result.clientSecret);
+          if (modal.error) {
+            setError(modal.error.message ?? "Identity verification was not completed.");
+            return;
+          }
+          router.refresh();
+          return;
+        }
+        router.refresh();
         return;
       }
-
-      const stripe = await browserStripe();
-      if (!stripe) {
-        setError(
-          "Stripe is not configured in the browser. Add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.",
-        );
-        return;
-      }
-
-      const modal = await stripe.verifyIdentity(result.clientSecret);
-      if (modal.error) {
-        setError(modal.error.message ?? "Identity verification was not completed.");
-        return;
-      }
-
-      setDone(true);
-      setMessage(
-        "Documents submitted. You'll be marked verified when Stripe confirms the check.",
-      );
+      window.location.assign(result.url);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not open identity verification.");
     } finally {
@@ -69,19 +61,18 @@ export function IdentityVerifyButton({ verified }: { verified: boolean }) {
         Stripe Identity
       </p>
       <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-300">
-        Confirm a government ID so this account can vote and file as a real person.
-        Stripe collects the document. Where 2 Run stores the verification result.
+        Confirm a government ID so this account can be ranked under a legal name. Stripe
+        collects the document. Where 2 Run stores the verification result.
       </p>
       <Button
         type="button"
         variant="gold"
         className="mt-5"
-        disabled={pending || done}
+        disabled={pending}
         onClick={() => void startVerification()}
       >
-        {pending ? "Opening Stripe…" : done ? "Verified" : "Verify identity"}
+        {pending ? "Opening Stripe…" : "Verify Identity with Stripe"}
       </Button>
-      {message ? <p className="mt-3 text-sm leading-6 text-parchment">{message}</p> : null}
       {error ? <p className="mt-3 text-sm leading-6 text-zinc-400">{error}</p> : null}
     </div>
   );

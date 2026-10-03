@@ -33,9 +33,28 @@ export function dollarsToCents(amount: number) {
 }
 
 export function getStripeWebhookSecret() {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  const secret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
   if (!secret) {
     throw new Error("Missing STRIPE_WEBHOOK_SECRET");
   }
   return secret;
+}
+
+export function getStripePublishableKey() {
+  const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim();
+  if (!key) {
+    throw new Error("Missing NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY");
+  }
+  return key;
+}
+
+/** First and last name from a verified Identity document, joined for `legal_name`. */
+export function verifiedLegalName(
+  firstName: string | null | undefined,
+  lastName: string | null | undefined,
+) {
+  return [firstName, lastName]
+    .map((part) => part?.trim() ?? "")
+    .filter(Boolean)
+    .join(" ");
 }
