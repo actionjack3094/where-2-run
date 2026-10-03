@@ -24,6 +24,7 @@ export type PlatformFormState = {
 function refresh() {
   revalidatePath("/ballot");
   revalidatePath("/debates");
+  revalidatePath("/elections");
   revalidatePath("/primaries");
 }
 
@@ -82,6 +83,7 @@ export async function postOpening(
     String(formData.get("prompt") ?? ""),
     String(formData.get("stance") ?? ""),
     formData.get("sparWithAi") === "on",
+    String(formData.get("sourcePromptId") ?? "") || null,
   );
 }
 

@@ -67,6 +67,12 @@ export default async function VolunteerDashboardPage() {
 
         <div className="mt-4 flex flex-wrap gap-4">
           <Link
+            href="/profile/settings"
+            className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+          >
+            Photo
+          </Link>
+          <Link
             href="/profile/settings/platform"
             className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
           >
@@ -86,7 +92,7 @@ export default async function VolunteerDashboardPage() {
           <div className="mt-8 rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-6">
             <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500">Locked</p>
             <p className="mt-3 text-sm leading-6 text-parchment">
-              The volunteer roster opens when you are a Frontrunner: top 10% Elo in a primary,
+              The volunteer roster opens when you are a Frontrunner: top 10% Civic Standing in a primary,
               with Stripe verification and a legal name.
             </p>
           </div>

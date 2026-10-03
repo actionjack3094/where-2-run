@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CIVIC_STANDING_TIP, IDEOLOGY_COMPASS_TIP, InfoTooltip } from "@/components/InfoTooltip";
 import { ChallengeForm, LockedSeat } from "@/components/platform/ArenaForms";
+import { ReportDebateButton } from "@/components/platform/ReportDebateButton";
+import { CandidateAvatar } from "@/components/profile/CandidateAvatar";
 import { isMissingSchema } from "@/lib/db/schema-errors";
 import { getServerUser } from "@/lib/db/supabase-server";
 import { ensureColdStart } from "@/lib/platform/cold-start";
@@ -44,8 +47,9 @@ export default async function DebatesPage(props: { searchParams: Promise<{ filed
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
             Nationwide primaries
           </p>
-          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment">
+          <h1 className="mt-3 inline-flex items-center gap-2 font-display text-3xl font-semibold tracking-tight text-parchment">
             Debates
+            <InfoTooltip label="Ideology Compass" text={IDEOLOGY_COMPASS_TIP} />
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
             Open seats from primaries closest to you, inside your party. Challenge locks
@@ -82,8 +86,8 @@ export default async function DebatesPage(props: { searchParams: Promise<{ filed
         {feed && !feed.needsDiagnostic && !feed.signedOut && feed.cards.length === 0 ? (
           <p className="mt-8 text-sm text-zinc-400">
             No open seats in range.{" "}
-            <Link href="/primaries" className="text-gold">
-              Browse primary hubs
+            <Link href="/elections" className="text-gold">
+              Browse elections
             </Link>
             .
           </p>
@@ -96,13 +100,25 @@ export default async function DebatesPage(props: { searchParams: Promise<{ filed
             const locked = card.status === "active";
             return (
               <article key={card.id} className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-5">
-                <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">
-                  <Link href={`/primaries/${card.primarySlug}`} className="hover:text-gold">
-                    {partyLabel(card.party)} · {card.officeName}
-                  </Link>
-                </p>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-zinc-500">
+                    <Link href={`/elections/${card.primarySlug}`} className="hover:text-gold">
+                      {partyLabel(card.party)} · {card.officeName}
+                    </Link>
+                    <InfoTooltip label="Civic Standing" text={CIVIC_STANDING_TIP} />
+                  </div>
+                  <ReportDebateButton
+                    debateId={card.id}
+                    viewerId={user?.id ?? null}
+                    participants={[
+                      { id: card.sideA.id, name: card.sideA.name },
+                      ...(card.sideB ? [{ id: card.sideB.id, name: card.sideB.name }] : []),
+                    ]}
+                  />
+                </div>
                 <h2 className="mt-3 font-display text-xl text-parchment">{card.prompt}</h2>
-                <p className="mt-4 text-sm font-medium text-parchment">
+                <p className="mt-4 flex items-center gap-2 text-sm font-medium text-parchment">
+                  <CandidateAvatar name={card.sideA.name} avatarUrl={card.sideA.avatarUrl} size="sm" />
                   <Link href={`/profile/${card.sideA.id}`} className="hover:text-gold">
                     {card.sideA.name}
                   </Link>{" "}
@@ -112,7 +128,8 @@ export default async function DebatesPage(props: { searchParams: Promise<{ filed
                 </p>
                 <p className="mt-2 text-sm leading-6 text-zinc-300">{card.stanceA}</p>
                 {card.sideB ? (
-                  <p className="mt-4 text-sm text-zinc-400">
+                  <p className="mt-4 flex items-center gap-2 text-sm text-zinc-400">
+                    <CandidateAvatar name={card.sideB.name} avatarUrl={card.sideB.avatarUrl} size="sm" />
                     Challenged by{" "}
                     <Link href={`/profile/${card.sideB.id}`} className="hover:text-gold">
                       {card.sideB.name}

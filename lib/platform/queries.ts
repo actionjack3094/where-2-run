@@ -5,8 +5,10 @@ import {
   activeEloField,
   buildPrimaryBoard,
   loadReleasedDonationHrefs,
+  normalizeStandingRow,
   tierForPrimaryStanding,
   type StandingRow,
+  type StandingSource,
 } from "@/lib/actions/tiers";
 import { normalizeOcdId } from "@/lib/civic-fencing";
 import { isMissingSchema } from "@/lib/db/schema-errors";
@@ -36,6 +38,7 @@ function side(profile: PlatformProfile | undefined, id: string) {
   return {
     id,
     name: displayName(profile ?? null),
+    avatarUrl: profile?.avatar_url ?? null,
     tier: asTier(profile?.candidate_tier),
     verified: canRank(profile ?? {
       id,
@@ -50,6 +53,9 @@ function side(profile: PlatformProfile | undefined, id: string) {
       candidate_tier: "pundit",
       is_synthetic: false,
       synthetic_key: null,
+      is_banned: false,
+      is_admin: false,
+      avatar_url: null,
     }),
     donationHref: null,
   };
@@ -143,10 +149,12 @@ export async function loadArenaFeed(userId: string | null) {
     .from("arena_debates")
     .select(ARENA_PUBLIC)
     .in("primary_id", ids)
-    .neq("status", "concluded")
+    .in("status", ["open_challenge", "active"])
     .order("created_at", { ascending: false });
   if (error) throw new Error(schemaMessage(error) ?? error.message);
-  const debates = (data ?? []) as ArenaPublic[];
+  const debates = ((data ?? []) as ArenaPublic[]).filter(
+    (debate) => debate.status === "open_challenge" || debate.status === "active",
+  );
   const promptIds = debates.map((debate) => debate.prompt_id);
   const prompts = new Map<string, DebatePrompt>();
   if (promptIds.length > 0) {
@@ -226,7 +234,9 @@ export async function loadBallot(userId: string | null) {
   );
   const standingResult = await admin
     .from("primary_standings")
-    .select("user_id, primary_id, elo, wins, losses, ties, debates_count")
+    .select(
+      "user_id, primary_id, civic_standing, ties, debates_count, debates_logged, policy_consistency",
+    )
     .in(
       "primary_id",
       primaries.map((primary) => primary.id),
@@ -400,32 +410,45 @@ export async function loadPrimaryHub(slug: string): Promise<PrimaryHub | null> {
   const primaries = await loadPrimaries(admin);
   const primary = preferCurrentPrimary(primaries, slug);
   if (!primary) return null;
-  const party: Party = primary.party === "republican" ? "republican" : "democrat";
-  const standingSelect = "user_id, elo, wins, losses, ties, debates_count, is_nominee";
-  const standingBase = "user_id, elo, wins, losses, ties, debates_count";
+  const party: Party | "nonpartisan" =
+    primary.party === "republican"
+      ? "republican"
+      : primary.party === "nonpartisan"
+        ? "nonpartisan"
+        : "democrat";
+  const sibling = [...primaries]
+    .filter((row) => row.general_slug === primary.general_slug && row.id !== primary.id && row.party !== primary.party)
+    .sort((a, b) => (b.cycle_year ?? 0) - (a.cycle_year ?? 0))[0];
+  const standingSelect =
+    "user_id, civic_standing, ties, debates_count, debates_logged, policy_consistency, is_nominee";
   const fullStandings = await admin
     .from("primary_standings")
     .select(standingSelect)
     .eq("primary_id", primary.id)
-    .order("elo", { ascending: false });
-  const standingResult =
-    fullStandings.error && isMissingSchema(fullStandings.error)
-      ? await admin
-          .from("primary_standings")
-          .select(standingBase)
-          .eq("primary_id", primary.id)
-          .order("elo", { ascending: false })
-      : fullStandings;
-  if (standingResult.error) throw new Error(schemaMessage(standingResult.error) ?? standingResult.error.message);
-  const standings = (standingResult.data ?? []) as {
-    user_id: string;
-    elo: number;
-    wins: number;
-    losses: number;
-    ties: number;
-    debates_count: number;
-    is_nominee?: boolean;
-  }[];
+    .order("civic_standing", { ascending: false });
+  let standingRows: StandingSource[] = [];
+  if (!fullStandings.error) {
+    standingRows = (fullStandings.data ?? []) as StandingSource[];
+  } else if (isMissingSchema(fullStandings.error)) {
+    const legacy = await (admin.from("primary_standings") as unknown as {
+      select: (columns: string) => {
+        eq: (
+          column: string,
+          value: string,
+        ) => Promise<{ data: StandingSource[] | null; error: { message: string } | null }>;
+      };
+    })
+      .select("user_id, elo, wins, losses, ties, debates_count")
+      .eq("primary_id", primary.id);
+    if (legacy.error) throw new Error(schemaMessage(legacy.error) ?? legacy.error.message);
+    standingRows = legacy.data ?? [];
+  } else {
+    throw new Error(schemaMessage(fullStandings.error) ?? fullStandings.error.message);
+  }
+  const standings = standingRows.map((row) => ({
+    ...normalizeStandingRow(row),
+    is_nominee: Boolean(row.is_nominee),
+  }));
   const profiles = await loadProfiles(
     admin,
     standings.map((row) => row.user_id),
@@ -469,6 +492,7 @@ export async function loadPrimaryHub(slug: string): Promise<PrimaryHub | null> {
     officeName: primary.office_name,
     state: primary.state,
     district: primary.district,
+    level: primary.level === "state" || primary.level === "local" ? primary.level : "federal",
     ocdId: primary.ocd_id,
     baselineX: primary.baseline_x,
     baselineY: primary.baseline_y,
@@ -477,6 +501,8 @@ export async function loadPrimaryHub(slug: string): Promise<PrimaryHub | null> {
     primaryDate: primary.primary_date,
     status: primary.status,
     closed: primaryClosed(primary),
+    counterpartySlug: sibling?.slug ?? null,
+    counterpartyParty: sibling?.party ?? null,
     leaderboard: board.ranked,
     unranked: board.unranked,
     openSeats: open.map((debate) =>

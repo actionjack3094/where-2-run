@@ -8,15 +8,16 @@ import {
 } from "@/lib/platform/records";
 import { parseTier, tierForStanding, type CandidateTierName } from "@/lib/platform/scoring";
 import { partyLabel, tierLabel } from "@/lib/platform/types";
+import { loadTownHalls, type TownHallQuestion } from "@/lib/platform/town-hall";
 import type { ArenaDebate, Primary, PrimaryStanding } from "@/types/database.types";
 
 export type ProfileStanding = {
   primaryId: string;
   slug: string;
   label: string;
-  elo: number;
-  wins: number;
-  losses: number;
+  civicStanding: number;
+  debatesLogged: number;
+  policyConsistency: number;
   ties: number;
   rank: number;
   fieldSize: number;
@@ -31,6 +32,9 @@ export type ProfileDebate = {
   opponentName: string;
   result: "Win" | "Loss" | "Tie" | "Closed";
   createdAt: string;
+  candidateAId: string;
+  candidateBId: string | null;
+  questions: TownHallQuestion[];
 };
 
 export type ArenaPublicProfile = {
@@ -39,6 +43,7 @@ export type ArenaPublicProfile = {
   tier: CandidateTierName;
   tierLabel: string;
   showVerified: boolean;
+  avatarUrl: string | null;
   ideologyX: number | null;
   ideologyY: number | null;
   standings: ProfileStanding[];
@@ -75,7 +80,9 @@ export async function loadArenaPublicProfile(userId: string): Promise<ArenaPubli
   const tier = parseTier(profile.candidate_tier);
   const { data: standingRows, error: standingError } = await admin
     .from("primary_standings")
-    .select("id, user_id, primary_id, elo, debates_count, wins, losses, ties, created_at, updated_at")
+    .select(
+      "id, user_id, primary_id, civic_standing, debates_count, debates_logged, policy_consistency, ties, created_at, updated_at",
+    )
     .eq("user_id", userId);
   if (standingError) {
     if (isMissingSchema(standingError)) {
@@ -85,6 +92,7 @@ export async function loadArenaPublicProfile(userId: string): Promise<ArenaPubli
         tier,
         tierLabel: tierLabel(tier),
         showVerified: tier === "declared_candidate" || tier === "frontrunner",
+        avatarUrl: profile.avatar_url,
         ideologyX: profile.ideology_x,
         ideologyY: profile.ideology_y,
         standings: [],
@@ -96,7 +104,7 @@ export async function loadArenaPublicProfile(userId: string): Promise<ArenaPubli
   const mine = (standingRows ?? []) as PrimaryStanding[];
   const primaryIds = mine.map((row) => row.primary_id);
   const primaries = new Map<string, Primary>();
-  const fieldByPrimary = new Map<string, { user_id: string; elo: number }[]>();
+  const fieldByPrimary = new Map<string, { user_id: string; civic_standing: number }[]>();
   if (primaryIds.length > 0) {
     const primaryResult = await admin
       .from("primaries")
@@ -107,14 +115,14 @@ export async function loadArenaPublicProfile(userId: string): Promise<ArenaPubli
 
     const fieldResult = await admin
       .from("primary_standings")
-      .select("user_id, primary_id, elo, debates_count")
+      .select("user_id, primary_id, civic_standing, debates_count")
       .in("primary_id", primaryIds)
       .gt("debates_count", 0);
     if (fieldResult.error) throw new Error(fieldResult.error.message);
     const peers = (fieldResult.data ?? []) as {
       user_id: string;
       primary_id: string;
-      elo: number;
+      civic_standing: number;
       debates_count: number;
     }[];
     const peerProfiles = await admin
@@ -130,7 +138,7 @@ export async function loadArenaPublicProfile(userId: string): Promise<ArenaPubli
     for (const row of peers) {
       if (synthetic.has(row.user_id)) continue;
       const list = fieldByPrimary.get(row.primary_id) ?? [];
-      list.push({ user_id: row.user_id, elo: row.elo });
+      list.push({ user_id: row.user_id, civic_standing: row.civic_standing });
       fieldByPrimary.set(row.primary_id, list);
     }
   }
@@ -140,28 +148,28 @@ export async function loadArenaPublicProfile(userId: string): Promise<ArenaPubli
     .map((row) => {
       const primary = primaries.get(row.primary_id);
       const field = fieldByPrimary.get(row.primary_id) ?? [];
-      const rank = 1 + field.filter((peer) => peer.elo > row.elo).length;
       const seat = primary?.district ? `${primary.state}-${primary.district}` : primary?.state ?? "";
-      const party = primary?.party === "republican" ? "republican" : "democrat";
+      const party = primary?.party === "republican" ? "republican" : primary?.party === "nonpartisan" ? "nonpartisan" : "democrat";
+      const rank = 1 + field.filter((peer) => peer.civic_standing > row.civic_standing).length;
       return {
         primaryId: row.primary_id,
         slug: primary?.slug ?? "",
         label: primary ? `${partyLabel(party)} · ${seat} · ${primary.office_name}` : "Primary",
-        elo: row.elo,
-        wins: row.wins,
-        losses: row.losses,
+        civicStanding: row.civic_standing,
+        debatesLogged: row.debates_logged ?? row.debates_count,
+        policyConsistency: row.policy_consistency ?? 100,
         ties: row.ties,
         rank,
         fieldSize: field.length,
         tier: tierForStanding(
-          row.elo,
-          field.map((peer) => peer.elo),
+          row.civic_standing,
+          field.map((peer) => peer.civic_standing),
           profile.is_verified || profile.tier2_status === "verified",
           profile.legal_name,
         ),
       };
     })
-    .sort((a, b) => a.rank - b.rank || b.elo - a.elo);
+    .sort((a, b) => a.rank - b.rank || b.civicStanding - a.civicStanding);
 
   const historyResult = await admin
     .from("arena_debates")
@@ -226,7 +234,16 @@ export async function loadArenaPublicProfile(userId: string): Promise<ArenaPubli
         opponentName: opponent ? publicName(opponent) : "Contender",
         result,
         createdAt: debate.created_at,
+        candidateAId: debate.candidate_a_id,
+        candidateBId: debate.candidate_b_id,
+        questions: [],
       });
+    }
+    try {
+      const halls = await loadTownHalls(history.map((debate) => debate.id));
+      for (const debate of history) debate.questions = halls.get(debate.id) ?? [];
+    } catch {
+      // History still renders if Town Hall tables are not applied yet.
     }
   }
 
@@ -236,6 +253,7 @@ export async function loadArenaPublicProfile(userId: string): Promise<ArenaPubli
     tier,
     tierLabel: tierLabel(tier),
     showVerified: tier === "declared_candidate" || tier === "frontrunner",
+    avatarUrl: profile.avatar_url,
     ideologyX: profile.ideology_x,
     ideologyY: profile.ideology_y,
     standings,

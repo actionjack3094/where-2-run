@@ -10,26 +10,51 @@ import type { LeaderRow } from "@/lib/platform/types";
 
 export type StandingRow = {
   user_id: string;
-  elo: number;
-  wins: number;
-  losses: number;
+  civic_standing: number;
   ties: number;
   debates_count: number;
+  debates_logged: number;
+  policy_consistency: number;
   is_nominee?: boolean;
 };
+
+export type StandingSource = {
+  user_id: string;
+  civic_standing?: number | null;
+  elo?: number | null;
+  ties?: number | null;
+  debates_count?: number | null;
+  debates_logged?: number | null;
+  policy_consistency?: number | null;
+  is_nominee?: boolean | null;
+};
+
+/** Read civic standing from the new columns, or from elo until the migration is applied. */
+export function normalizeStandingRow(row: StandingSource): StandingRow {
+  const debates = row.debates_count ?? 0;
+  return {
+    user_id: row.user_id,
+    civic_standing: row.civic_standing ?? row.elo ?? 1200,
+    ties: row.ties ?? 0,
+    debates_count: debates,
+    debates_logged: row.debates_logged ?? debates,
+    policy_consistency: row.policy_consistency ?? 100,
+    is_nominee: Boolean(row.is_nominee),
+  };
+}
 
 export function isKycVerified(profile: PlatformProfile | null | undefined) {
   return Boolean(profile && (profile.is_verified || profile.tier2_status === "verified"));
 }
 
-/** Elo values of real debaters who have finished at least one match in this primary. */
+/** Civic standing of real debaters who have finished at least one match in this primary. */
 export function activeEloField(standings: StandingRow[], profiles: Map<string, PlatformProfile>) {
   return standings
     .filter((row) => {
       const profile = profiles.get(row.user_id);
       return profile && !profile.is_synthetic && row.debates_count > 0;
     })
-    .map((row) => row.elo);
+    .map((row) => row.civic_standing);
 }
 
 export function tierForPrimaryStanding(
@@ -38,7 +63,7 @@ export function tierForPrimaryStanding(
   field: number[],
 ): CandidateTierName {
   if (!profile || profile.is_synthetic || row.debates_count <= 0) return "pundit";
-  return tierForStanding(row.elo, field, isKycVerified(profile), profile.legal_name);
+  return tierForStanding(row.civic_standing, field, isKycVerified(profile), profile.legal_name);
 }
 
 export function buildPrimaryBoard(
@@ -48,7 +73,9 @@ export function buildPrimaryBoard(
   const field = activeEloField(standings, profiles);
   const ranked: LeaderRow[] = [];
   const unranked: LeaderRow[] = [];
-  const ordered = [...standings].sort((a, b) => b.elo - a.elo || a.user_id.localeCompare(b.user_id));
+  const ordered = [...standings].sort(
+    (a, b) => b.civic_standing - a.civic_standing || a.user_id.localeCompare(b.user_id),
+  );
 
   for (const row of ordered) {
     const profile = profiles.get(row.user_id);
@@ -59,9 +86,10 @@ export function buildPrimaryBoard(
       userId: row.user_id,
       legalName: profile.legal_name?.trim() || null,
       displayName: displayName(profile),
-      elo: row.elo,
-      wins: row.wins,
-      losses: row.losses,
+      avatarUrl: profile.avatar_url,
+      civicStanding: row.civic_standing,
+      debatesLogged: row.debates_logged ?? row.debates_count,
+      policyConsistency: row.policy_consistency ?? 100,
       ties: row.ties,
       tier,
       verified,

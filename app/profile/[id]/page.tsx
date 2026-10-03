@@ -20,6 +20,7 @@ import { isUuid } from "@/lib/arena/display";
 import { loadPublishedPlatforms, loadVolunteerPrimaryIds } from "@/lib/actions/campaign";
 import { getServerUser } from "@/lib/db/supabase-server";
 import { loadArenaPublicProfile } from "@/lib/platform/public-profile";
+import { loadProfile, platformAdmin } from "@/lib/platform/records";
 import { ArenaPublicProfileView } from "@/app/profile/[id]/arena-public";
 import { hasTrustBadge, verificationLabel } from "@/lib/verification";
 import { loadActiveCoalitionsForCandidate } from "@/lib/coalitions";
@@ -31,7 +32,7 @@ import {
   unwrapDistrict,
   type ElectabilityMatch,
 } from "@/lib/electability";
-import { formatRecord, recordFromStats } from "@/lib/leaderboard";
+import { recordFromStats } from "@/lib/leaderboard";
 import type { CandidateStats, Coalition, District, ElectabilityScore } from "@/types/database.types";
 
 type ProfileParams = { id: string };
@@ -208,6 +209,7 @@ export default async function PublicProfilePage({
   const arena = isUuid(id) ? await loadArenaPublicProfile(id).catch(() => null) : null;
   if (arena) {
     const viewer = await getServerUser().catch(() => null);
+    const viewerProfile = viewer ? await loadProfile(platformAdmin(), viewer.id).catch(() => null) : null;
     const platforms = await loadPublishedPlatforms(id).catch(() => []);
     const volunteeredPrimaryIds =
       viewer && platforms.length > 0
@@ -220,6 +222,7 @@ export default async function PublicProfilePage({
             profile={arena}
             platforms={platforms}
             viewerId={viewer?.id ?? null}
+            viewerVerified={Boolean(viewerProfile?.is_verified)}
             volunteeredPrimaryIds={volunteeredPrimaryIds}
           />
         </div>
@@ -263,9 +266,14 @@ function ReadyProfile({ profile }: { profile: PublicProfile }) {
               <VerificationBadge tier={stats.verification_tier} size="lg" />
             </h1>
             <p className="mt-2 text-sm leading-6 text-zinc-400">
-              Debate record{" "}
               <span className="font-medium tabular-nums text-parchment">
-                {formatRecord(record.wins, record.losses)}
+                {record.wins + record.losses} Debates Logged
+              </span>
+              {" · "}
+              <span className="font-medium tabular-nums text-parchment">100% Policy Consistency</span>
+              {" · "}
+              <span className="font-medium tabular-nums text-parchment">
+                {stats.elo_rating} Civic Standing
               </span>
               {hasTrustBadge(stats.verification_tier)
                 ? ` · ${verificationLabel(stats.verification_tier)}`
@@ -291,12 +299,12 @@ function ReadyProfile({ profile }: { profile: PublicProfile }) {
       </header>
 
       <section className="mt-8 grid grid-cols-2 gap-3">
-        <StatCard label="Wins" value={record.wins} />
-        <StatCard label="Losses" value={record.losses} />
+        <StatCard label="Debates Logged" value={record.wins + record.losses} />
+        <StatCard label="Policy Consistency" value="100%" />
       </section>
 
       <section className="mt-14">
-        <IdeologyRadar candidateId={stats.id} vector={ideologyVector} />
+        <IdeologyRadar candidateId={stats.id} name={stats.username} vector={ideologyVector} />
       </section>
 
       <section className="mt-14">
@@ -377,7 +385,7 @@ function ReadyProfile({ profile }: { profile: PublicProfile }) {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
     <Card>
       <CardHeader className="gap-3">

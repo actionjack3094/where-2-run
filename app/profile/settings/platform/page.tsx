@@ -42,6 +42,12 @@ export default async function CampaignPlatformSettingsPage() {
           </p>
           <div className="mt-4 flex flex-wrap gap-4">
             <Link
+              href="/profile/settings"
+              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+            >
+              Photo
+            </Link>
+            <Link
               href="/profile/settings/volunteers"
               className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
             >
@@ -64,7 +70,7 @@ export default async function CampaignPlatformSettingsPage() {
               Locked
             </p>
             <p className="mt-3 text-sm leading-6 text-parchment">
-              Campaign publishing opens when you reach the top 50% Elo in a primary, Stripe has
+              Campaign publishing opens when you reach the top 50% Civic Standing in a primary, Stripe has
               verified your identity, and a legal name is on the profile.
             </p>
             <Link

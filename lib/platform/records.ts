@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/db/supabase-admin";
 import { isMissingSchema } from "@/lib/db/schema-errors";
 import { preferCurrentPrimary } from "@/lib/platform/cycle";
+import { asElectionLevel } from "@/lib/platform/states";
 import { normalizeOcdId } from "@/lib/civic-fencing";
 import {
   higherTier,
@@ -31,10 +32,29 @@ export type PlatformProfile = {
   candidate_tier: string;
   is_synthetic: boolean;
   synthetic_key: string | null;
+  is_banned: boolean;
+  is_admin: boolean;
+  avatar_url: string | null;
 };
 
-const PROFILE_COLUMNS =
+const PROFILE_BASE =
   "id, ideology_x, ideology_y, onboarding_completed, is_verified, tier2_status, legal_name, display_name, full_name, candidate_tier, is_synthetic, synthetic_key";
+const PROFILE_COLUMNS = `${PROFILE_BASE}, is_banned, is_admin, avatar_url`;
+
+function withModeration(
+  row: Omit<PlatformProfile, "is_banned" | "is_admin" | "avatar_url"> & {
+    is_banned?: boolean;
+    is_admin?: boolean;
+    avatar_url?: string | null;
+  },
+): PlatformProfile {
+  return {
+    ...row,
+    is_banned: row.is_banned === true,
+    is_admin: row.is_admin === true,
+    avatar_url: row.avatar_url?.trim() || null,
+  };
+}
 
 export function canRank(profile: PlatformProfile) {
   const verified = profile.is_verified || profile.tier2_status === "verified";
@@ -55,21 +75,25 @@ export function displayName(profile: Pick<PlatformProfile, "display_name" | "ful
 }
 
 export async function loadProfile(admin: PlatformAdmin, userId: string) {
-  const { data, error } = await admin
-    .from("profiles")
-    .select(PROFILE_COLUMNS)
-    .eq("id", userId)
-    .maybeSingle();
-  if (error) throw new Error(schemaMessage(error) ?? error.message);
-  return (data as PlatformProfile | null) ?? null;
+  const full = await admin.from("profiles").select(PROFILE_COLUMNS).eq("id", userId).maybeSingle();
+  if (!full.error) return full.data ? withModeration(full.data) : null;
+  if (!isMissingSchema(full.error)) throw new Error(schemaMessage(full.error) ?? full.error.message);
+  const base = await admin.from("profiles").select(PROFILE_BASE).eq("id", userId).maybeSingle();
+  if (base.error) throw new Error(schemaMessage(base.error) ?? base.error.message);
+  return base.data ? withModeration(base.data) : null;
 }
 
 export async function loadProfiles(admin: PlatformAdmin, ids: string[]) {
   const unique = [...new Set(ids.filter(Boolean))];
   if (unique.length === 0) return new Map<string, PlatformProfile>();
-  const { data, error } = await admin.from("profiles").select(PROFILE_COLUMNS).in("id", unique);
-  if (error) throw new Error(schemaMessage(error) ?? error.message);
-  return new Map(((data ?? []) as PlatformProfile[]).map((row) => [row.id, row]));
+  const full = await admin.from("profiles").select(PROFILE_COLUMNS).in("id", unique);
+  if (!full.error) {
+    return new Map((full.data ?? []).map((row) => [row.id, withModeration(row)]));
+  }
+  if (!isMissingSchema(full.error)) throw new Error(schemaMessage(full.error) ?? full.error.message);
+  const base = await admin.from("profiles").select(PROFILE_BASE).in("id", unique);
+  if (base.error) throw new Error(schemaMessage(base.error) ?? base.error.message);
+  return new Map((base.data ?? []).map((row) => [row.id, withModeration(row)]));
 }
 
 function normalizeOcdList(value: unknown) {
@@ -107,11 +131,12 @@ export function ocdMatches(homeOcdIds: string[], ocdId: string) {
 const PRIMARY_BASE =
   "id, party, office_name, state, district, ocd_id, baseline_x, baseline_y, slug, general_slug, created_at";
 const PRIMARY_COLUMNS =
-  `${PRIMARY_BASE}, cycle_year, primary_date, general_election_date, term_length_years, senate_class, status`;
+  `${PRIMARY_BASE}, cycle_year, primary_date, general_election_date, term_length_years, senate_class, status, level`;
 
 function normalizePrimary(row: Primary): Primary {
   return {
     ...row,
+    level: asElectionLevel(row.level, row.office_name),
     cycle_year: row.cycle_year ?? 0,
     primary_date: row.primary_date ?? "",
     general_election_date: row.general_election_date ?? null,
@@ -168,7 +193,9 @@ export async function loadPrompt(admin: PlatformAdmin, promptId: string) {
 export async function loadStanding(admin: PlatformAdmin, userId: string, primaryId: string) {
   const { data, error } = await admin
     .from("primary_standings")
-    .select("id, user_id, primary_id, elo, debates_count, wins, losses, ties, created_at, updated_at")
+    .select(
+      "id, user_id, primary_id, civic_standing, debates_count, debates_logged, policy_consistency, ties, created_at, updated_at",
+    )
     .eq("user_id", userId)
     .eq("primary_id", primaryId)
     .maybeSingle();
@@ -179,10 +206,10 @@ export async function loadStanding(admin: PlatformAdmin, userId: string, primary
 export async function rankedField(admin: PlatformAdmin, primaryId: string) {
   const { data, error } = await admin
     .from("primary_standings")
-    .select("user_id, elo, debates_count")
+    .select("user_id, civic_standing, debates_count")
     .eq("primary_id", primaryId);
   if (error) throw new Error(schemaMessage(error) ?? error.message);
-  const rows = (data ?? []) as { user_id: string; elo: number; debates_count: number }[];
+  const rows = (data ?? []) as { user_id: string; civic_standing: number; debates_count: number }[];
   const profiles = await loadProfiles(
     admin,
     rows.map((row) => row.user_id),
@@ -192,7 +219,7 @@ export async function rankedField(admin: PlatformAdmin, primaryId: string) {
       const profile = profiles.get(row.user_id);
       return profile && !profile.is_synthetic && row.debates_count > 0;
     })
-    .map((row) => row.elo);
+    .map((row) => row.civic_standing);
 }
 
 export async function recomputeTier(admin: PlatformAdmin, userId: string) {
@@ -200,15 +227,15 @@ export async function recomputeTier(admin: PlatformAdmin, userId: string) {
   if (!profile) return "pundit" as CandidateTierName;
   const { data, error } = await admin
     .from("primary_standings")
-    .select("primary_id, elo, debates_count")
+    .select("primary_id, civic_standing, debates_count")
     .eq("user_id", userId);
   if (error) throw new Error(schemaMessage(error) ?? error.message);
-  const rows = (data ?? []) as { primary_id: string; elo: number; debates_count: number }[];
+  const rows = (data ?? []) as { primary_id: string; civic_standing: number; debates_count: number }[];
   let best: CandidateTierName = "pundit";
   for (const row of rows) {
     const field = await rankedField(admin, row.primary_id);
     const next = tierForStanding(
-      row.elo,
+      row.civic_standing,
       field,
       canRank(profile) && row.debates_count > 0,
       profile.legal_name,

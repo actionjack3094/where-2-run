@@ -81,6 +81,9 @@ export type AccountProfile = {
   county: string | null;
   municipality: string | null;
   ocd_ids: string[];
+  is_banned: boolean;
+  is_admin: boolean;
+  avatar_url: string | null;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -96,6 +99,7 @@ export interface Primary {
   baseline_y: number;
   slug: string;
   general_slug: string;
+  level: "federal" | "state" | "local" | string;
   cycle_year: number;
   primary_date: string;
   general_election_date: string | null;
@@ -109,10 +113,10 @@ export interface PrimaryStanding {
   id: string;
   user_id: string;
   primary_id: string;
-  elo: number;
+  civic_standing: number;
   debates_count: number;
-  wins: number;
-  losses: number;
+  debates_logged: number;
+  policy_consistency: number;
   ties: number;
   is_nominee: boolean;
   created_at: string;
@@ -146,6 +150,39 @@ export interface DebatePrompt {
   ideology_x: number;
   ideology_y: number;
   status: PromptStatus | string;
+  source_prompt_id: string | null;
+  created_at: string;
+}
+
+export interface CommunityPromptRow {
+  id: string;
+  primary_id: string;
+  voter_id: string;
+  title: string;
+  content: string;
+  upvote_count: number;
+  created_at: string;
+}
+
+export interface PromptUpvote {
+  prompt_id: string;
+  voter_id: string;
+  created_at: string;
+}
+
+export interface ConstituentQuestion {
+  id: string;
+  debate_id: string;
+  voter_id: string;
+  content: string;
+  created_at: string;
+}
+
+export interface CandidateAnswer {
+  id: string;
+  question_id: string;
+  candidate_id: string;
+  content: string;
   created_at: string;
 }
 
@@ -185,7 +222,19 @@ export interface DebateLike {
   user_id: string;
   supported_id: string;
   created_at: string;
-};
+}
+
+export type FlagStatus = "pending" | "dismissed" | "banned";
+
+export interface FlaggedContent {
+  id: string;
+  reporter_id: string;
+  debate_id: string;
+  offender_id: string;
+  reason: string;
+  status: FlagStatus | string;
+  created_at: string;
+}
 
 export interface UserProfile {
   id: string;
@@ -1599,6 +1648,65 @@ export interface Database {
           },
         ];
       };
+      community_prompts: {
+        Row: CommunityPromptRow;
+        Insert: Partial<CommunityPromptRow> &
+          Pick<CommunityPromptRow, "primary_id" | "voter_id" | "title" | "content">;
+        Update: Partial<CommunityPromptRow>;
+        Relationships: [
+          {
+            foreignKeyName: "community_prompts_primary_id_fkey";
+            columns: ["primary_id"];
+            isOneToOne: false;
+            referencedRelation: "primaries";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      prompt_upvotes: {
+        Row: PromptUpvote;
+        Insert: Partial<PromptUpvote> & Pick<PromptUpvote, "prompt_id" | "voter_id">;
+        Update: Partial<PromptUpvote>;
+        Relationships: [
+          {
+            foreignKeyName: "prompt_upvotes_prompt_id_fkey";
+            columns: ["prompt_id"];
+            isOneToOne: false;
+            referencedRelation: "community_prompts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      constituent_questions: {
+        Row: ConstituentQuestion;
+        Insert: Partial<ConstituentQuestion> &
+          Pick<ConstituentQuestion, "debate_id" | "voter_id" | "content">;
+        Update: Partial<ConstituentQuestion>;
+        Relationships: [
+          {
+            foreignKeyName: "constituent_questions_debate_id_fkey";
+            columns: ["debate_id"];
+            isOneToOne: false;
+            referencedRelation: "arena_debates";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      candidate_answers: {
+        Row: CandidateAnswer;
+        Insert: Partial<CandidateAnswer> &
+          Pick<CandidateAnswer, "question_id" | "candidate_id" | "content">;
+        Update: Partial<CandidateAnswer>;
+        Relationships: [
+          {
+            foreignKeyName: "candidate_answers_question_id_fkey";
+            columns: ["question_id"];
+            isOneToOne: false;
+            referencedRelation: "constituent_questions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       arena_debates: {
         Row: ArenaDebate;
         Insert: Partial<ArenaDebate> &
@@ -1646,6 +1754,35 @@ export interface Database {
             columns: ["debate_id"];
             isOneToOne: false;
             referencedRelation: "arena_debates";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      flagged_content: {
+        Row: FlaggedContent;
+        Insert: Partial<FlaggedContent> &
+          Pick<FlaggedContent, "reporter_id" | "debate_id" | "offender_id" | "reason">;
+        Update: Partial<FlaggedContent>;
+        Relationships: [
+          {
+            foreignKeyName: "flagged_content_debate_id_fkey";
+            columns: ["debate_id"];
+            isOneToOne: false;
+            referencedRelation: "arena_debates";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "flagged_content_offender_id_fkey";
+            columns: ["offender_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "flagged_content_reporter_id_fkey";
+            columns: ["reporter_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
         ];

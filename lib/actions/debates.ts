@@ -21,7 +21,10 @@ import {
 } from "@/lib/platform/records";
 import { primaryClosed } from "@/lib/platform/cycle";
 import { closedPrimaryIds } from "@/lib/platform/freeze";
+import { BANNED_ARENA_MESSAGE } from "@/lib/platform/moderation";
+import { agendaPromptText, loadCommunityPrompts } from "@/lib/platform/agenda";
 import { partyFromCoordinate } from "@/lib/platform/scoring";
+import { incrementDebatesLogged } from "@/lib/platform/standings";
 import type { PublicJudgment } from "@/lib/platform/types";
 import type { Primary } from "@/types/database.types";
 
@@ -216,9 +219,13 @@ export type DebateActionResult = {
 
 function refreshArena(slug?: string) {
   revalidatePath("/debates");
+  revalidatePath("/elections");
   revalidatePath("/primaries");
   revalidatePath("/ballot");
-  if (slug) revalidatePath(`/primaries/${slug}`);
+  if (slug) {
+    revalidatePath(`/elections/${slug}`);
+    revalidatePath(`/primaries/${slug}`);
+  }
 }
 
 async function signedIn() {
@@ -320,19 +327,30 @@ export async function releaseExpiredSeats(): Promise<{ released: number }> {
 
 export async function createPrimaryDebatePrompt(
   primaryId: string,
-  promptText: string,
+  _promptText: string,
   stanceText: string,
   sparWithAi = false,
+  sourcePromptId: string | null = null,
 ): Promise<DebateActionResult> {
   try {
     if (!isUuid(primaryId)) return { error: "That primary is not on the board." };
     const session = await signedIn();
     if (!session.userId || !session.admin) return { error: session.error ?? "Sign in to continue." };
+    if (session.profile?.is_banned) throw new Error(BANNED_ARENA_MESSAGE);
     if (!ready(session.profile)) return { error: "Finish the ideology diagnostic first." };
 
-    const prompt = promptText.trim();
+    if (!sourcePromptId || !isUuid(sourcePromptId)) {
+      return { error: "Choose an issue from the district agenda." };
+    }
+    const agenda = await loadCommunityPrompts(primaryId, null, 5);
+    if (agenda.missing) return { error: "Apply the constituent agenda migration, then reload." };
+    const source = agenda.prompts.find((row) => row.id === sourcePromptId);
+    if (!source || source.primaryId !== primaryId) {
+      return { error: "Choose one of the top issues on the district agenda." };
+    }
+    const prompt = agendaPromptText(source.title, source.content);
     const stance = stanceText.trim();
-    if (prompt.length < PROMPT_MIN) return { error: "Write the question you want judged." };
+    if (prompt.length < PROMPT_MIN) return { error: "That issue is too short to debate." };
     if (stance.length < STANCE_MIN || stance.length > STANCE_MAX) {
       return { error: "The opening stance needs at least a short paragraph." };
     }
@@ -358,10 +376,14 @@ export async function createPrimaryDebatePrompt(
         ideology_x: session.profile.ideology_x ?? 0,
         ideology_y: session.profile.ideology_y ?? 0,
         status: "open",
+        source_prompt_id: source.id,
       })
       .select("id")
       .single();
-    if (promptError) return { error: promptError.message };
+    if (promptError) {
+      if (isMissingSchema(promptError)) return { error: "Apply the constituent agenda migration, then reload." };
+      return { error: promptError.message };
+    }
 
     const sparNow = sparWithAi === true && isDevelopment();
     const botSparAt = new Date(Date.now() + (sparNow ? 0 : BOT_SPAR_GRACE_MS)).toISOString();
@@ -404,6 +426,7 @@ export async function acceptDebateChallenge(debateId: string): Promise<DebateAct
     if (!isUuid(debateId)) return { error: "That seat is no longer open." };
     const session = await signedIn();
     if (!session.userId || !session.admin) return { error: session.error ?? "Sign in to continue." };
+    if (session.profile?.is_banned) throw new Error(BANNED_ARENA_MESSAGE);
     if (!ready(session.profile)) return { error: "Finish the ideology diagnostic first." };
 
     const debate = await loadArenaById(session.admin, debateId);
@@ -477,6 +500,7 @@ export async function submitRebuttal(debateId: string, stanceText: string): Prom
     if (!isUuid(debateId)) return { error: "That seat is not waiting on a rebuttal." };
     const session = await signedIn();
     if (!session.userId || !session.admin) return { error: session.error ?? "Sign in to continue." };
+    if (session.profile?.is_banned) throw new Error(BANNED_ARENA_MESSAGE);
 
     const debate = await loadArenaById(session.admin, debateId);
     if (!debate || debate.status !== "active") return { error: "That seat is not waiting on a rebuttal." };
@@ -509,6 +533,10 @@ export async function submitRebuttal(debateId: string, stanceText: string): Prom
 
     try {
       const judged = await adjudicateDebate(debate.id);
+      await incrementDebatesLogged(session.admin, debate.primary_id, [
+        debate.candidate_a_id,
+        session.userId,
+      ]);
       refreshArena();
       return { judgment: judged.b, message: "The exchange is closed." };
     } catch (caught) {

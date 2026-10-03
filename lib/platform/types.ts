@@ -9,6 +9,7 @@ export type PublicJudgment = {
 export type ArenaSide = {
   id: string;
   name: string;
+  avatarUrl: string | null;
   tier: CandidateTierName;
   verified: boolean;
   donationHref: string | null;
@@ -67,9 +68,10 @@ export type LeaderRow = {
   userId: string;
   legalName: string | null;
   displayName: string;
-  elo: number;
-  wins: number;
-  losses: number;
+  avatarUrl: string | null;
+  civicStanding: number;
+  debatesLogged: number;
+  policyConsistency: number;
   ties: number;
   tier: CandidateTierName;
   verified: boolean;
@@ -80,10 +82,11 @@ export type LeaderRow = {
 export type PrimaryHub = {
   id: string;
   slug: string;
-  party: Party;
+  party: Party | "nonpartisan";
   officeName: string;
   state: string;
   district: string | null;
+  level: "federal" | "state" | "local";
   ocdId: string;
   baselineX: number;
   baselineY: number;
@@ -92,6 +95,8 @@ export type PrimaryHub = {
   primaryDate: string;
   status: string;
   closed: boolean;
+  counterpartySlug: string | null;
+  counterpartyParty: string | null;
   leaderboard: LeaderRow[];
   unranked: LeaderRow[];
   openSeats: ArenaCard[];
@@ -103,8 +108,10 @@ export function formatCoordinate(x: number, y: number) {
   return `Economic ${econ} · Social ${social}`;
 }
 
-export function partyLabel(party: Party) {
-  return party === "democrat" ? "Democratic" : "Republican";
+export function partyLabel(party: string) {
+  if (party === "republican") return "Republican";
+  if (party === "nonpartisan") return "Nonpartisan";
+  return "Democratic";
 }
 
 export function tierLabel(tier: CandidateTierName) {
