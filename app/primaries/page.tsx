@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { isMissingSchema } from "@/lib/db/schema-errors";
+import { primaryClosed } from "@/lib/platform/cycle";
 import { loadPrimaryIndex } from "@/lib/platform/queries";
 import { formatCoordinate, partyLabel } from "@/lib/platform/types";
 
@@ -56,6 +57,12 @@ export default async function PrimariesPage() {
                       <p className="mt-1 text-sm text-zinc-400">
                         Baseline {formatCoordinate(primary.baseline_x, primary.baseline_y)}
                       </p>
+                      {primary.cycle_year ? (
+                        <p className="mt-1 text-xs uppercase tracking-widest text-zinc-500">
+                          {primary.cycle_year}
+                          {primaryClosed(primary) ? " · Frozen" : " · Active"}
+                        </p>
+                      ) : null}
                     </Link>
                   );
                 })}

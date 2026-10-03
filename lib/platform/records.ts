@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/db/supabase-admin";
 import { isMissingSchema } from "@/lib/db/schema-errors";
+import { preferCurrentPrimary } from "@/lib/platform/cycle";
 import { normalizeOcdId } from "@/lib/civic-fencing";
 import {
   higherTier,
@@ -103,23 +104,45 @@ export function ocdMatches(homeOcdIds: string[], ocdId: string) {
   return Boolean(target) && homeOcdIds.includes(target);
 }
 
+const PRIMARY_BASE =
+  "id, party, office_name, state, district, ocd_id, baseline_x, baseline_y, slug, general_slug, created_at";
+const PRIMARY_COLUMNS =
+  `${PRIMARY_BASE}, cycle_year, primary_date, general_election_date, term_length_years, senate_class, status`;
+
+function normalizePrimary(row: Primary): Primary {
+  return {
+    ...row,
+    cycle_year: row.cycle_year ?? 0,
+    primary_date: row.primary_date ?? "",
+    general_election_date: row.general_election_date ?? null,
+    term_length_years: row.term_length_years ?? 2,
+    senate_class: row.senate_class ?? null,
+    status: row.status === "frozen" ? "frozen" : "active",
+  };
+}
+
 export async function loadPrimaries(admin: PlatformAdmin) {
-  const { data, error } = await admin
-    .from("primaries")
-    .select("id, party, office_name, state, district, ocd_id, baseline_x, baseline_y, slug, general_slug, created_at")
-    .order("state", { ascending: true });
-  if (error) throw new Error(schemaMessage(error) ?? error.message);
-  return (data ?? []) as Primary[];
+  const full = await admin.from("primaries").select(PRIMARY_COLUMNS).order("state", { ascending: true });
+  if (!full.error) return ((full.data ?? []) as Primary[]).map(normalizePrimary);
+  if (!isMissingSchema(full.error)) {
+    throw new Error(schemaMessage(full.error) ?? full.error.message);
+  }
+  const base = await admin.from("primaries").select(PRIMARY_BASE).order("state", { ascending: true });
+  if (base.error) throw new Error(schemaMessage(base.error) ?? base.error.message);
+  return ((base.data ?? []) as Primary[]).map(normalizePrimary);
 }
 
 export async function loadPrimaryBySlug(admin: PlatformAdmin, slug: string) {
-  const { data, error } = await admin
-    .from("primaries")
-    .select("id, party, office_name, state, district, ocd_id, baseline_x, baseline_y, slug, general_slug, created_at")
-    .eq("slug", slug)
-    .maybeSingle();
-  if (error) throw new Error(schemaMessage(error) ?? error.message);
-  return (data as Primary | null) ?? null;
+  const full = await admin.from("primaries").select(PRIMARY_COLUMNS).eq("slug", slug);
+  if (!full.error) {
+    return preferCurrentPrimary(((full.data ?? []) as Primary[]).map(normalizePrimary), slug);
+  }
+  if (!isMissingSchema(full.error)) {
+    throw new Error(schemaMessage(full.error) ?? full.error.message);
+  }
+  const base = await admin.from("primaries").select(PRIMARY_BASE).eq("slug", slug);
+  if (base.error) throw new Error(schemaMessage(base.error) ?? base.error.message);
+  return preferCurrentPrimary(((base.data ?? []) as Primary[]).map(normalizePrimary), slug);
 }
 
 export async function loadArenaById(admin: PlatformAdmin, debateId: string) {

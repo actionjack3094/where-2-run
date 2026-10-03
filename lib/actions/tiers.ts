@@ -15,6 +15,7 @@ export type StandingRow = {
   losses: number;
   ties: number;
   debates_count: number;
+  is_nominee?: boolean;
 };
 
 export function isKycVerified(profile: PlatformProfile | null | undefined) {
@@ -65,6 +66,7 @@ export function buildPrimaryBoard(
       tier,
       verified,
       ranked: tier === "declared_candidate" || tier === "frontrunner",
+      isNominee: Boolean(row.is_nominee),
     };
     if (entry.ranked && entry.legalName) ranked.push(entry);
     else unranked.push({ ...entry, legalName: null, tier: "pundit", ranked: false });

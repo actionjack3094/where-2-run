@@ -6,6 +6,7 @@ import { adjudicateDebate } from "@/lib/ai/judge";
 import { resolveTextModel } from "@/lib/ai/provider";
 import { isUuid } from "@/lib/arena/display";
 import { isMissingSchema } from "@/lib/db/schema-errors";
+import { primaryClosed } from "@/lib/platform/cycle";
 import {
   loadArenaById,
   loadPrompt,
@@ -290,22 +291,33 @@ export async function triggerBotSparring(debateId: string): Promise<BotSparResul
   const [primaryResult, prompt] = await Promise.all([
     admin
       .from("primaries")
-      .select("id, party, office_name, baseline_x, baseline_y")
+      .select("id, party, office_name, baseline_x, baseline_y, status, primary_date")
       .eq("id", debate.primary_id)
       .maybeSingle(),
     loadPrompt(admin, debate.prompt_id),
   ]);
-  if (primaryResult.error) throw new Error(primaryResult.error.message);
-  const primary = primaryResult.data as {
+  let primaryQuery = primaryResult;
+  if (primaryQuery.error && isMissingSchema(primaryQuery.error)) {
+    primaryQuery = await admin
+      .from("primaries")
+      .select("id, party, office_name, baseline_x, baseline_y")
+      .eq("id", debate.primary_id)
+      .maybeSingle();
+  }
+  if (primaryQuery.error) throw new Error(primaryQuery.error.message);
+  const primary = primaryQuery.data as {
     id: string;
     party: Party;
     office_name: string;
     baseline_x: number;
     baseline_y: number;
+    status?: string | null;
+    primary_date?: string | null;
   } | null;
   if (!primary || (primary.party !== "democrat" && primary.party !== "republican")) {
     return { sparred: false };
   }
+  if (primaryClosed(primary)) return { sparred: false };
   if (!prompt || prompt.author_kind === "ai") return { sparred: false };
 
   let bots = await listSyntheticBots(admin);

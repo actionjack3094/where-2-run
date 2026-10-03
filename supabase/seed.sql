@@ -1443,7 +1443,13 @@ insert into public.primaries (
   baseline_x,
   baseline_y,
   slug,
-  general_slug
+  general_slug,
+  cycle_year,
+  primary_date,
+  general_election_date,
+  term_length_years,
+  senate_class,
+  status
 )
 values
   (
@@ -1456,7 +1462,13 @@ values
     -0.34,
     0.12,
     'tx-senate-dem',
-    'tx-senate'
+    'tx-senate',
+    2026,
+    '2026-03-03T20:00:00Z',
+    '2026-11-03T00:00:00Z',
+    6,
+    2,
+    'active'
   ),
   (
     'b71a0001-0002-4000-8000-000000000002',
@@ -1468,7 +1480,13 @@ values
     0.30,
     0.18,
     'tx-senate-rep',
-    'tx-senate'
+    'tx-senate',
+    2026,
+    '2026-03-03T20:00:00Z',
+    '2026-11-03T00:00:00Z',
+    6,
+    2,
+    'active'
   ),
   (
     'b71a0001-0003-4000-8000-000000000003',
@@ -1480,7 +1498,13 @@ values
     -0.86,
     -0.70,
     'ny-mayor-dem',
-    'ny-mayor'
+    'ny-mayor',
+    2025,
+    '2025-06-24T21:00:00Z',
+    '2025-11-04T00:00:00Z',
+    4,
+    null,
+    'active'
   ),
   (
     'b71a0001-0004-4000-8000-000000000004',
@@ -1492,9 +1516,15 @@ values
     0.86,
     0.72,
     'fl-governor-rep',
-    'fl-governor'
+    'fl-governor',
+    2026,
+    '2026-08-18T20:00:00Z',
+    '2026-11-03T00:00:00Z',
+    4,
+    null,
+    'active'
   )
-on conflict (slug) do update
+on conflict (slug, cycle_year) do update
 set
   party = excluded.party,
   office_name = excluded.office_name,
@@ -1503,7 +1533,11 @@ set
   ocd_id = excluded.ocd_id,
   baseline_x = excluded.baseline_x,
   baseline_y = excluded.baseline_y,
-  general_slug = excluded.general_slug;
+  general_slug = excluded.general_slug,
+  primary_date = excluded.primary_date,
+  general_election_date = excluded.general_election_date,
+  term_length_years = excluded.term_length_years,
+  senate_class = excluded.senate_class;
 
 insert into auth.users (
   instance_id,

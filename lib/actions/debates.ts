@@ -19,6 +19,8 @@ import {
   type PlatformAdmin,
   type PlatformProfile,
 } from "@/lib/platform/records";
+import { primaryClosed } from "@/lib/platform/cycle";
+import { closedPrimaryIds } from "@/lib/platform/freeze";
 import { partyFromCoordinate } from "@/lib/platform/scoring";
 import type { PublicJudgment } from "@/lib/platform/types";
 import type { Primary } from "@/types/database.types";
@@ -233,14 +235,22 @@ function ready(profile: PlatformProfile | null): profile is PlatformProfile {
   );
 }
 
+const PRIMARY_BASE =
+  "id, party, office_name, state, district, ocd_id, baseline_x, baseline_y, slug, general_slug, created_at";
+const PRIMARY_COLUMNS = `${PRIMARY_BASE}, cycle_year, primary_date, status`;
+
 async function primaryFor(admin: PlatformAdmin, primaryId: string) {
-  const { data, error } = await admin
-    .from("primaries")
-    .select("id, party, office_name, state, district, ocd_id, baseline_x, baseline_y, slug, general_slug, created_at")
-    .eq("id", primaryId)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  return (data as Primary | null) ?? null;
+  let result = await admin.from("primaries").select(PRIMARY_COLUMNS).eq("id", primaryId).maybeSingle();
+  if (result.error && isMissingSchema(result.error)) {
+    result = await admin.from("primaries").select(PRIMARY_BASE).eq("id", primaryId).maybeSingle();
+  }
+  if (result.error) throw new Error(result.error.message);
+  return (result.data as Primary | null) ?? null;
+}
+
+function closedMessage(primary: Primary) {
+  if (!primaryClosed(primary)) return null;
+  return "This primary has closed. Debates are locked.";
 }
 
 /** Reopen arena seats whose 24-hour lock expired before a rebuttal was filed. */
@@ -250,20 +260,30 @@ export async function releaseExpiredSeats(): Promise<{ released: number }> {
   const now = new Date().toISOString();
   const { data, error } = await admin
     .from("arena_debates")
-    .update({
-      status: "open_challenge",
-      candidate_b_id: null,
-      seat_locked_until: null,
-      updated_at: now,
-    })
+    .select("id, prompt_id, primary_id")
     .eq("status", "active")
     .is("stance_b", null)
-    .lt("seat_locked_until", now)
-    .select("id, prompt_id");
+    .lt("seat_locked_until", now);
   if (error) throw new Error(error.message);
-  const rows = (data ?? []) as { id: string; prompt_id: string }[];
-  const promptIds = [...new Set(rows.map((row) => row.prompt_id))];
-  if (promptIds.length > 0) {
+  const rows = (data ?? []) as { id: string; prompt_id: string; primary_id: string }[];
+  const closed = await closedPrimaryIds(admin, rows.map((row) => row.primary_id));
+  const reopen = rows.filter((row) => !closed.has(row.primary_id));
+  const cancel = rows.filter((row) => closed.has(row.primary_id));
+
+  if (reopen.length > 0) {
+    const { error: reopenError } = await admin
+      .from("arena_debates")
+      .update({
+        status: "open_challenge",
+        candidate_b_id: null,
+        seat_locked_until: null,
+        updated_at: now,
+      })
+      .in("id", reopen.map((row) => row.id))
+      .eq("status", "active")
+      .is("stance_b", null);
+    if (reopenError) throw new Error(reopenError.message);
+    const promptIds = [...new Set(reopen.map((row) => row.prompt_id))];
     const { error: promptError } = await admin
       .from("debate_prompts")
       .update({ status: "open" })
@@ -271,6 +291,22 @@ export async function releaseExpiredSeats(): Promise<{ released: number }> {
       .eq("status", "locked");
     if (promptError) throw new Error(promptError.message);
   }
+
+  if (cancel.length > 0) {
+    const { error: cancelError } = await admin
+      .from("arena_debates")
+      .update({
+        status: "cancelled",
+        candidate_b_id: null,
+        seat_locked_until: null,
+        updated_at: now,
+      })
+      .in("id", cancel.map((row) => row.id))
+      .eq("status", "active")
+      .is("stance_b", null);
+    if (cancelError && !isMissingSchema(cancelError)) throw new Error(cancelError.message);
+  }
+
   try {
     await sparDueBotSeats(1);
   } catch (caught) {
@@ -279,7 +315,7 @@ export async function releaseExpiredSeats(): Promise<{ released: number }> {
       caught instanceof Error ? caught.message : "Could not spar an open prompt.",
     );
   }
-  return { released: rows.length };
+  return { released: reopen.length };
 }
 
 export async function createPrimaryDebatePrompt(
@@ -303,6 +339,8 @@ export async function createPrimaryDebatePrompt(
 
     const primary = await primaryFor(session.admin, primaryId);
     if (!primary) return { error: "That primary is not on the board." };
+    const closed = closedMessage(primary);
+    if (closed) return { error: closed };
     const party = partyFromCoordinate({
       x: session.profile.ideology_x ?? 0,
       y: session.profile.ideology_y ?? 0,
@@ -378,6 +416,8 @@ export async function acceptDebateChallenge(debateId: string): Promise<DebateAct
 
     const primary = await primaryFor(session.admin, debate.primary_id);
     if (!primary) return { error: "That primary is not on the board." };
+    const closed = closedMessage(primary);
+    if (closed) return { error: closed };
     const party = partyFromCoordinate({
       x: session.profile.ideology_x ?? 0,
       y: session.profile.ideology_y ?? 0,

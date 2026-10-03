@@ -49,7 +49,7 @@ export type PrimaryParty = "democrat" | "republican";
 
 export type PromptStatus = "open" | "locked" | "concluded";
 
-export type ArenaDebateStatus = "open_challenge" | "active" | "concluded";
+export type ArenaDebateStatus = "open_challenge" | "active" | "concluded" | "cancelled";
 
 export type AccountProfile = {
   id: string;
@@ -96,6 +96,12 @@ export interface Primary {
   baseline_y: number;
   slug: string;
   general_slug: string;
+  cycle_year: number;
+  primary_date: string;
+  general_election_date: string | null;
+  term_length_years: number;
+  senate_class: number | null;
+  status: "active" | "frozen" | string;
   created_at: string;
 }
 
@@ -108,6 +114,7 @@ export interface PrimaryStanding {
   wins: number;
   losses: number;
   ties: number;
+  is_nominee: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -1547,6 +1554,8 @@ export interface Database {
             | "baseline_y"
             | "slug"
             | "general_slug"
+            | "cycle_year"
+            | "primary_date"
           >;
         Update: Partial<Primary>;
         Relationships: [];

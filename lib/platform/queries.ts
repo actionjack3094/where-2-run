@@ -1,4 +1,6 @@
 import { releaseExpiredSeats } from "@/lib/actions/debates";
+import { primaryClosed, preferCurrentPrimary } from "@/lib/platform/cycle";
+import { freezeDuePrimaries } from "@/lib/platform/freeze";
 import {
   activeEloField,
   buildPrimaryBoard,
@@ -385,25 +387,44 @@ export async function loadBallot(userId: string | null) {
 }
 
 export async function loadPrimaryHub(slug: string): Promise<PrimaryHub | null> {
+  try {
+    await freezeDuePrimaries();
+  } catch (caught) {
+    console.error(
+      "freezeDuePrimaries failed.",
+      caught instanceof Error ? caught.message : "Could not freeze a primary.",
+    );
+  }
   await releaseExpiredSeats();
   const admin = platformAdmin();
   const primaries = await loadPrimaries(admin);
-  const primary = primaries.find((row) => row.slug === slug);
+  const primary = preferCurrentPrimary(primaries, slug);
   if (!primary) return null;
   const party: Party = primary.party === "republican" ? "republican" : "democrat";
-  const { data: standingRows, error } = await admin
+  const standingSelect = "user_id, elo, wins, losses, ties, debates_count, is_nominee";
+  const standingBase = "user_id, elo, wins, losses, ties, debates_count";
+  const fullStandings = await admin
     .from("primary_standings")
-    .select("user_id, elo, wins, losses, ties, debates_count")
+    .select(standingSelect)
     .eq("primary_id", primary.id)
     .order("elo", { ascending: false });
-  if (error) throw new Error(schemaMessage(error) ?? error.message);
-  const standings = (standingRows ?? []) as {
+  const standingResult =
+    fullStandings.error && isMissingSchema(fullStandings.error)
+      ? await admin
+          .from("primary_standings")
+          .select(standingBase)
+          .eq("primary_id", primary.id)
+          .order("elo", { ascending: false })
+      : fullStandings;
+  if (standingResult.error) throw new Error(schemaMessage(standingResult.error) ?? standingResult.error.message);
+  const standings = (standingResult.data ?? []) as {
     user_id: string;
     elo: number;
     wins: number;
     losses: number;
     ties: number;
     debates_count: number;
+    is_nominee?: boolean;
   }[];
   const profiles = await loadProfiles(
     admin,
@@ -452,6 +473,10 @@ export async function loadPrimaryHub(slug: string): Promise<PrimaryHub | null> {
     baselineX: primary.baseline_x,
     baselineY: primary.baseline_y,
     generalSlug: primary.general_slug,
+    cycleYear: primary.cycle_year,
+    primaryDate: primary.primary_date,
+    status: primary.status,
+    closed: primaryClosed(primary),
     leaderboard: board.ranked,
     unranked: board.unranked,
     openSeats: open.map((debate) =>

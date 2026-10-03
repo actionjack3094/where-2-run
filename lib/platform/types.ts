@@ -74,6 +74,7 @@ export type LeaderRow = {
   tier: CandidateTierName;
   verified: boolean;
   ranked: boolean;
+  isNominee: boolean;
 };
 
 export type PrimaryHub = {
@@ -87,6 +88,10 @@ export type PrimaryHub = {
   baselineX: number;
   baselineY: number;
   generalSlug: string;
+  cycleYear: number;
+  primaryDate: string;
+  status: string;
+  closed: boolean;
   leaderboard: LeaderRow[];
   unranked: LeaderRow[];
   openSeats: ArenaCard[];

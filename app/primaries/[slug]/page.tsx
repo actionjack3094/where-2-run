@@ -5,6 +5,7 @@ import { BOT_SPAR_GRACE_MS } from "@/lib/ai/bots";
 import { ChallengeForm, OpeningForm } from "@/components/platform/ArenaForms";
 import { getServerUser } from "@/lib/db/supabase-server";
 import { isMissingSchema } from "@/lib/db/schema-errors";
+import { daysUntilPrimary, formatPrimaryDate } from "@/lib/platform/cycle";
 import { loadPrimaryHub } from "@/lib/platform/queries";
 import { loadProfile, platformAdmin } from "@/lib/platform/records";
 import { partyFromCoordinate } from "@/lib/platform/scoring";
@@ -53,6 +54,17 @@ export default async function PrimaryHubPage(props: HubPageProps) {
     }
   }
 
+  const nominee = hub
+    ? (hub.leaderboard.find((row) => row.isNominee) ?? hub.unranked.find((row) => row.isNominee) ?? null)
+    : null;
+  const ranked = hub
+    ? nominee
+      ? [nominee, ...hub.leaderboard.filter((row) => row.userId !== nominee.userId)]
+      : hub.leaderboard
+    : [];
+  const unranked = hub ? hub.unranked.filter((row) => row.userId !== nominee?.userId) : [];
+  const daysLeft = hub?.primaryDate ? daysUntilPrimary(hub.primaryDate) : 0;
+
   return (
     <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
@@ -74,6 +86,16 @@ export default async function PrimaryHubPage(props: HubPageProps) {
               <p className="mt-2 text-sm text-zinc-300">
                 Baseline {formatCoordinate(hub.baselineX, hub.baselineY)}
               </p>
+              {hub.closed && hub.primaryDate ? (
+                <p className="mt-4 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm leading-6 text-parchment">
+                  This primary concluded on {formatPrimaryDate(hub.primaryDate)}. Debates are permanently locked.
+                </p>
+              ) : hub.primaryDate ? (
+                <p className="mt-4 text-sm text-zinc-300">
+                  Primary Date: {formatPrimaryDate(hub.primaryDate)} ({daysLeft}{" "}
+                  {daysLeft === 1 ? "day" : "days"} remaining)
+                </p>
+              ) : null}
               <p className="mt-1 text-xs text-zinc-500">{hub.ocdId}</p>
             </header>
 
@@ -83,18 +105,30 @@ export default async function PrimaryHubPage(props: HubPageProps) {
                 Declared Candidates and Frontrunners are verified and listed under their legal name.
                 Everyone else keeps their Elo in the unranked division.
               </p>
-              {hub.leaderboard.length === 0 ? (
+              {ranked.length === 0 ? (
                 <p className="mt-4 text-sm text-zinc-400">No declared contenders in this primary yet.</p>
               ) : (
                 <ol className="mt-4 grid gap-3">
-                  {hub.leaderboard.map((row, index) => (
-                    <li key={row.userId} className="rounded-xl border border-zinc-800 px-4 py-3">
+                  {ranked.map((row, index) => (
+                    <li
+                      key={row.userId}
+                      className={
+                        row.isNominee
+                          ? "rounded-xl border border-gold px-4 py-3"
+                          : "rounded-xl border border-zinc-800 px-4 py-3"
+                      }
+                    >
                       <div className="flex flex-wrap items-baseline justify-between gap-2">
                         <p className="text-sm font-medium text-parchment">
                           {index + 1}.{" "}
                           <Link href={`/profile/${row.userId}`} className="hover:text-gold">
-                            {row.legalName}
+                            {row.legalName ?? row.displayName}
                           </Link>
+                          {row.isNominee ? (
+                            <span className="ml-2 text-[11px] font-medium uppercase tracking-widest text-gold">
+                              Party Nominee
+                            </span>
+                          ) : null}
                         </p>
                         <p className="text-sm text-zinc-300">{row.elo} Elo</p>
                       </div>
@@ -117,7 +151,7 @@ export default async function PrimaryHubPage(props: HubPageProps) {
                   ))}
                 </ol>
               )}
-              {hub.unranked.length > 0 ? (
+              {unranked.length > 0 ? (
                 <div className="mt-8">
                   <h3 className="text-sm font-medium uppercase tracking-[0.16em] text-zinc-500">
                     Unranked
@@ -126,7 +160,7 @@ export default async function PrimaryHubPage(props: HubPageProps) {
                     Pseudonyms and unverified debaters compete here until Stripe verification and a legal name.
                   </p>
                   <ul className="mt-4 grid gap-3">
-                    {hub.unranked.map((row) => (
+                    {unranked.map((row) => (
                       <li key={row.userId} className="rounded-xl border border-zinc-800 px-4 py-3">
                         <div className="flex flex-wrap items-baseline justify-between gap-2">
                           <p className="text-sm font-medium text-parchment">
@@ -160,7 +194,7 @@ export default async function PrimaryHubPage(props: HubPageProps) {
                       {" · "}
                       {tierLabel(seat.sideA.tier)}
                     </p>
-                    {canPost && user?.id !== seat.sideA.id ? (
+                    {canPost && !hub.closed && user?.id !== seat.sideA.id ? (
                       <div className="mt-4">
                         <ChallengeForm debateId={seat.id} />
                       </div>
@@ -175,7 +209,11 @@ export default async function PrimaryHubPage(props: HubPageProps) {
 
             <section className="mt-10">
               <h2 className="font-display text-xl text-parchment">Post a question</h2>
-              {canPost ? (
+              {hub.closed ? (
+                <p className="mt-3 text-sm leading-6 text-zinc-400">
+                  Debates are permanently locked.
+                </p>
+              ) : canPost ? (
                 <OpeningForm
                   primaryId={hub.id}
                   botSparGraceMinutes={
