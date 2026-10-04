@@ -165,7 +165,7 @@ export function LoginForm() {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
+        <form method="post" onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
           <label className="flex flex-col gap-2">
             <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-400">
               Email

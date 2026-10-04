@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Cinzel, Geist, Geist_Mono } from "next/font/google";
 import { PledgeHost } from "@/components/pledges/PledgeHost";
 import { SiteChrome } from "@/components/site-chrome";
+import { loadNavIdentity } from "@/lib/actions/profile";
 import { redirectIfOnboardingIncomplete } from "@/lib/onboarding/gate";
 import "./globals.css";
 
@@ -28,6 +29,7 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   await redirectIfOnboardingIncomplete();
+  const identity = await loadNavIdentity().catch(() => null);
   return (
     <html
       lang="en"
@@ -35,7 +37,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col bg-parchment text-charcoal">
         <PledgeHost>
-          <SiteChrome>{children}</SiteChrome>
+          <SiteChrome identity={identity}>{children}</SiteChrome>
         </PledgeHost>
       </body>
     </html>

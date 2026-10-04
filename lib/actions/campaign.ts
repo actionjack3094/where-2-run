@@ -96,7 +96,7 @@ export async function upsertCampaignPlatform(
       return { error: "Stripe identity verification is required before a platform can be published." };
     }
     if (!canPublishPlatform(tier)) {
-      return { error: "Campaign publishing opens in the top 50% Elo of this primary." };
+      return { error: "Campaign publishing opens in the top 50% Civic Standing of this primary." };
     }
 
     const now = new Date().toISOString();
@@ -118,6 +118,7 @@ export async function upsertCampaignPlatform(
     }
 
     revalidatePath(`/profile/${userId}`);
+    revalidatePath("/dashboard");
     revalidatePath("/profile/settings/platform");
     return { message: "Your campaign platform is live." };
   } catch (caught) {
@@ -319,7 +320,7 @@ export type VolunteerSignupRow = {
   districts: string;
 };
 
-const VOLUNTEER_STATUS = ["accepted", "declined", "contacted"] as const;
+const VOLUNTEER_STATUS = ["pending", "accepted", "declined", "contacted"] as const;
 export type VolunteerUpdateStatus = (typeof VOLUNTEER_STATUS)[number];
 
 async function frontrunnerPrimaryIds(admin: PlatformAdmin, userId: string) {
@@ -447,7 +448,9 @@ export async function updateVolunteerStatus(
 ): Promise<CampaignActionResult> {
   try {
     if (!isUuid(signupId)) return { error: "That signup is not on the roster." };
-    if (!VOLUNTEER_STATUS.includes(status)) return { error: "Choose accepted, declined, or contacted." };
+    if (!VOLUNTEER_STATUS.includes(status)) {
+      return { error: "Choose pending, accepted, declined, or contacted." };
+    }
     const userId = await requireActionUserId();
     if (!userId) return { error: "Sign in to update a volunteer." };
 
@@ -477,6 +480,7 @@ export async function updateVolunteerStatus(
       .eq("campaign_user_id", userId);
     if (updateError) return { error: updateError.message };
 
+    revalidatePath("/dashboard");
     revalidatePath("/profile/settings/volunteers");
     return { message: "Volunteer status updated." };
   } catch (caught) {

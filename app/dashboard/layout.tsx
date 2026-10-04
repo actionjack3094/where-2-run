@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "My Campaign · WHERE 2 RUN",
-  description:
-    "Sort Local, State, and Federal matched elections as a voter or a candidate.",
+  title: "Candidate HQ · WHERE 2 RUN",
+  description: "Identity, campaign platform, and ground game in one place.",
 };
 
 export default function DashboardLayout({ children }: LayoutProps<"/dashboard">) {

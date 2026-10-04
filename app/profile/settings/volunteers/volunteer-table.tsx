@@ -6,8 +6,8 @@ import { updateVolunteerStatus, type VolunteerSignupRow, type VolunteerUpdateSta
 import { Button } from "@/components/ui/button";
 
 const ACTIONS: { status: VolunteerUpdateStatus; label: string }[] = [
-  { status: "accepted", label: "Accept" },
-  { status: "declined", label: "Decline" },
+  { status: "pending", label: "Pending" },
+  { status: "accepted", label: "Accepted" },
   { status: "contacted", label: "Contacted" },
 ];
 

@@ -29,6 +29,17 @@ const nextConfig: NextConfig = {
       { source: "/discover", destination: "/debates", permanent: false },
       { source: "/primaries", destination: "/elections", permanent: false },
       { source: "/primaries/:slug", destination: "/elections/:slug", permanent: false },
+      { source: "/profile/settings", destination: "/dashboard?tab=identity", permanent: false },
+      {
+        source: "/profile/settings/platform",
+        destination: "/dashboard?tab=platform",
+        permanent: false,
+      },
+      {
+        source: "/profile/settings/volunteers",
+        destination: "/dashboard?tab=ground",
+        permanent: false,
+      },
     ];
   },
 };

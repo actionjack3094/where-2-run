@@ -191,7 +191,7 @@ export function ProfileSections({
               ) : null}
               {viewerId === campaignUserId ? (
                 <Link
-                  href="/profile/settings/platform"
+                  href="/dashboard?tab=platform"
                   className="mt-5 inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
                 >
                   Edit platform
