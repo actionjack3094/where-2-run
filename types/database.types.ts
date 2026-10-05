@@ -89,6 +89,8 @@ export type AccountProfile = {
   is_banned: boolean;
   is_admin: boolean;
   avatar_url: string | null;
+  /** Short public biography shown on the candidate profile. */
+  bio: string | null;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -123,6 +125,8 @@ export interface PrimaryStanding {
   debates_logged: number;
   policy_consistency: number;
   ties: number;
+  /** Dollars pledged to this candidate in this primary. */
+  pledged_war_chest: number | string;
   is_nominee: boolean;
   created_at: string;
   updated_at: string;
@@ -141,7 +145,7 @@ export interface VolunteerSignup {
   campaign_user_id: string;
   volunteer_user_id: string;
   primary_id: string;
-  status: "pending" | "accepted" | "declined" | "contacted" | string;
+  status: "pending" | "accepted" | "declined" | "contacted" | "enlisted" | string;
   created_at: string;
 }
 
@@ -221,6 +225,8 @@ export interface SoapboxPost {
   id: string;
   author_id: string;
   content: string;
+  tags: string[];
+  upvote_count: number;
   created_at: string;
 }
 

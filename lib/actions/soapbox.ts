@@ -31,6 +31,7 @@ export type SoapboxPostView = {
   id: string;
   authorId: string;
   content: string;
+  tags: string[];
   createdAt: string;
   name: string;
   legalName: string | null;
@@ -63,6 +64,8 @@ type SpeechRow = {
   id: string;
   author_id: string;
   content: string;
+  tags?: string[] | null;
+  upvote_count?: number | null;
   created_at: string;
 };
 
@@ -149,11 +152,18 @@ async function sharedPrimaries(admin: PlatformAdmin, challengerId: string, autho
 export async function loadSoapboxFeed(viewerId: string | null): Promise<SoapboxFeed> {
   try {
     const admin = platformAdmin();
-    const posts = await admin
+    let posts = await admin
       .from("soapbox_posts")
-      .select("id, author_id, content, created_at")
+      .select("id, author_id, content, tags, upvote_count, created_at")
       .order("created_at", { ascending: false })
       .limit(50);
+    if (posts.error && isMissingSchema(posts.error)) {
+      posts = await admin
+        .from("soapbox_posts")
+        .select("id, author_id, content, created_at")
+        .order("created_at", { ascending: false })
+        .limit(50);
+    }
     if (posts.error) {
       const missing = migrationError(posts.error);
       if (missing) return { posts: [], missing: true, error: null };
@@ -214,10 +224,12 @@ export async function loadSoapboxFeed(viewerId: string | null): Promise<SoapboxF
         const profile = profiles.get(row.author_id) ?? null;
         const legalName = profile?.legal_name?.trim() || null;
         const tally = tallies.get(row.id);
+        const baseUpvotes = row.upvote_count ?? 0;
         return {
           id: row.id,
           authorId: row.author_id,
           content: row.content,
+          tags: row.tags ?? [],
           createdAt: row.created_at,
           name: legalName || displayName(profile),
           legalName,
@@ -225,7 +237,7 @@ export async function loadSoapboxFeed(viewerId: string | null): Promise<SoapboxF
           civicStanding: standingByUser.get(row.author_id) ?? null,
           ideologyX: profile?.ideology_x ?? null,
           ideologyY: profile?.ideology_y ?? null,
-          upvotes: tally?.upvotes ?? 0,
+          upvotes: baseUpvotes + (tally?.upvotes ?? 0),
           downvotes: tally?.downvotes ?? 0,
           viewerVote: tally?.viewerVote ?? 0,
         };
@@ -311,8 +323,14 @@ export async function castSoapboxVote(
       else if (vote.direction < 0) downvotes += 1;
       if (vote.voter_id === current.userId) viewerVote = vote.direction > 0 ? 1 : -1;
     }
+    const speech = await current.admin
+      .from("soapbox_posts")
+      .select("upvote_count")
+      .eq("id", postId)
+      .maybeSingle();
+    const base = speech.error ? 0 : Number((speech.data as { upvote_count?: number | null } | null)?.upvote_count ?? 0);
     revalidatePath("/soapbox");
-    return { upvotes, downvotes, viewerVote };
+    return { upvotes: base + upvotes, downvotes, viewerVote };
   } catch (caught) {
     return { error: caught instanceof Error ? caught.message : "Could not record that vote." };
   }

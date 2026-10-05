@@ -85,6 +85,18 @@ export function SoapboxPost({
       </div>
 
       <p className="mt-4 text-sm leading-6 text-zinc-200">{post.content}</p>
+      {post.tags.length > 0 ? (
+        <ul className="mt-3 flex flex-wrap gap-2">
+          {post.tags.map((tag) => (
+            <li
+              key={tag}
+              className="rounded-full border border-gold/40 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-gold"
+            >
+              {tag}
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
         <VoteButton
