@@ -1,5 +1,22 @@
 -- Campaign platforms for Declared Candidates, and volunteer signups for Frontrunners.
 
+create or replace function public.candidate_key_policies_valid(policies jsonb)
+returns boolean
+language sql
+immutable
+as $$
+  select
+    jsonb_typeof(policies) = 'array'
+    and jsonb_array_length(policies) between 1 and 3
+    and not exists (
+      select 1
+      from jsonb_array_elements(policies) as item
+      where jsonb_typeof(item) <> 'string'
+        or char_length(btrim(item #>> '{}')) = 0
+        or char_length(item #>> '{}') > 180
+    );
+$$;
+
 create table if not exists public.candidate_platforms (
   user_id uuid not null references public.profiles (id) on delete cascade,
   primary_id uuid not null references public.primaries (id) on delete cascade,
@@ -10,17 +27,7 @@ create table if not exists public.candidate_platforms (
   constraint candidate_platforms_manifesto_length
     check (char_length(btrim(manifesto)) between 20 and 4000),
   constraint candidate_platforms_key_policies_check
-    check (
-      jsonb_typeof(key_policies) = 'array'
-      and jsonb_array_length(key_policies) between 1 and 3
-      and not exists (
-        select 1
-        from jsonb_array_elements(key_policies) as item
-        where jsonb_typeof(item) <> 'string'
-          or char_length(btrim(item #>> '{}')) = 0
-          or char_length(item #>> '{}') > 180
-      )
-    )
+    check (public.candidate_key_policies_valid(key_policies))
 );
 
 comment on table public.candidate_platforms is

@@ -31,7 +31,8 @@ begin
   limit 1;
 
   if v_debate is null then
-    raise exception 'Concluded Zoning Preemption debate with James Harlan is missing. Apply 20261003190000_seed_agenda_queue.sql first.';
+    raise notice 'Town Hall demo seed skipped. The Zoning Preemption debate is not on this database.';
+    return;
   end if;
 
   select id into v_voter
@@ -44,7 +45,8 @@ begin
   limit 1;
 
   if v_voter is null then
-    raise exception 'Jordan Hale is not on profiles. Apply supabase/seed.sql before this migration.';
+    raise notice 'Town Hall demo seed skipped. Jordan Hale is not on this database.';
+    return;
   end if;
 
   update public.profiles

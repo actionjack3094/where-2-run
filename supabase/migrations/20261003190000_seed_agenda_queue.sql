@@ -12,10 +12,10 @@ declare
   v_voter uuid;
   v_harlan uuid;
   v_vance uuid := 'b07a0001-0005-4000-8000-000000000005';
-  v_filibuster uuid := 'c0mm0001-0001-4000-8000-000000000001';
-  v_permitting uuid := 'c0mm0001-0002-4000-8000-000000000002';
-  v_budget uuid := 'c0mm0001-0003-4000-8000-000000000003';
-  v_zoning uuid := 'c0mm0001-0004-4000-8000-000000000004';
+  v_filibuster uuid := 'c0110001-0001-4000-8000-000000000001';
+  v_permitting uuid := 'c0110001-0002-4000-8000-000000000002';
+  v_budget uuid := 'c0110001-0003-4000-8000-000000000003';
+  v_zoning uuid := 'c0110001-0004-4000-8000-000000000004';
   v_prompt uuid := 'd3b70001-0005-4000-8000-000000000005';
   v_debate uuid := 'a4e40001-0005-4000-8000-000000000005';
   v_austin_ocd text := 'ocd-division/country:us/state:tx/place:austin';
@@ -25,6 +25,36 @@ declare
   v_zoning_title text := 'Zoning Preemption';
   v_zoning_body text := 'Austin''s housing crisis is driven by local zoning laws blocking density. Should the state or federal government explicitly override local Austin zoning laws to force the construction of high-density housing, even if local neighborhood associations oppose it?';
 begin
+  select id into v_harlan
+  from public.profiles
+  where id = 'b07a0001-0002-4000-8000-000000000002'
+     or synthetic_key = 'blue-dog'
+     or display_name = 'James Harlan'
+     or full_name = 'James Harlan'
+  order by (id = 'b07a0001-0002-4000-8000-000000000002') desc
+  limit 1;
+
+  select p.id into v_voter
+  from public.profiles p
+  where p.id in (
+      'a07e0001-0001-4000-8000-000000000001',
+      'a07e0001-0003-4000-8000-000000000003'
+    )
+    or exists (
+      select 1
+      from public.users u
+      where u.id = p.id
+        and u.is_verified = true
+        and u.verification_tier = 'voter_verified'
+    )
+  order by (p.id = 'a07e0001-0001-4000-8000-000000000001') desc
+  limit 1;
+
+  if v_harlan is null or v_voter is null then
+    raise notice 'Agenda demo seed skipped. Local seed profiles are not on this database.';
+    return;
+  end if;
+
   select exists (
     select 1
     from information_schema.columns
