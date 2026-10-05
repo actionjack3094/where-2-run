@@ -13,6 +13,11 @@ import { cn } from "@/lib/utils";
 
 const LINKS = [
   {
+    href: "/soapbox",
+    label: "The Soapbox",
+    match: (path: string) => path.startsWith("/soapbox"),
+  },
+  {
     href: "/ballot",
     label: "My Ballot",
     match: (path: string) => path.startsWith("/ballot") || path.startsWith("/feed"),

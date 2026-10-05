@@ -1,0 +1,30 @@
+---
+description: WHERE 2 RUN 3-lane strategy for the Soapbox, Press Scrums, and the Arena
+alwaysApply: true
+---
+
+# 3-Lane Strategy
+
+WHERE 2 RUN has three lanes. Do not merge them, and do not put a stance, challenge, or rebuttal control on My Ballot (`/ballot`).
+
+## Lane 1: The Soapbox
+
+Casual expression at `/soapbox`, linked first in the center navigation.
+
+- A stump speech is a `soapbox_posts` row: `author_id`, `content` (1–280 characters), `created_at`. Public read. Authenticated insert, and only as yourself.
+- `soapbox_votes` stores one upvote (`1`) or downvote (`-1`) per member per speech.
+- A same-party peer opens `ChallengeModal` and checks the overlapping primaries shared by both people. A primary is contestable for someone when it is their party, still open, and either matches their home OCD-ID or already has a `primary_standings` row for them. The checkbox list is the intersection of those two sets.
+- Submit calls `createSoapboxChallenge`. It inserts `arena_debates` with `status = 'pending_acceptance'`, `source_post_id` pointing at the speech, and `expires_at` 24 hours from filing. The challenger is `candidate_a` and their text is `stance_a`. The author is `candidate_b` and the speech is `stance_b`.
+- `arena_debates.primary_id` is the anchor race (first selected, by label). Every selected primary, including the anchor, is also inserted into `arena_debate_primaries` so the judged result propagates to each leaderboard.
+- A locked `debate_prompts` row is created for the anchor so the existing arena foreign key stays satisfied. That prompt is not an open Arena seat.
+- Acceptance is a later step. Do not judge a `pending_acceptance` row, and do not show adherence scores.
+
+## Lane 2: Press Scrums
+
+Answering community agenda topics in the Elections Hub (`/elections`). Constituents file `community_prompts`. Candidates answer those issues on the hub. This lane is not a Soapbox speech and does not lock an Arena seat.
+
+## Lane 3: The Arena
+
+AI-judged debates at `/debates`. The existing exchange still applies here: opening stance (`open_challenge`), 24-hour seat lock, one rebuttal, then judging. Rows live in `arena_debates`, never legacy `public.debates`.
+
+A concluded match moves Civic Standing on each tagged primary ladder (`primary_standings`, and `arena_debate_primaries` when the match came from the Soapbox). Users see win, loss, or tie (tie at a margin of 3% or less), the Civic Standing delta, and the updated ideology coordinate. `candidate_a_score` and `candidate_b_score` stay server-side.

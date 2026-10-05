@@ -49,7 +49,12 @@ export type PrimaryParty = "democrat" | "republican";
 
 export type PromptStatus = "open" | "locked" | "concluded";
 
-export type ArenaDebateStatus = "open_challenge" | "active" | "concluded" | "cancelled";
+export type ArenaDebateStatus =
+  | "open_challenge"
+  | "active"
+  | "concluded"
+  | "cancelled"
+  | "pending_acceptance";
 
 export type AccountProfile = {
   id: string;
@@ -197,6 +202,10 @@ export interface ArenaDebate {
   seat_locked_until: string | null;
   /** When a human opening may be claimed by a same-party synthetic partner. */
   bot_spar_at: string | null;
+  /** Soapbox stump speech this challenge answers. Null for Arena-native seats. */
+  source_post_id: string | null;
+  /** Acceptance deadline for a Soapbox challenge. */
+  expires_at: string | null;
   status: ArenaDebateStatus | string;
   winner_id: string | null;
   is_tie: boolean;
@@ -206,6 +215,26 @@ export interface ArenaDebate {
   candidate_b_score: number | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface SoapboxPost {
+  id: string;
+  author_id: string;
+  content: string;
+  created_at: string;
+}
+
+export interface SoapboxVote {
+  post_id: string;
+  voter_id: string;
+  direction: number;
+  created_at: string;
+}
+
+export interface ArenaDebatePrimary {
+  debate_id: string;
+  primary_id: string;
+  created_at: string;
 }
 
 export interface DebateComment {
@@ -1754,6 +1783,55 @@ export interface Database {
             columns: ["debate_id"];
             isOneToOne: false;
             referencedRelation: "arena_debates";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      soapbox_posts: {
+        Row: SoapboxPost;
+        Insert: Partial<SoapboxPost> & Pick<SoapboxPost, "author_id" | "content">;
+        Update: Partial<SoapboxPost>;
+        Relationships: [
+          {
+            foreignKeyName: "soapbox_posts_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      soapbox_votes: {
+        Row: SoapboxVote;
+        Insert: Partial<SoapboxVote> & Pick<SoapboxVote, "post_id" | "voter_id" | "direction">;
+        Update: Partial<SoapboxVote>;
+        Relationships: [
+          {
+            foreignKeyName: "soapbox_votes_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "soapbox_posts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      arena_debate_primaries: {
+        Row: ArenaDebatePrimary;
+        Insert: Partial<ArenaDebatePrimary> & Pick<ArenaDebatePrimary, "debate_id" | "primary_id">;
+        Update: Partial<ArenaDebatePrimary>;
+        Relationships: [
+          {
+            foreignKeyName: "arena_debate_primaries_debate_id_fkey";
+            columns: ["debate_id"];
+            isOneToOne: false;
+            referencedRelation: "arena_debates";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "arena_debate_primaries_primary_id_fkey";
+            columns: ["primary_id"];
+            isOneToOne: false;
+            referencedRelation: "primaries";
             referencedColumns: ["id"];
           },
         ];
