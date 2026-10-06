@@ -152,17 +152,20 @@ async function sharedPrimaries(admin: PlatformAdmin, challengerId: string, autho
 export async function loadSoapboxFeed(viewerId: string | null): Promise<SoapboxFeed> {
   try {
     const admin = platformAdmin();
+    const selected = "id, author_id, content, tags, upvote_count, created_at";
+    const fallback = "id, author_id, content, created_at";
     let posts = await admin
       .from("soapbox_posts")
-      .select("id, author_id, content, tags, upvote_count, created_at")
+      .select(selected)
       .order("created_at", { ascending: false })
       .limit(50);
     if (posts.error && isMissingSchema(posts.error)) {
-      posts = await admin
+      const legacy = await admin
         .from("soapbox_posts")
-        .select("id, author_id, content, created_at")
+        .select(fallback)
         .order("created_at", { ascending: false })
         .limit(50);
+      posts = legacy as unknown as typeof posts;
     }
     if (posts.error) {
       const missing = migrationError(posts.error);

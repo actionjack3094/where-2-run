@@ -6,7 +6,8 @@ import { AvatarUpload } from "@/app/profile/settings/avatar-upload";
 import { PlatformEditor } from "@/app/profile/settings/platform/platform-editor";
 import { VolunteerTable } from "@/app/profile/settings/volunteers/volunteer-table";
 import { IdeologyCompass, compassFromPlane } from "@/components/IdeologyCompass";
-import { getVolunteerSignups, loadCampaignRaces, type VolunteerSignupRow } from "@/lib/actions/campaign";
+import { loadCampaignRaces, loadVolunteerRoster, type VolunteerSignupRow } from "@/lib/actions/campaign";
+import { loadDebaterQueue, loadSoapboxAnalytics } from "@/lib/campaign/hq";
 import { isMissingSchema } from "@/lib/db/schema-errors";
 import { getServerUser } from "@/lib/db/supabase-server";
 import { displayName, loadProfile, platformAdmin } from "@/lib/platform/records";
@@ -16,20 +17,22 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Candidate HQ · WHERE 2 RUN",
-  description: "Identity, campaign platform, and ground game in one place.",
+  description: "Debater queue, Soapbox analytics, and the volunteer roster.",
 };
 
 const TABS = [
-  { id: "identity", label: "Identity & Compass" },
-  { id: "platform", label: "Platform" },
-  { id: "ground", label: "Ground Game" },
+  { id: "queue", label: "Debater Queue" },
+  { id: "soapbox", label: "Soapbox" },
+  { id: "volunteers", label: "Volunteer Roster" },
 ] as const;
 
-type TabId = (typeof TABS)[number]["id"];
+type TabId = (typeof TABS)[number]["id"] | "identity" | "platform";
 
 function asTab(value: string | undefined): TabId {
-  if (value === "platform" || value === "ground") return value;
-  return "identity";
+  if (value === "identity" || value === "platform") return value;
+  if (value === "soapbox") return "soapbox";
+  if (value === "volunteers" || value === "ground") return "volunteers";
+  return "queue";
 }
 
 export default async function CandidateHqPage(props: {
@@ -79,28 +82,31 @@ export default async function CandidateHqPage(props: {
     }
   }
 
-  let groundLocked = false;
-  let groundError: string | null = null;
-  const volunteers: VolunteerSignupRow[] = [];
-  if (tab === "ground") {
+  let queue: Awaited<ReturnType<typeof loadDebaterQueue>> = [];
+  let queueError: string | null = null;
+  if (tab === "queue") {
     try {
-      const frontrunner = (await loadCampaignRaces(user.id)).filter((race) => race.tier === "frontrunner");
-      if (frontrunner.length === 0) {
-        groundLocked = true;
-      } else {
-        for (const race of frontrunner) {
-          const result = await getVolunteerSignups(race.primaryId);
-          if (result.error) {
-            groundError = result.error;
-            break;
-          }
-          volunteers.push(
-            ...result.signups.filter(
-              (row) => row.status === "pending" || row.status === "accepted" || row.status === "contacted",
-            ),
-          );
-        }
-      }
+      queue = await loadDebaterQueue(user.id);
+    } catch (caught) {
+      queueError = caught instanceof Error ? caught.message : "Could not load the debater queue.";
+    }
+  }
+
+  let soapbox: Awaited<ReturnType<typeof loadSoapboxAnalytics>> | null = null;
+  let soapboxError: string | null = null;
+  if (tab === "soapbox") {
+    try {
+      soapbox = await loadSoapboxAnalytics(user.id);
+    } catch (caught) {
+      soapboxError = caught instanceof Error ? caught.message : "Could not load Soapbox analytics.";
+    }
+  }
+
+  let groundError: string | null = null;
+  let volunteers: VolunteerSignupRow[] = [];
+  if (tab === "volunteers") {
+    try {
+      volunteers = (await loadVolunteerRoster(user.id)).filter((row) => row.status !== "declined");
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "Could not load volunteers.";
       groundError = isMissingSchema({ message })
@@ -120,7 +126,19 @@ export default async function CandidateHqPage(props: {
             Candidate HQ
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
-            Photo, name, platform, and ground game for the primaries you are contesting.
+            The queue, your Soapbox, and the people who enlisted. The milestone map lives in{" "}
+            <Link href="/campaign" className="text-gold">
+              Campaign Hub
+            </Link>
+            .
+          </p>
+          <p className="mt-3 flex flex-wrap gap-4 text-[11px] uppercase tracking-widest">
+            <Link href="/dashboard?tab=identity" className="text-zinc-500 hover:text-gold">
+              Identity
+            </Link>
+            <Link href="/dashboard?tab=platform" className="text-zinc-500 hover:text-gold">
+              Platform
+            </Link>
           </p>
         </header>
 
@@ -130,7 +148,7 @@ export default async function CandidateHqPage(props: {
             return (
               <Link
                 key={item.id}
-                href={item.id === "identity" ? "/dashboard" : `/dashboard?tab=${item.id}`}
+                href={item.id === "queue" ? "/dashboard" : `/dashboard?tab=${item.id}`}
                 role="tab"
                 aria-selected={selected}
                 className={cn(
@@ -145,6 +163,69 @@ export default async function CandidateHqPage(props: {
             );
           })}
         </div>
+
+        {tab === "queue" ? (
+          <section className="mt-8">
+            {queueError ? <p className="text-sm leading-6 text-zinc-300">{queueError}</p> : null}
+            {!queueError && queue.length === 0 ? (
+              <p className="text-sm leading-6 text-zinc-400">
+                Nothing is waiting. Open a stance in the Arena or accept a Soapbox challenge and it lands here.
+              </p>
+            ) : null}
+            <ul className="grid gap-3">
+              {queue.map((item) => (
+                <li key={item.id}>
+                  <Link
+                    href={`/debates/${item.id}`}
+                    className="block rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4 transition-colors hover:border-gold/50"
+                  >
+                    <p className="text-[11px] uppercase tracking-widest text-gold">
+                      {item.role} · {item.office}
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-parchment">{item.prompt}</p>
+                    <p className="mt-1 text-sm text-zinc-400">vs {item.opponent}</p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {tab === "soapbox" && soapbox ? (
+          <section className="mt-8">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Stat label="Speeches" value={String(soapbox.posts.length)} />
+              <Stat label="Upvotes" value={soapbox.totalUpvotes.toLocaleString("en-US")} />
+              <Stat
+                label="Top tag"
+                value={soapbox.tagCounts[0] ? `${soapbox.tagCounts[0].tag} · ${soapbox.tagCounts[0].count}` : "—"}
+              />
+            </div>
+            {soapbox.posts.length === 0 ? (
+              <p className="mt-6 text-sm leading-6 text-zinc-400">
+                <Link href="/soapbox" className="text-gold">
+                  Post a stump speech
+                </Link>{" "}
+                and the counts show up here.
+              </p>
+            ) : (
+              <ul className="mt-6 grid gap-3">
+                {soapbox.posts.map((post) => (
+                  <li key={post.id} className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4">
+                    <p className="text-sm leading-6 text-parchment">{post.content}</p>
+                    <p className="mt-2 text-[11px] uppercase tracking-widest text-zinc-500">
+                      {post.upvotes.toLocaleString("en-US")} upvotes
+                      {post.tags.length > 0 ? ` · ${post.tags.join(" · ")}` : ""}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        ) : null}
+        {tab === "soapbox" && soapboxError ? (
+          <p className="mt-8 text-sm leading-6 text-zinc-300">{soapboxError}</p>
+        ) : null}
 
         {tab === "identity" ? (
           <section className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]">
@@ -221,14 +302,14 @@ export default async function CandidateHqPage(props: {
           </section>
         ) : null}
 
-        {tab === "ground" ? (
+        {tab === "volunteers" ? (
           <section className="mt-8">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <p className="max-w-xl text-sm leading-6 text-zinc-400">
-                Pending, accepted, and contacted volunteers for primaries where you are a Frontrunner.
-                Districts come from each volunteer&apos;s ballot. The street address stays private.
+                People who enlisted for this campaign. Districts come from each volunteer&apos;s ballot.
+                The street address stays private.
               </p>
-              {groundLocked || groundError ? null : (
+              {groundError || volunteers.length === 0 ? null : (
                 <a
                   href="/api/export/volunteers"
                   className="inline-flex h-10 items-center justify-center rounded-md bg-gold-strong px-4 font-display text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-950"
@@ -238,19 +319,19 @@ export default async function CandidateHqPage(props: {
               )}
             </div>
             {groundError ? <p className="mt-8 text-sm leading-6 text-zinc-300">{groundError}</p> : null}
-            {groundLocked ? (
-              <div className="mt-8 rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-6">
-                <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500">Locked</p>
-                <p className="mt-3 text-sm leading-6 text-parchment">
-                  The volunteer roster opens at Frontrunner: top 10% Civic Standing in a primary, with
-                  Stripe verification and a legal name.
-                </p>
-              </div>
-            ) : null}
-            {!groundLocked && !groundError ? <VolunteerTable rows={volunteers} /> : null}
+            {!groundError ? <VolunteerTable rows={volunteers} /> : null}
           </section>
         ) : null}
       </div>
     </main>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-4">
+      <p className="text-[11px] uppercase tracking-widest text-zinc-500">{label}</p>
+      <p className="mt-2 font-display text-2xl text-parchment">{value}</p>
+    </div>
   );
 }

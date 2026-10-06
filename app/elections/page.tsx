@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ElectionLeaderboard } from "@/components/elections/ElectionLeaderboard";
 import {
   CIVIC_STANDING_TIP,
   DISTRICT_AGENDA_TIP,
@@ -7,6 +8,8 @@ import {
   InfoTooltip,
   TOWN_HALL_TIP,
 } from "@/components/InfoTooltip";
+import { loadElectionLeaderboard } from "@/lib/elections/leaderboard";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Elections · WHERE 2 RUN",
@@ -20,7 +23,12 @@ const definitions = [
   { label: "Town Hall Q&A", text: TOWN_HALL_TIP },
 ] as const;
 
-export default function ElectionsHubPage() {
+export default async function ElectionsHubPage(props: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const tab = (await props.searchParams).tab === "leaderboard" ? "leaderboard" : "browse";
+  const board = tab === "leaderboard" ? await loadElectionLeaderboard().catch(() => []) : [];
+
   return (
     <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
@@ -42,28 +50,61 @@ export default function ElectionsHubPage() {
           </ul>
         </header>
 
-        <div className="mt-10 grid gap-4">
+        <div role="tablist" aria-label="Elections" className="mt-8 flex flex-wrap gap-2">
           <Link
-            href="/elections/states"
-            className="rounded-2xl border border-gold bg-zinc-900 px-6 py-10 transition-colors hover:bg-zinc-800"
+            href="/elections"
+            role="tab"
+            aria-selected={tab === "browse"}
+            className={cn(
+              "inline-flex h-10 items-center justify-center rounded-full px-4 text-[11px] font-medium uppercase tracking-widest",
+              tab === "browse"
+                ? "bg-gold-strong text-zinc-950"
+                : "border border-gold/40 text-zinc-400 hover:border-gold hover:text-parchment",
+            )}
           >
-            <p className="text-[11px] uppercase tracking-[0.2em] text-gold">Nationwide</p>
-            <p className="mt-3 font-display text-4xl font-semibold tracking-tight text-parchment">
-              All Elections
-            </p>
-            <p className="mt-2 text-sm text-zinc-400">Browse all 50 states, then filter federal, state, and local seats.</p>
+            Browse
           </Link>
           <Link
-            href="/elections/my-ballot"
-            className="rounded-2xl border border-zinc-700 bg-zinc-900 px-6 py-10 transition-colors hover:border-zinc-500"
+            href="/elections?tab=leaderboard"
+            role="tab"
+            aria-selected={tab === "leaderboard"}
+            className={cn(
+              "inline-flex h-10 items-center justify-center rounded-full px-4 text-[11px] font-medium uppercase tracking-widest",
+              tab === "leaderboard"
+                ? "bg-gold-strong text-zinc-950"
+                : "border border-gold/40 text-zinc-400 hover:border-gold hover:text-parchment",
+            )}
           >
-            <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Your address</p>
-            <p className="mt-3 font-display text-4xl font-semibold tracking-tight text-parchment">
-              My Ballot Elections
-            </p>
-            <p className="mt-2 text-sm text-zinc-400">Races whose district matches your verified home address.</p>
+            Leaderboard
           </Link>
         </div>
+
+        {tab === "leaderboard" ? (
+          <ElectionLeaderboard rows={board} />
+        ) : (
+          <div className="mt-10 grid gap-4">
+            <Link
+              href="/elections/states"
+              className="rounded-2xl border border-gold bg-zinc-900 px-6 py-10 transition-colors hover:bg-zinc-800"
+            >
+              <p className="text-[11px] uppercase tracking-[0.2em] text-gold">Nationwide</p>
+              <p className="mt-3 font-display text-4xl font-semibold tracking-tight text-parchment">
+                All Elections
+              </p>
+              <p className="mt-2 text-sm text-zinc-400">Browse all 50 states, then filter federal, state, and local seats.</p>
+            </Link>
+            <Link
+              href="/elections/my-ballot"
+              className="rounded-2xl border border-zinc-700 bg-zinc-900 px-6 py-10 transition-colors hover:border-zinc-500"
+            >
+              <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Your address</p>
+              <p className="mt-3 font-display text-4xl font-semibold tracking-tight text-parchment">
+                My Ballot Elections
+              </p>
+              <p className="mt-2 text-sm text-zinc-400">Races whose district matches your verified home address.</p>
+            </Link>
+          </div>
+        )}
       </div>
     </main>
   );

@@ -29,6 +29,7 @@ export type BallotComment = {
 
 export type BallotMatch = {
   id: string;
+  primaryId: string;
   primarySlug: string;
   officeName: string;
   state: string;
@@ -45,6 +46,10 @@ export type BallotMatch = {
   priority: boolean;
   comments: BallotComment[];
   viewerSupportId: string | null;
+  warChestA: number;
+  warChestB: number;
+  enlistedA: boolean;
+  enlistedB: boolean;
 };
 
 export type ArenaCard = {

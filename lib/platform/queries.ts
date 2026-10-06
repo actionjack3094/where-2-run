@@ -320,6 +320,39 @@ export async function loadBallot(userId: string | null) {
     admin,
     debates.flatMap((debate) => [debate.candidate_a_id, debate.candidate_b_id ?? ""]),
   );
+  const chestBySeat = new Map<string, number>();
+  const chestResult = await admin
+    .from("primary_standings")
+    .select("user_id, primary_id, pledged_war_chest")
+    .in(
+      "primary_id",
+      primaries.map((primary) => primary.id),
+    );
+  if (!chestResult.error) {
+    for (const row of (chestResult.data ?? []) as {
+      user_id: string;
+      primary_id: string;
+      pledged_war_chest: number | string | null;
+    }[]) {
+      chestBySeat.set(`${row.user_id}:${row.primary_id}`, Number(row.pledged_war_chest ?? 0));
+    }
+  } else if (!isMissingSchema(chestResult.error)) {
+    throw new Error(chestResult.error.message);
+  }
+  const enlistedSeats = new Set<string>();
+  if (userId) {
+    const enlistments = await admin
+      .from("volunteer_signups")
+      .select("campaign_user_id, primary_id")
+      .eq("volunteer_user_id", userId);
+    if (!enlistments.error) {
+      for (const row of (enlistments.data ?? []) as { campaign_user_id: string; primary_id: string }[]) {
+        enlistedSeats.add(`${row.campaign_user_id}:${row.primary_id}`);
+      }
+    } else if (!isMissingSchema(enlistments.error)) {
+      throw new Error(enlistments.error.message);
+    }
+  }
 
   const matches = debates.map((debate) => {
     const primary = primaryById.get(debate.primary_id);
@@ -370,8 +403,10 @@ export async function loadBallot(userId: string | null) {
         createdAt: row.created_at,
       }));
     const priority = sideA.tier === "frontrunner" || sideB.tier === "frontrunner";
+    const primaryId = debate.primary_id;
     return {
       id: debate.id,
+      primaryId,
       primarySlug: primary?.slug ?? "",
       officeName: primary?.office_name ?? "Primary",
       state: primary?.state ?? "",
@@ -389,6 +424,10 @@ export async function loadBallot(userId: string | null) {
       comments,
       viewerSupportId: likeRows.find((like) => like.debate_id === debate.id && like.user_id === userId)
         ?.supported_id ?? null,
+      warChestA: chestBySeat.get(`${sideA.id}:${primaryId}`) ?? 0,
+      warChestB: chestBySeat.get(`${sideB.id}:${primaryId}`) ?? 0,
+      enlistedA: enlistedSeats.has(`${sideA.id}:${primaryId}`),
+      enlistedB: enlistedSeats.has(`${sideB.id}:${primaryId}`),
     } satisfies BallotMatch;
   });
 

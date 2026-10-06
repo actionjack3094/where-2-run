@@ -15,6 +15,7 @@
     "sim:season": "tsx scripts/sim-season.ts",
     "feed:patch": "tsx scripts/patch-feed-user.ts",
     "seed:bots": "npx tsx scripts/seed-bots.ts",
+    "seed:austin": "tsx scripts/seed-austin.ts",
     "jury:test": "tsx scripts/test-jury-appeal.ts"
   },
   "dependencies": {

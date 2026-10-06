@@ -37,9 +37,16 @@ export type ProfileDebate = {
   questions: TownHallQuestion[];
 };
 
+export type WarChest = {
+  primaryId: string;
+  label: string;
+  amount: number;
+};
+
 export type ArenaPublicProfile = {
   id: string;
   name: string;
+  bio: string | null;
   tier: CandidateTierName;
   tierLabel: string;
   showVerified: boolean;
@@ -47,6 +54,7 @@ export type ArenaPublicProfile = {
   ideologyX: number | null;
   ideologyY: number | null;
   standings: ProfileStanding[];
+  warChests: WarChest[];
   history: ProfileDebate[];
 };
 
@@ -89,6 +97,7 @@ export async function loadArenaPublicProfile(userId: string): Promise<ArenaPubli
       return {
         id: profile.id,
         name: publicName(profile),
+        bio: null,
         tier,
         tierLabel: tierLabel(tier),
         showVerified: tier === "declared_candidate" || tier === "frontrunner",
@@ -96,6 +105,7 @@ export async function loadArenaPublicProfile(userId: string): Promise<ArenaPubli
         ideologyX: profile.ideology_x,
         ideologyY: profile.ideology_y,
         standings: [],
+        warChests: [],
         history: [],
       };
     }
@@ -247,9 +257,38 @@ export async function loadArenaPublicProfile(userId: string): Promise<ArenaPubli
     }
   }
 
+  const bioResult = await admin.from("profiles").select("bio").eq("id", userId).maybeSingle();
+  const bio = bioResult.error
+    ? null
+    : ((bioResult.data as { bio?: string | null } | null)?.bio?.trim() || null);
+  const chestResult = await admin
+    .from("primary_standings")
+    .select("primary_id, pledged_war_chest")
+    .eq("user_id", userId);
+  const chestAmounts = new Map<string, number>();
+  if (!chestResult.error) {
+    for (const row of (chestResult.data ?? []) as {
+      primary_id: string;
+      pledged_war_chest: number | string | null;
+    }[]) {
+      chestAmounts.set(row.primary_id, Number(row.pledged_war_chest ?? 0));
+    }
+  }
+  const warChests: WarChest[] = [...chestAmounts.entries()].map(([primaryId, amount]) => {
+    const standing = standings.find((row) => row.primaryId === primaryId);
+    const primary = primaries.get(primaryId);
+    const seat = primary?.district ? `${primary.state}-${primary.district}` : primary?.state ?? "";
+    return {
+      primaryId,
+      label: standing?.label ?? (primary ? `${seat} · ${primary.office_name}` : "Primary"),
+      amount,
+    };
+  });
+
   return {
     id: profile.id,
     name: publicName(profile),
+    bio,
     tier,
     tierLabel: tierLabel(tier),
     showVerified: tier === "declared_candidate" || tier === "frontrunner",
@@ -257,6 +296,7 @@ export async function loadArenaPublicProfile(userId: string): Promise<ArenaPubli
     ideologyX: profile.ideology_x,
     ideologyY: profile.ideology_y,
     standings,
+    warChests,
     history,
   };
 }

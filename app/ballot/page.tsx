@@ -4,6 +4,7 @@ import { BallotEngage } from "@/components/platform/ArenaForms";
 import { ReportDebateButton } from "@/components/platform/ReportDebateButton";
 import { TownHall } from "@/components/platform/TownHall";
 import { CandidateAvatar } from "@/components/profile/CandidateAvatar";
+import { BallotSupportBar } from "@/components/support/BallotSupportBar";
 import { isMissingSchema } from "@/lib/db/schema-errors";
 import { getServerUser } from "@/lib/db/supabase-server";
 import { loadBallot } from "@/lib/platform/queries";
@@ -141,6 +142,13 @@ export default async function BallotPage() {
                     <p className="mt-3 text-sm leading-6 text-zinc-300">
                       {index === 0 ? match.stanceA : match.stanceB || "Rebuttal not filed yet."}
                     </p>
+                    <BallotSupportBar
+                      candidateId={side.id}
+                      primaryId={match.primaryId}
+                      warChest={index === 0 ? match.warChestA : match.warChestB}
+                      enlisted={index === 0 ? match.enlistedA : match.enlistedB}
+                      signedIn={Boolean(user)}
+                    />
                     {side.tier === "declared_candidate" ? (
                       <Link href={`/profile/${side.id}`} className="mt-3 inline-flex text-xs uppercase tracking-widest text-gold">
                         Platform

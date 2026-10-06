@@ -69,7 +69,7 @@ function VolunteerButton({
   already: boolean;
 }) {
   const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState<string | null>(already ? "Your volunteer request is pending." : null);
+  const [message, setMessage] = useState<string | null>(already ? "✓ Enlisted" : null);
   const [error, setError] = useState<string | null>(null);
 
   if (!signedIn) {
@@ -92,14 +92,14 @@ function VolunteerButton({
         setPending(true);
         setError(null);
         void registerAsVolunteer(campaignUserId, primaryId).then((result) => {
-          setMessage(result.message ?? null);
+          setMessage(result.error ? null : "✓ Enlisted");
           setError(result.error ?? null);
           setPending(false);
         });
       }}
     >
       <Button type="submit" variant="gold" size="full" disabled={pending || Boolean(message)}>
-        {message ? "Request sent" : pending ? "Sending…" : "Volunteer for Campaign"}
+        {message ? "✓ Enlisted" : pending ? "Sending…" : "Volunteer for Campaign"}
       </Button>
       {message ? <p className="mt-3 text-sm leading-6 text-parchment">{message}</p> : null}
       {error ? <p className="mt-3 text-sm leading-6 text-zinc-300">{error}</p> : null}

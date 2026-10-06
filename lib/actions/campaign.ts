@@ -418,6 +418,23 @@ async function signupRows(admin: PlatformAdmin, userId: string, primaryIds: stri
   });
 }
 
+/** Every enlistment on this campaign, including rows filed before Frontrunner. */
+export async function loadVolunteerRoster(userId: string): Promise<VolunteerSignupRow[]> {
+  const admin = platformAdmin();
+  const { data, error } = await admin
+    .from("volunteer_signups")
+    .select("primary_id")
+    .eq("campaign_user_id", userId);
+  if (error) {
+    if (isMissingSchema(error)) return [];
+    throw new Error(error.message);
+  }
+  const primaryIds = [
+    ...new Set(((data ?? []) as { primary_id: string }[]).map((row) => row.primary_id)),
+  ];
+  return signupRows(admin, userId, primaryIds);
+}
+
 /** Signups for one primary. The caller must be that campaign's Frontrunner. */
 export async function getVolunteerSignups(
   primaryId: string,

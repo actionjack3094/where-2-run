@@ -5,6 +5,7 @@ import { CIVIC_STANDING_TIP, IDEOLOGY_COMPASS_TIP, InfoTooltip } from "@/compone
 import { ReportDebateButton } from "@/components/platform/ReportDebateButton";
 import { TownHall } from "@/components/platform/TownHall";
 import { CandidateAvatar } from "@/components/profile/CandidateAvatar";
+import { PledgeFundsCard } from "@/components/support/PledgeFundsCard";
 import type { PublishedPlatform } from "@/lib/actions/campaign";
 import type { ArenaPublicProfile } from "@/lib/platform/public-profile";
 import { tierLabel } from "@/lib/platform/types";
@@ -36,7 +37,14 @@ export function ArenaPublicProfileView({
           <span className="rounded-full border border-gold px-2 py-0.5 text-gold">{profile.tierLabel}</span>
           {profile.showVerified ? <span>Verified</span> : null}
         </p>
+        {profile.bio ? <p className="mt-4 max-w-xl text-sm leading-6 text-zinc-300">{profile.bio}</p> : null}
       </header>
+
+      <PledgeFundsCard
+        candidateId={profile.id}
+        signedIn={Boolean(viewerId)}
+        chests={profile.warChests}
+      />
 
       <section className="mt-10">
         <h2 className="inline-flex items-center gap-2 font-display text-xl text-parchment">
