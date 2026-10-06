@@ -114,7 +114,7 @@ export function Navbar({ identity }: { identity: NavIdentity | null }) {
         </div>
         <button
           type="button"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-md text-charcoal transition-colors duration-200 hover:bg-white md:hidden"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-md text-stone-900 transition-colors duration-200 hover:bg-white md:hidden"
           aria-expanded={open}
           aria-controls="mobile-nav"
           onClick={() => setOpen((current) => !current)}
@@ -130,8 +130,8 @@ export function Navbar({ identity }: { identity: NavIdentity | null }) {
               key={link.href}
               href={link.href}
               className={cn(
-                "rounded-md px-2 py-2 text-[11px] font-medium uppercase tracking-widest transition-colors duration-200 hover:bg-parchment-light",
-                link.match(pathname) ? "text-brass" : "text-charcoal-muted",
+                "rounded-md px-2 py-2 text-[11px] font-medium uppercase tracking-widest transition-colors duration-200 hover:bg-white",
+                link.match(pathname) ? "text-amber-800" : "text-stone-600",
               )}
             >
               {link.label}
@@ -167,7 +167,7 @@ function NavLink({
       href={href}
       className={cn(
         "whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.14em] transition-colors lg:text-[11px] lg:tracking-widest",
-        active ? "text-brass" : "text-charcoal-muted hover:text-charcoal",
+        active ? "text-amber-800" : "text-stone-600 hover:text-stone-900",
       )}
     >
       {children}
@@ -195,13 +195,13 @@ function AccountSlot({
       <div className={cn("flex items-center gap-4", stacked && "flex-col items-start")}>
         <Link
           href="/auth/login"
-          className="text-[11px] font-medium uppercase tracking-widest text-charcoal-muted transition-colors hover:text-charcoal"
+          className="text-[11px] font-medium uppercase tracking-widest text-stone-600 transition-colors hover:text-stone-900"
         >
           Sign In
         </Link>
         <Link
           href="/auth/login?mode=create"
-          className="inline-flex h-8 items-center rounded-md bg-gold-strong px-3 text-[11px] font-semibold uppercase tracking-widest text-zinc-950"
+          className="inline-flex h-8 items-center rounded-md bg-gold-strong px-3 text-[11px] font-semibold uppercase tracking-widest text-stone-900"
         >
           Get Started
         </Link>
@@ -213,15 +213,15 @@ function AccountSlot({
     <div ref={menuRef} className="relative">
       <button
         type="button"
-        className="flex items-center gap-2 rounded-full py-1 pr-2 text-left outline-none hover:bg-parchment-light focus-visible:ring-2 focus-visible:ring-brass"
+        className="flex items-center gap-2 rounded-full py-1 pr-2 text-left outline-none hover:bg-white focus-visible:ring-2 focus-visible:ring-amber-600"
         aria-haspopup="menu"
         aria-expanded={menuOpen}
         aria-controls={menuId}
         onClick={() => setMenuOpen((current) => !current)}
       >
         <CandidateAvatar name={identity.name} avatarUrl={identity.avatarUrl} size="sm" />
-        <span className="max-w-[9rem] truncate text-sm text-charcoal">{identity.name}</span>
-        <span className="rounded-full border border-gold px-2 py-0.5 text-[10px] uppercase tracking-widest text-brass">
+        <span className="max-w-[9rem] truncate text-sm text-stone-900">{identity.name}</span>
+        <span className="rounded-full border border-amber-500/40 px-2 py-0.5 text-[10px] uppercase tracking-widest text-amber-800">
           {tierLabel(identity.tier)}
         </span>
       </button>
@@ -229,7 +229,7 @@ function AccountSlot({
         <div
           id={menuId}
           role="menu"
-          className="absolute right-0 z-20 mt-2 w-52 rounded-lg border border-brass/50 bg-parchment py-1 shadow-lg"
+          className="absolute right-0 z-20 mt-2 w-52 rounded-lg border border-amber-500/30 bg-white py-1 shadow-lg"
         >
           <MenuLink href="/dashboard">Candidate HQ</MenuLink>
           <MenuLink href="/campaign">Campaign Hub</MenuLink>
@@ -237,7 +237,7 @@ function AccountSlot({
           <button
             type="button"
             role="menuitem"
-            className="block w-full px-3 py-2 text-left text-[11px] font-medium uppercase tracking-widest text-charcoal-muted hover:bg-parchment-light hover:text-charcoal"
+            className="block w-full px-3 py-2 text-left text-[11px] font-medium uppercase tracking-widest text-stone-600 hover:bg-stone-50 hover:text-stone-900"
             onClick={() => {
               setMenuOpen(false);
               void signOutAction();
@@ -256,7 +256,7 @@ function MenuLink({ href, children }: { href: string; children: string }) {
     <Link
       href={href}
       role="menuitem"
-      className="block px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-charcoal-muted hover:bg-parchment-light hover:text-charcoal"
+      className="block px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-stone-600 hover:bg-stone-50 hover:text-stone-900"
     >
       {children}
     </Link>

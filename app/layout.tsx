@@ -35,7 +35,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-stone-50 text-charcoal">
+      <body className="flex min-h-full flex-col bg-stone-50 text-stone-900">
         <PledgeHost>
           <SiteChrome identity={identity}>{children}</SiteChrome>
         </PledgeHost>

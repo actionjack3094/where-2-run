@@ -19,11 +19,11 @@ export function SiteFooter() {
         <div>
           <Link
             href="/ballot"
-            className="font-display text-xs font-medium uppercase tracking-[0.2em] text-brass"
+            className="font-display text-xs font-medium uppercase tracking-[0.2em] text-amber-800"
           >
             Where 2 Run
           </Link>
-          <p className="mt-3 max-w-xs text-sm leading-6 text-charcoal-muted">
+          <p className="mt-3 max-w-xs text-sm leading-6 text-stone-600">
             Match a district, take the floor, and let the room decide.
           </p>
         </div>
@@ -32,7 +32,7 @@ export function SiteFooter() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-[11px] font-medium uppercase tracking-widest text-charcoal-muted transition-colors hover:text-charcoal"
+              className="text-[11px] font-medium uppercase tracking-widest text-stone-600 transition-colors hover:text-stone-900"
             >
               {link.label}
             </Link>
