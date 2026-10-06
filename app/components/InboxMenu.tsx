@@ -48,6 +48,7 @@ function InboxRow({
 export function InboxMenu() {
   const pathname = usePathname();
   const panelId = useId();
+  const bellId = panelId.replace(/:/g, "");
   const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<InboxItem[]>([]);
@@ -76,8 +77,10 @@ export function InboxMenu() {
     let channel: ReturnType<typeof supabase.channel> | null = null;
     void supabase.auth.getUser().then(({ data }) => {
       if (cancelled || !data.user) return;
+      // A fresh topic so a second bell, or a remount, never reuses a channel
+      // that has already started joining. Listeners have to be attached first.
       channel = supabase
-        .channel(`arena-notifications:${data.user.id}`)
+        .channel(`arena-notifications:${data.user.id}:${bellId}:${crypto.randomUUID()}`)
         .on(
           "postgres_changes",
           {
@@ -98,7 +101,7 @@ export function InboxMenu() {
       window.removeEventListener(INBOX_UPDATED_EVENT, load);
       if (channel) void supabase.removeChannel(channel);
     };
-  }, [pathname]);
+  }, [bellId, pathname]);
 
   useEffect(() => {
     if (!open) return;
@@ -144,7 +147,7 @@ export function InboxMenu() {
           active || open ? "text-amber-700" : "text-amber-800/80 hover:text-amber-700",
         )}
       >
-        <LibertyBell unread={unread > 0} className="h-6 w-6 overflow-visible" />
+        <LibertyBell unread={unread > 0} className="h-7 w-7 overflow-visible" />
       </button>
       {open ? (
         <div
