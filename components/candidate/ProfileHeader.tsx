@@ -1,6 +1,7 @@
 "use client";
 
 import { MapPin, ShieldCheck } from "lucide-react";
+import { CIVIC_STANDING_TIP, InfoTooltip } from "@/components/InfoTooltip";
 import { PledgeSupportButton, type PledgeRaceOption } from "@/app/components/PledgeModal";
 import { PledgeEscrowButton } from "@/components/pledges/PledgeEscrowButton";
 import { CandidateAvatar } from "@/components/profile/CandidateAvatar";
@@ -82,8 +83,9 @@ export function ProfileHeader({
             className="flex h-32 min-w-32 shrink-0 flex-col items-center justify-center rounded-full border-2 border-gold bg-gold/15 px-5 text-center shadow-[0_0_32px_rgba(212,175,55,0.18)]"
             aria-label={`${eloLocked ? "Locked Civic Standing" : "Civic Standing"} ${eloRating}`}
           >
-            <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-gold">
+            <p className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-[0.22em] text-gold">
               {eloLocked ? "Locked Civic Standing" : "Civic Standing"}
+              <InfoTooltip label="Civic Standing" text={CIVIC_STANDING_TIP} />
             </p>
             <p className="mt-1 font-display text-4xl font-semibold tabular-nums leading-none tracking-tight text-gold">
               {eloRating}

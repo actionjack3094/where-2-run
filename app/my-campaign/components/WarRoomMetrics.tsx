@@ -1,3 +1,4 @@
+import { CIVIC_STANDING_TIP, InfoTooltip, PLEDGED_ESCROW_TIP } from "@/components/InfoTooltip";
 import {
   Card,
   CardContent,
@@ -29,7 +30,10 @@ export function WarRoomMetrics({ metrics }: { metrics: Metrics }) {
           <CardTitle className="mt-2 font-display text-3xl font-semibold tabular-nums tracking-tight text-gold sm:text-4xl">
             {formatUsd(metrics.escrowTotal)}
           </CardTitle>
-          <CardDescription>Total Escrow Raised</CardDescription>
+          <CardDescription className="inline-flex items-center gap-1.5">
+            Pledged Escrow
+            <InfoTooltip label="Pledged Escrow" text={PLEDGED_ESCROW_TIP} />
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm leading-6 text-zinc-400">
@@ -45,12 +49,15 @@ export function WarRoomMetrics({ metrics }: { metrics: Metrics }) {
       <Card className="bg-zinc-900">
         <CardHeader>
           <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
-            Arena
+            Debates
           </p>
           <CardTitle className="mt-2 font-display text-3xl font-semibold tabular-nums tracking-tight text-gold sm:text-4xl">
             {metrics.eloRating}
           </CardTitle>
-          <CardDescription>Civic Standing</CardDescription>
+          <CardDescription className="inline-flex items-center gap-1.5">
+            Civic Standing
+            <InfoTooltip label="Civic Standing" text={CIVIC_STANDING_TIP} />
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm leading-6 text-zinc-400">{eloCaption}</p>

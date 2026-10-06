@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CIVIC_STANDING_TIP, IDEOLOGY_COMPASS_TIP, InfoTooltip } from "@/components/InfoTooltip";
+import { DistrictGauntletForm } from "@/components/debates/DistrictGauntletForm";
 import { ChallengeForm, LockedSeat } from "@/components/platform/ArenaForms";
+import { stanceIsStale } from "@/lib/ballot/fading";
+import { loadDistrictGauntlet } from "@/lib/debates/load-gauntlet";
+import { roundByNumber } from "@/lib/debates/structure";
+import { platformAdmin } from "@/lib/platform/records";
 import { ReportDebateButton } from "@/components/platform/ReportDebateButton";
 import { CandidateAvatar } from "@/components/profile/CandidateAvatar";
 import { isMissingSchema } from "@/lib/db/schema-errors";
@@ -20,6 +25,20 @@ export const metadata: Metadata = {
 export default async function DebatesPage(props: { searchParams: Promise<{ filed?: string }> }) {
   const searchParams = await props.searchParams;
   const user = await getServerUser();
+  const gauntlet = user?.id ? await loadDistrictGauntlet(user.id).catch(() => null) : null;
+  let stanceStale = false;
+  if (user?.id) {
+    const activity = await platformAdmin()
+      .from("arena_debates")
+      .select("updated_at")
+      .or(`candidate_a_id.eq.${user.id},candidate_b_id.eq.${user.id}`)
+      .order("updated_at", { ascending: false })
+      .limit(1);
+    const last = activity.error
+      ? null
+      : ((activity.data ?? []) as { updated_at: string }[])[0]?.updated_at ?? null;
+    stanceStale = stanceIsStale(last);
+  }
   let setup: string | null = null;
   try {
     if (user?.id) await ensureColdStart();
@@ -52,8 +71,9 @@ export default async function DebatesPage(props: { searchParams: Promise<{ filed
             <InfoTooltip label="Ideology Compass" text={IDEOLOGY_COMPASS_TIP} />
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
-            Open seats from primaries closest to you, inside your party. Challenge locks
-            the seat for 24 hours.
+            Open seats from primaries closest to you, inside your party. Each debate is four
+            rounds — Opening Statement, Rebuttal 1, Rebuttal 2, Closing Statement — at 500
+            characters each. A challenge locks the seat for 24 hours.
           </p>
           {feed?.coordinate ? (
             <p className="mt-3 text-sm text-parchment">
@@ -94,9 +114,30 @@ export default async function DebatesPage(props: { searchParams: Promise<{ filed
         ) : null}
 
         <div className="mt-8 grid gap-6">
+          {stanceStale && user ? (
+            <p className="mt-8 rounded-xl border border-amber-500/30 bg-zinc-900 px-5 py-4 text-sm leading-6 text-zinc-300">
+              Your stance is stale. File an update on the{" "}
+              <Link href="/elections" className="text-gold">
+                Agenda Queue
+              </Link>{" "}
+              so the match confidence can recover.
+            </p>
+          ) : null}
+          {gauntlet ? (
+            <DistrictGauntletForm
+              primaryId={gauntlet.primaryId}
+              office={gauntlet.office}
+              prompts={gauntlet.prompts}
+            />
+          ) : null}
           {feed?.cards.map((card) => {
             const mine = user?.id === card.sideA.id;
-            const challenger = user?.id != null && user.id === card.sideB?.id;
+            const next = roundByNumber(card.exchangeRound + 1);
+            const filing =
+              user?.id != null &&
+              next != null &&
+              ((next.speaker === "a" && user.id === card.sideA.id) ||
+                (next.speaker === "b" && user.id === card.sideB?.id));
             const locked = card.status === "active";
             return (
               <article key={card.id} className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-5">
@@ -142,7 +183,8 @@ export default async function DebatesPage(props: { searchParams: Promise<{ filed
                     <LockedSeat
                       debateId={card.id}
                       until={card.seatLockedUntil}
-                      isHolder={challenger}
+                      isHolder={filing}
+                      label={next?.label ?? "Rebuttal 1"}
                     />
                   ) : null}
                   {mine && !locked ? (

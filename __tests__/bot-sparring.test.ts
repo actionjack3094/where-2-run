@@ -186,7 +186,7 @@ describe("bot sparring", () => {
     expect(plain.startsWith("Blue Dog")).toBe(true);
     expect(plain.includes("*")).toBe(false);
     expect(plain.includes("`")).toBe(false);
-    expect(plain.length).toBe(2000);
+    expect(plain.length).toBe(500);
     expect(plainRebuttal("too short")).toBe("");
   });
 
@@ -203,17 +203,20 @@ describe("bot sparring", () => {
     expect(text.length).toBeGreaterThanOrEqual(20);
   });
 
-  it("files the bot rebuttal and sends the match to adjudication", async () => {
+  it("files Rebuttal 1 and holds the seat for Rebuttal 2", async () => {
     const result = await triggerBotSparring(debateId);
     const debate = harness.tables.arena_debates[0];
     expect(debate?.candidate_b_id).toBe(nearId);
+    expect(debate?.status).toBe("active");
+    expect(debate?.exchange_round).toBe(2);
     expect(String(debate?.stance_b)).toContain("Democratic primary");
+    expect(String(debate?.stance_b).length).toBeLessThanOrEqual(500);
     expect(String(debate?.stance_b)).not.toContain("*");
     expect(harness.tables.debate_prompts[0]?.status).toBe("locked");
     expect(harness.notifyChallengeAccepted).toHaveBeenCalledWith(debateId, humanId);
-    expect(harness.adjudicateDebate).toHaveBeenCalledWith(debateId);
+    expect(harness.adjudicateDebate).not.toHaveBeenCalled();
     expect(result.sparred).toBe(true);
-    expect(result.judgment?.outcome).toBe("win");
+    expect(result.judgment).toBeUndefined();
   });
 
   it("notifies both debaters and shifts the human coordinate by their own moving average", () => {

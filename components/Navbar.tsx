@@ -13,19 +13,24 @@ import { cn } from "@/lib/utils";
 
 const LINKS = [
   {
+    href: "/townhall",
+    label: "The Townhall",
+    match: (path: string) => path.startsWith("/townhall"),
+  },
+  {
     href: "/soapbox",
     label: "The Soapbox",
     match: (path: string) => path.startsWith("/soapbox"),
   },
   {
+    href: "/debates",
+    label: "The Debates",
+    match: (path: string) => path.startsWith("/debates") || path.startsWith("/discover"),
+  },
+  {
     href: "/ballot",
     label: "My Ballot",
     match: (path: string) => path.startsWith("/ballot") || path.startsWith("/feed"),
-  },
-  {
-    href: "/debates",
-    label: "The Arena",
-    match: (path: string) => path.startsWith("/debates") || path.startsWith("/discover"),
   },
   {
     href: "/elections",
@@ -34,20 +39,10 @@ const LINKS = [
   },
 ] as const;
 
-const CANDIDATE_LINKS = [
-  { href: "/dashboard", label: "Candidate HQ" },
-  { href: "/campaign", label: "Campaign Hub" },
-] as const;
-
-function candidateActive(path: string) {
-  return path.startsWith("/dashboard") || path.startsWith("/campaign") || path.startsWith("/my-campaign");
-}
-
 export function Navbar({ identity }: { identity: NavIdentity | null }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [candidateOpen, setCandidateOpen] = useState(false);
   const [live, setLive] = useState(identity);
   const menuId = useId();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -57,7 +52,6 @@ export function Navbar({ identity }: { identity: NavIdentity | null }) {
     setMenuPathname(pathname);
     setOpen(false);
     setMenuOpen(false);
-    setCandidateOpen(false);
   }
 
   useEffect(() => {
@@ -91,30 +85,36 @@ export function Navbar({ identity }: { identity: NavIdentity | null }) {
   }, [menuOpen]);
 
   return (
-    <header className="border-b-2 border-brass bg-parchment shadow-[inset_0_3px_0_0_var(--brass)]">
-      <div className="relative mx-auto flex w-full max-w-6xl items-center gap-x-4 px-6 py-3 sm:h-14 sm:py-0">
+    <header className="border-b border-amber-500/30 bg-stone-50">
+      <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-3 px-4 sm:px-6">
         <Link
           href="/ballot"
           aria-label="Where 2 Run home"
-          className="font-display shrink-0 text-xs font-medium uppercase tracking-[0.2em] text-brass"
+          className="font-display shrink-0 text-xs font-medium uppercase tracking-[0.2em] text-amber-800"
         >
           WHERE 2 RUN
         </Link>
-        <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-6 md:flex">
+        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-3 lg:gap-5 md:flex">
           {LINKS.map((link) => (
             <NavLink key={link.href} href={link.href} active={link.match(pathname)}>
               {link.label}
             </NavLink>
           ))}
-          <CandidateMenu open={candidateOpen} setOpen={setCandidateOpen} active={candidateActive(pathname)} />
-        </nav>
-        <div className="ml-auto hidden items-center gap-3 md:flex">
           {live ? <InboxMenu /> : null}
-          <AccountSlot identity={live} menuId={menuId} menuOpen={menuOpen} menuRef={menuRef} setMenuOpen={setMenuOpen} />
+        </nav>
+        <div className="ml-auto flex items-center gap-3 md:ml-0">
+          {live ? (
+            <span className="inline-flex md:hidden">
+              <InboxMenu />
+            </span>
+          ) : null}
+          <div className="hidden md:block">
+            <AccountSlot identity={live} menuId={menuId} menuOpen={menuOpen} menuRef={menuRef} setMenuOpen={setMenuOpen} />
+          </div>
         </div>
         <button
           type="button"
-          className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-md text-charcoal transition-colors duration-200 hover:bg-parchment-light md:hidden"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-md text-charcoal transition-colors duration-200 hover:bg-white md:hidden"
           aria-expanded={open}
           aria-controls="mobile-nav"
           onClick={() => setOpen((current) => !current)}
@@ -124,7 +124,7 @@ export function Navbar({ identity }: { identity: NavIdentity | null }) {
         </button>
       </div>
       {open ? (
-        <nav id="mobile-nav" className="flex flex-col gap-1 border-t border-brass/40 px-6 py-3 md:hidden">
+        <nav id="mobile-nav" className="flex flex-col gap-1 border-t border-amber-500/30 px-6 py-3 md:hidden">
           {LINKS.map((link) => (
             <Link
               key={link.href}
@@ -132,19 +132,6 @@ export function Navbar({ identity }: { identity: NavIdentity | null }) {
               className={cn(
                 "rounded-md px-2 py-2 text-[11px] font-medium uppercase tracking-widest transition-colors duration-200 hover:bg-parchment-light",
                 link.match(pathname) ? "text-brass" : "text-charcoal-muted",
-              )}
-            >
-              {link.label}
-            </Link>
-          ))}
-          <p className="px-2 pt-3 text-[10px] font-medium uppercase tracking-widest text-charcoal-muted">Candidate</p>
-          {CANDIDATE_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                "rounded-md px-2 py-2 text-[11px] font-medium uppercase tracking-widest transition-colors duration-200 hover:bg-parchment-light",
-                pathname.startsWith(link.href) ? "text-brass" : "text-charcoal-muted",
               )}
             >
               {link.label}
@@ -166,72 +153,6 @@ export function Navbar({ identity }: { identity: NavIdentity | null }) {
   );
 }
 
-function CandidateMenu({
-  open,
-  setOpen,
-  active,
-}: {
-  open: boolean;
-  setOpen: (open: boolean | ((current: boolean) => boolean)) => void;
-  active: boolean;
-}) {
-  const menuId = useId();
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function onPointer(event: MouseEvent) {
-      if (!ref.current?.contains(event.target as Node)) setOpen(false);
-    }
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("mousedown", onPointer);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onPointer);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open, setOpen]);
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        className={cn(
-          "text-[11px] font-medium uppercase tracking-widest transition-colors",
-          active || open ? "text-brass" : "text-charcoal-muted hover:text-charcoal",
-        )}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls={menuId}
-        onClick={() => setOpen((current) => !current)}
-      >
-        Candidate
-      </button>
-      {open ? (
-        <div
-          id={menuId}
-          role="menu"
-          className="absolute left-1/2 z-20 mt-3 w-48 -translate-x-1/2 rounded-lg border border-brass/50 bg-parchment py-1 shadow-lg"
-        >
-          {CANDIDATE_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              role="menuitem"
-              className="block px-3 py-2 text-[11px] font-medium uppercase tracking-widest text-charcoal-muted hover:bg-parchment-light hover:text-charcoal"
-              onClick={() => setOpen(false)}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 function NavLink({
   href,
   active,
@@ -245,7 +166,7 @@ function NavLink({
     <Link
       href={href}
       className={cn(
-        "text-[11px] font-medium uppercase tracking-widest transition-colors",
+        "whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.14em] transition-colors lg:text-[11px] lg:tracking-widest",
         active ? "text-brass" : "text-charcoal-muted hover:text-charcoal",
       )}
     >

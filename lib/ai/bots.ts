@@ -19,13 +19,14 @@ import {
   type AxisPoint,
   type Party,
 } from "@/lib/platform/scoring";
+import { ROUND_CHAR_LIMIT } from "@/lib/debates/structure";
 import type { PublicJudgment } from "@/lib/platform/types";
 
 /** Humans get this long to accept a new prompt before a synthetic partner may claim it. */
 export const BOT_SPAR_GRACE_MS = 15 * 60 * 1000;
 
 const STANCE_MIN = 20;
-const STANCE_MAX = 2000;
+const STANCE_MAX = ROUND_CHAR_LIMIT;
 
 export type SparringPersona = {
   key: string;
@@ -352,8 +353,9 @@ export async function triggerBotSparring(debateId: string): Promise<BotSparResul
   const claimPatch = {
     candidate_b_id: bot.id,
     stance_b: rebuttal,
-    status: "concluded" as const,
-    seat_locked_until: null,
+    status: "active" as const,
+    exchange_round: 2,
+    seat_locked_until: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     bot_spar_at: null,
     updated_at: now,
   };
@@ -368,15 +370,27 @@ export async function triggerBotSparring(debateId: string): Promise<BotSparResul
       .maybeSingle();
   let claimed = await claim();
   if (claimed.error && isMissingSchema(claimed.error)) {
-    const { bot_spar_at: _ignored, ...withoutSchedule } = claimPatch;
     claimed = await admin
       .from("arena_debates")
-      .update(withoutSchedule)
+      .update({
+        candidate_b_id: bot.id,
+        stance_b: rebuttal,
+        status: "concluded",
+        seat_locked_until: null,
+        updated_at: now,
+      })
       .eq("id", debate.id)
       .eq("status", "open_challenge")
       .is("candidate_b_id", null)
       .select("id")
       .maybeSingle();
+    if (claimed.error) throw new Error(claimed.error.message);
+    if (!claimed.data) return { sparred: false };
+    await notifyChallengeAccepted(debate.id, debate.candidate_a_id);
+    const locked = await admin.from("debate_prompts").update({ status: "locked" }).eq("id", debate.prompt_id);
+    if (locked.error) throw new Error(locked.error.message);
+    const judged = await adjudicateDebate(debate.id);
+    return { sparred: true, judgment: judged.a };
   }
   if (claimed.error) throw new Error(claimed.error.message);
   if (!claimed.data) return { sparred: false };
@@ -388,28 +402,7 @@ export async function triggerBotSparring(debateId: string): Promise<BotSparResul
     .eq("id", debate.prompt_id);
   if (promptError) throw new Error(promptError.message);
 
-  try {
-    const judged = await adjudicateDebate(debate.id);
-    return { sparred: true, judgment: judged.a };
-  } catch (caught) {
-    await admin
-      .from("arena_debates")
-      .update({
-        status: "open_challenge",
-        candidate_b_id: null,
-        stance_b: null,
-        seat_locked_until: null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", debate.id)
-      .is("candidate_a_score", null);
-    await admin.from("debate_prompts").update({ status: "open" }).eq("id", debate.prompt_id);
-    console.error(
-      "triggerBotSparring failed.",
-      caught instanceof Error ? caught.message : "Could not close the sparring match.",
-    );
-    return { sparred: false };
-  }
+  return { sparred: true };
 }
 
 /** Claim human openings whose grace window has elapsed. */

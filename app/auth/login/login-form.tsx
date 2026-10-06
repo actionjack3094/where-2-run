@@ -38,7 +38,7 @@ export function LoginForm() {
   async function routeAfterAuth(userId: string) {
     const { data, error: profileError } = await supabase
       .from("users")
-      .select("home_ocd_ids, stance_vector")
+      .select("stance_vector")
       .eq("id", userId)
       .maybeSingle();
 
@@ -48,10 +48,7 @@ export function LoginForm() {
       return;
     }
 
-    const home = Array.isArray(data?.home_ocd_ids)
-      ? data.home_ocd_ids.filter((id): id is string => typeof id === "string" && id.trim() !== "")
-      : [];
-    const complete = home.length > 0 && hasStanceVector(data?.stance_vector);
+    const complete = hasStanceVector(data?.stance_vector);
 
     if (complete) {
       router.push(safeNextPath(searchParams.get("next")) ?? "/feed");
@@ -59,7 +56,7 @@ export function LoginForm() {
       return;
     }
 
-    router.push("/onboarding");
+    router.push("/townhall");
     router.refresh();
   }
 
@@ -123,7 +120,7 @@ export function LoginForm() {
     <main className="flex min-h-full w-full flex-1 flex-col items-center justify-center bg-zinc-950 px-6 py-16 text-zinc-100">
       <section className="w-full max-w-md rounded-xl border border-gold/40 bg-zinc-900 p-6 shadow-[inset_3px_0_0_0_var(--gold-strong)] sm:p-8">
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-gold">
-          Arena access
+          Debates access
         </p>
         <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment">
           {signingIn ? "Sign in" : "Create account"}

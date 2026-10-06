@@ -23,7 +23,7 @@ import type { Primary } from "@/types/database.types";
 
 const SPEECH_MAX = 280;
 const STANCE_MIN = 20;
-const STANCE_MAX = 2000;
+const STANCE_MAX = 500;
 const ACCEPTANCE_MS = 24 * 60 * 60 * 1000;
 const MIGRATION_MESSAGE = "Apply the Soapbox migration, then reload.";
 
@@ -374,7 +374,7 @@ export async function createSoapboxChallenge(input: {
     if (!isUuid(input.postId)) return { error: "That speech is no longer on the Soapbox." };
     const stance = input.openingStance.trim();
     if (stance.length < STANCE_MIN || stance.length > STANCE_MAX) {
-      return { error: "The opening stance needs at least a short paragraph." };
+      return { error: "Opening Statement needs at least a short paragraph and is 500 characters at most." };
     }
     const primaryIds = [...new Set(input.primaryIds.filter((id) => isUuid(id)))];
     if (primaryIds.length === 0) return { error: "Select at least one race." };

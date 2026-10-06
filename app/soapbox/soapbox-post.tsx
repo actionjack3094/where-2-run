@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ChallengeModal } from "@/components/ChallengeModal";
+import { CIVIC_STANDING_TIP, IDEOLOGY_VECTOR_TIP, InfoTooltip } from "@/components/InfoTooltip";
 import { CandidateAvatar } from "@/components/profile/CandidateAvatar";
 import { castSoapboxVote, type SoapboxPostView } from "@/lib/actions/soapbox";
 import { formatCoordinate } from "@/lib/platform/types";
@@ -70,12 +71,14 @@ export function SoapboxPost({
           <Link href={`/profile/${post.authorId}`} className="text-sm font-medium text-parchment hover:text-gold">
             {post.name}
           </Link>
-          <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500">
+          <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500">
             Civic Standing
+            <InfoTooltip label="Civic Standing" text={CIVIC_STANDING_TIP} />
           </p>
           <p className="text-sm text-parchment">{standing}</p>
-          <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500">
-            Ideology
+          <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500">
+            Ideology Vectors
+            <InfoTooltip label="Ideology Vectors" text={IDEOLOGY_VECTOR_TIP} />
           </p>
           <p className="text-sm text-parchment">{coordinate}</p>
         </div>

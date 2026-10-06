@@ -127,6 +127,8 @@ export interface PrimaryStanding {
   ties: number;
   /** Dollars pledged to this candidate in this primary. */
   pledged_war_chest: number | string;
+  /** Dollars from accepted PACs and unions. */
+  institutional_war_chest?: number | string | null;
   is_nominee: boolean;
   created_at: string;
   updated_at: string;
@@ -166,7 +168,8 @@ export interface DebatePrompt {
 export interface CommunityPromptRow {
   id: string;
   primary_id: string;
-  voter_id: string;
+  voter_id: string | null;
+  entity_id?: string | null;
   title: string;
   content: string;
   upvote_count: number;
@@ -210,6 +213,9 @@ export interface ArenaDebate {
   source_post_id: string | null;
   /** Acceptance deadline for a Soapbox challenge. */
   expires_at: string | null;
+  /** Last completed round in the four-round exchange. */
+  exchange_round?: number | null;
+  round_transcript?: { round: number; author_id: string; content: string }[] | null;
   status: ArenaDebateStatus | string;
   winner_id: string | null;
   is_tie: boolean;
@@ -227,6 +233,64 @@ export interface SoapboxPost {
   content: string;
   tags: string[];
   upvote_count: number;
+  /** Transparency posts from accepted institutional pledges stay on the Soapbox. */
+  locked?: boolean;
+  created_at: string;
+}
+
+export interface EntityRow {
+  id: string;
+  slug: string;
+  name: string;
+  kind: "pac" | "union" | string;
+  summary: string;
+  steward_id: string | null;
+  created_at: string;
+}
+
+export interface InstitutionalPledge {
+  id: string;
+  entity_id: string;
+  candidate_id: string;
+  primary_id: string | null;
+  amount: number | string;
+  status: "pending" | "accepted" | "rejected" | string;
+  created_at: string;
+}
+
+export interface EntityEndorsement {
+  id: string;
+  entity_id: string;
+  candidate_id: string;
+  primary_id: string | null;
+  statement: string;
+  created_at: string;
+}
+
+export interface PlatformPledge {
+  id: string;
+  donor_id: string;
+  candidate_id: string;
+  primary_id: string | null;
+  amount: number | string;
+  source: "grassroots" | "institutional" | string;
+  status: "pledged" | "accepted" | "rejected" | "refunded" | string;
+  entity_id: string | null;
+  created_at: string;
+}
+
+export interface CivicCredit {
+  user_id: string;
+  balance: number | string;
+  updated_at: string;
+}
+
+export interface GauntletStance {
+  id: string;
+  user_id: string;
+  primary_id: string;
+  prompt_id: string;
+  content: string;
   created_at: string;
 }
 
@@ -463,7 +527,14 @@ export interface UserIdeology {
   /** Three-axis stance `{ economic, social, governance }` in [-1, 1], or a numeric vector. */
   vector_data:
     | IdeologyVector
-    | { economic?: number; social?: number; governance?: number }
+    | {
+        economic?: number;
+        social?: number;
+        governance?: number;
+        townhall?: {
+          answers: { id: string; score: number; weight: string }[];
+        };
+      }
     | string
     | null;
   scores: Record<string, number> | number[] | Record<string, unknown>;
@@ -1686,7 +1757,7 @@ export interface Database {
       community_prompts: {
         Row: CommunityPromptRow;
         Insert: Partial<CommunityPromptRow> &
-          Pick<CommunityPromptRow, "primary_id" | "voter_id" | "title" | "content">;
+          Pick<CommunityPromptRow, "primary_id" | "title" | "content">;
         Update: Partial<CommunityPromptRow>;
         Relationships: [
           {
@@ -1841,6 +1912,46 @@ export interface Database {
             referencedColumns: ["id"];
           },
         ];
+      };
+      entities: {
+        Row: EntityRow;
+        Insert: Partial<EntityRow> & Pick<EntityRow, "slug" | "name" | "kind">;
+        Update: Partial<EntityRow>;
+        Relationships: [];
+      };
+      institutional_pledges: {
+        Row: InstitutionalPledge;
+        Insert: Partial<InstitutionalPledge> &
+          Pick<InstitutionalPledge, "entity_id" | "candidate_id" | "amount">;
+        Update: Partial<InstitutionalPledge>;
+        Relationships: [];
+      };
+      entity_endorsements: {
+        Row: EntityEndorsement;
+        Insert: Partial<EntityEndorsement> &
+          Pick<EntityEndorsement, "entity_id" | "candidate_id" | "statement">;
+        Update: Partial<EntityEndorsement>;
+        Relationships: [];
+      };
+      platform_pledges: {
+        Row: PlatformPledge;
+        Insert: Partial<PlatformPledge> &
+          Pick<PlatformPledge, "donor_id" | "candidate_id" | "amount" | "source">;
+        Update: Partial<PlatformPledge>;
+        Relationships: [];
+      };
+      civic_credits: {
+        Row: CivicCredit;
+        Insert: Partial<CivicCredit> & Pick<CivicCredit, "user_id" | "balance">;
+        Update: Partial<CivicCredit>;
+        Relationships: [];
+      };
+      gauntlet_stances: {
+        Row: GauntletStance;
+        Insert: Partial<GauntletStance> &
+          Pick<GauntletStance, "user_id" | "primary_id" | "prompt_id" | "content">;
+        Update: Partial<GauntletStance>;
+        Relationships: [];
       };
       flagged_content: {
         Row: FlaggedContent;

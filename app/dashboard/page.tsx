@@ -6,6 +6,7 @@ import { AvatarUpload } from "@/app/profile/settings/avatar-upload";
 import { PlatformEditor } from "@/app/profile/settings/platform/platform-editor";
 import { VolunteerTable } from "@/app/profile/settings/volunteers/volunteer-table";
 import { IdeologyCompass, compassFromPlane } from "@/components/IdeologyCompass";
+import { IDEOLOGY_VECTOR_TIP, InfoTooltip } from "@/components/InfoTooltip";
 import { loadCampaignRaces, loadVolunteerRoster, type VolunteerSignupRow } from "@/lib/actions/campaign";
 import { loadDebaterQueue, loadSoapboxAnalytics } from "@/lib/campaign/hq";
 import { isMissingSchema } from "@/lib/db/schema-errors";
@@ -169,7 +170,7 @@ export default async function CandidateHqPage(props: {
             {queueError ? <p className="text-sm leading-6 text-zinc-300">{queueError}</p> : null}
             {!queueError && queue.length === 0 ? (
               <p className="text-sm leading-6 text-zinc-400">
-                Nothing is waiting. Open a stance in the Arena or accept a Soapbox challenge and it lands here.
+                Nothing is waiting. Open a stance in Debates or accept a Soapbox challenge and it lands here.
               </p>
             ) : null}
             <ul className="grid gap-3">
@@ -262,8 +263,9 @@ export default async function CandidateHqPage(props: {
               )}
             </div>
             <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-5">
-              <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500">
-                Ideology Compass
+              <p className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500">
+                Ideology Vectors
+                <InfoTooltip label="Ideology Vectors" text={IDEOLOGY_VECTOR_TIP} />
               </p>
               <div className="mt-4">
                 <IdeologyCompass

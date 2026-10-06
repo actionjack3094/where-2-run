@@ -16,18 +16,20 @@ export function campaignMilestones(input: {
   civicStanding: number;
   pledged: number;
   filed: boolean;
+  gauntletFiled?: number;
 }): CampaignMilestone[] {
   const debates = Math.max(0, input.concludedDebates);
+  const gauntletDone = (input.gauntletFiled ?? 0) >= 3;
   const civic = Math.max(0, input.civicStanding);
   const pledged = Math.max(0, input.pledged);
   return [
     {
       id: "debates",
-      title: "3 Arena Debates",
-      detail: "Finish three judged matches.",
-      current: debates,
+      title: "3 Debates",
+      detail: "Finish three judged matches, or file the District Gauntlet when you are unopposed.",
+      current: gauntletDone ? DEBATE_GOAL : debates,
       goal: DEBATE_GOAL,
-      complete: debates >= DEBATE_GOAL,
+      complete: gauntletDone || debates >= DEBATE_GOAL,
     },
     {
       id: "civic",

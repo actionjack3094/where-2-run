@@ -1,8 +1,10 @@
 import Link from "next/link";
 
 const links = [
+  { href: "/townhall", label: "The Townhall" },
+  { href: "/soapbox", label: "The Soapbox" },
+  { href: "/debates", label: "The Debates" },
   { href: "/ballot", label: "My Ballot" },
-  { href: "/debates", label: "The Arena" },
   { href: "/elections", label: "Elections" },
   { href: "/dashboard", label: "Candidate HQ" },
   { href: "/campaign", label: "Campaign Hub" },
@@ -12,7 +14,7 @@ const links = [
 
 export function SiteFooter() {
   return (
-    <footer className="mt-auto border-t-2 border-brass bg-parchment">
+    <footer className="mt-auto border-t border-amber-500/30 bg-stone-50">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-10 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <Link

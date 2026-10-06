@@ -45,15 +45,15 @@ export default async function Home() {
 
       <section className="relative mx-auto flex w-full max-w-4xl flex-col items-start px-6 pb-16 pt-20 sm:pt-28">
         <p className="text-xs font-medium uppercase tracking-[0.22em] text-brass">
-          Public arena
+          Public debates
         </p>
         <h1 className="mt-5 max-w-3xl font-display text-5xl font-semibold leading-[1.05] tracking-tight text-charcoal sm:text-6xl lg:text-7xl">
-          The Civic Arena.{" "}
+          The Debates.{" "}
           <span className="text-brass">No soundbites. Just substance.</span>
         </h1>
         <p className="mt-6 max-w-2xl text-base leading-7 text-charcoal-muted sm:text-lg sm:leading-8">
           Score where you stand on six policy axes, watch candidates defend those
-          positions in a timed arena, then leave the deciding ballots to verified
+          positions in a timed debate, then leave the deciding ballots to verified
           constituents inside the district.
         </p>
         <div className="mt-10">
@@ -63,7 +63,7 @@ export default async function Home() {
             size="lg"
             className="h-auto min-h-12 whitespace-normal px-6 py-3 text-center text-xs leading-5 sm:text-sm"
           >
-            <Link href={SIGN_UP_HREF}>Enter the Arena</Link>
+            <Link href={SIGN_UP_HREF}>Enter Debates</Link>
           </Button>
         </div>
       </section>

@@ -67,6 +67,7 @@ function card(
   profiles: Map<string, PlatformProfile>,
   prompt: string,
   distance = 0,
+  exchangeRound = debate.stance_b ? 2 : 1,
 ): ArenaCard {
   return {
     id: debate.id,
@@ -82,6 +83,7 @@ function card(
       ? side(profiles.get(debate.candidate_b_id), debate.candidate_b_id)
       : null,
     status: debate.status,
+    exchangeRound,
     seatLockedUntil: debate.seat_locked_until,
     isTie: debate.is_tie,
     winnerId: debate.winner_id,
@@ -171,6 +173,21 @@ export async function loadArenaFeed(userId: string | null) {
     admin,
     debates.flatMap((debate) => [debate.candidate_a_id, debate.candidate_b_id ?? ""]),
   );
+  const rounds = new Map<string, number>();
+  if (debates.length > 0) {
+    const roundRows = await admin
+      .from("arena_debates")
+      .select("id, exchange_round")
+      .in(
+        "id",
+        debates.map((debate) => debate.id),
+      );
+    if (!roundRows.error) {
+      for (const row of (roundRows.data ?? []) as { id: string; exchange_round: number | null }[]) {
+        if (row.exchange_round != null) rounds.set(row.id, row.exchange_round);
+      }
+    }
+  }
   const distanceByPrimary = new Map(matched.map((row) => [row.primary.id, row.distance]));
   const primaryById = new Map(primaries.map((primary) => [primary.id, primary]));
   const cards = debates
@@ -183,6 +200,7 @@ export async function loadArenaFeed(userId: string | null) {
         profiles,
         prompts.get(debate.prompt_id)?.prompt_text ?? "Open question",
         distanceByPrimary.get(primary.id) ?? 0,
+        rounds.get(debate.id),
       );
     })
     .filter((item): item is ArenaCard => item != null)
@@ -417,6 +435,7 @@ export async function loadBallot(userId: string | null) {
       sideA,
       sideB,
       status: debate.status,
+      createdAt: debate.created_at,
       isTie: debate.is_tie,
       winnerId: debate.winner_id,
       crowd,

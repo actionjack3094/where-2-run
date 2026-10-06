@@ -1,6 +1,12 @@
 import { isMissingSchema } from "@/lib/db/schema-errors";
-import { pickNominee, primaryClosed, type NomineeCandidate } from "@/lib/platform/cycle";
-import { platformAdmin, type PlatformAdmin } from "@/lib/platform/records";
+import {
+  nextFilingClock,
+  pickNominee,
+  planPrimaryRollovers,
+  primaryClosed,
+  type NomineeCandidate,
+} from "@/lib/platform/cycle";
+import { loadPrimaries, platformAdmin, type PlatformAdmin } from "@/lib/platform/records";
 
 export async function closedPrimaryIds(admin: PlatformAdmin, primaryIds: string[]) {
   const closed = new Set<string>();
@@ -89,7 +95,7 @@ export async function freezeDuePrimaries() {
     .eq("status", "active")
     .lte("primary_date", now);
   if (error) {
-    if (isMissingSchema(error)) return { frozen: 0, nominees: 0, cancelled: 0 };
+    if (isMissingSchema(error)) return { frozen: 0, nominees: 0, cancelled: 0, rolled: 0 };
     throw new Error(error.message);
   }
 
@@ -134,5 +140,55 @@ export async function freezeDuePrimaries() {
     if (freezeError) throw new Error(freezeError.message);
   }
 
-  return { frozen: due.length, nominees, cancelled };
+  const rolled = await rolloverClosedPrimaries(admin);
+  return { frozen: due.length, nominees, cancelled, rolled };
+}
+
+async function rolloverClosedPrimaries(admin: PlatformAdmin) {
+  let primaries: Awaited<ReturnType<typeof loadPrimaries>>;
+  try {
+    primaries = await loadPrimaries(admin);
+  } catch (caught) {
+    const message = caught instanceof Error ? caught.message : "";
+    if (isMissingSchema({ message })) return 0;
+    throw caught;
+  }
+
+  const drafts = planPrimaryRollovers(primaries);
+  let rolled = 0;
+  for (const draft of drafts) {
+    if (draft.party !== "democrat" && draft.party !== "republican") continue;
+    const { error } = await admin.from("primaries").insert({
+      party: draft.party,
+      office_name: draft.office_name,
+      state: draft.state,
+      district: draft.district,
+      ocd_id: draft.ocd_id,
+      baseline_x: draft.baseline_x,
+      baseline_y: draft.baseline_y,
+      slug: draft.slug,
+      general_slug: draft.general_slug,
+      level: draft.level === "state" || draft.level === "local" ? draft.level : "federal",
+      cycle_year: draft.cycle_year,
+      primary_date: draft.primary_date,
+      general_election_date: draft.general_election_date,
+      term_length_years: draft.term_length_years > 0 ? draft.term_length_years : 2,
+      senate_class: draft.senate_class,
+      status: "active",
+    });
+    if (error) {
+      if (error.code === "23505") continue;
+      if (isMissingSchema(error)) return rolled;
+      throw new Error(error.message);
+    }
+    rolled += 1;
+  }
+  return rolled;
+}
+
+/** Freeze concluded primaries, open the next cycle, and report its filing clock. */
+export async function loadNextFilingClock(now = Date.now()) {
+  await freezeDuePrimaries();
+  const primaries = await loadPrimaries(platformAdmin());
+  return nextFilingClock(primaries, now);
 }

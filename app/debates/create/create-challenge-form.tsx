@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createPrimaryDebatePrompt } from "@/lib/actions/debates";
+import { ROUND_CHAR_LIMIT } from "@/lib/debates/structure";
 import type { AgendaPrompt } from "@/lib/platform/agenda";
 
 export function CreateChallengeForm({
@@ -74,11 +75,12 @@ export function CreateChallengeForm({
         ))}
       </fieldset>
       <label className="grid gap-2 text-sm text-zinc-300">
-        Opening stance
+        Opening Statement
         <textarea
           name="stance"
           required
           minLength={20}
+          maxLength={ROUND_CHAR_LIMIT}
           rows={5}
           className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-parchment"
         />

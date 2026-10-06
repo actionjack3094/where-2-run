@@ -23,6 +23,7 @@ import { primaryClosed } from "@/lib/platform/cycle";
 import { closedPrimaryIds } from "@/lib/platform/freeze";
 import { BANNED_ARENA_MESSAGE } from "@/lib/platform/moderation";
 import { agendaPromptText, loadCommunityPrompts } from "@/lib/platform/agenda";
+import { appendRound, cleanRoundText, DEBATE_ROUNDS, ROUND_CHAR_LIMIT, TOTAL_ROUNDS } from "@/lib/debates/structure";
 import { partyFromCoordinate } from "@/lib/platform/scoring";
 import { incrementDebatesLogged } from "@/lib/platform/standings";
 import type { PublicJudgment } from "@/lib/platform/types";
@@ -208,8 +209,6 @@ export async function loadDiscoveryDebates(): Promise<{
 
 const SEAT_LOCK_MS = 24 * 60 * 60 * 1000;
 const PROMPT_MIN = 12;
-const STANCE_MIN = 20;
-const STANCE_MAX = 2000;
 
 export type DebateActionResult = {
   error?: string;
@@ -349,11 +348,10 @@ export async function createPrimaryDebatePrompt(
       return { error: "Choose one of the top issues on the district agenda." };
     }
     const prompt = agendaPromptText(source.title, source.content);
-    const stance = stanceText.trim();
     if (prompt.length < PROMPT_MIN) return { error: "That issue is too short to debate." };
-    if (stance.length < STANCE_MIN || stance.length > STANCE_MAX) {
-      return { error: "The opening stance needs at least a short paragraph." };
-    }
+    const opening = cleanRoundText(stanceText, "Opening Statement");
+    if ("error" in opening) return { error: opening.error };
+    const stance = opening.text;
 
     const primary = await primaryFor(session.admin, primaryId);
     if (!primary) return { error: "That primary is not on the board." };
@@ -504,50 +502,140 @@ export async function submitRebuttal(debateId: string, stanceText: string): Prom
 
     const debate = await loadArenaById(session.admin, debateId);
     if (!debate || debate.status !== "active") return { error: "That seat is not waiting on a rebuttal." };
-    if (debate.candidate_b_id !== session.userId) return { error: "Only the challenger files the rebuttal." };
 
     const lock = debate.seat_locked_until ? Date.parse(debate.seat_locked_until) : NaN;
     if (!Number.isFinite(lock) || lock <= Date.now()) {
       return { error: "The 24-hour lock has expired." };
     }
 
-    const stance = stanceText.trim();
-    if (stance.length < STANCE_MIN || stance.length > STANCE_MAX) {
-      return { error: "The rebuttal needs at least a short paragraph." };
+    const progress = await session.admin
+      .from("arena_debates")
+      .select("exchange_round, round_transcript")
+      .eq("id", debate.id)
+      .maybeSingle();
+    if (progress.error && isMissingSchema(progress.error)) {
+      return fileLegacyRebuttal(session, debate, stanceText);
+    }
+    if (progress.error) return { error: progress.error.message };
+
+    const row = progress.data as { exchange_round?: number | null; round_transcript?: unknown } | null;
+    const completed = Number(row?.exchange_round ?? (debate.stance_b ? 2 : 1));
+    const next = completed + 1;
+    const round = DEBATE_ROUNDS[next - 1];
+    if (!round) return { error: "That debate has already closed." };
+
+    const speakerId = round.speaker === "a" ? debate.candidate_a_id : debate.candidate_b_id;
+    if (!speakerId || speakerId !== session.userId) {
+      return { error: `${round.label} is waiting on the other candidate.` };
+    }
+    const cleaned = cleanRoundText(stanceText, round.label);
+    if ("error" in cleaned) return { error: cleaned.error };
+
+    const now = new Date().toISOString();
+    const lockUntil = new Date(Date.now() + SEAT_LOCK_MS).toISOString();
+    const closing = next >= TOTAL_ROUNDS;
+    const patch: {
+      stance_b?: string;
+      exchange_round: number;
+      round_transcript?: ReturnType<typeof appendRound>;
+      status: "active" | "concluded";
+      seat_locked_until: string | null;
+      updated_at: string;
+    } = {
+      exchange_round: next,
+      status: closing ? "concluded" : "active",
+      seat_locked_until: closing ? null : lockUntil,
+      updated_at: now,
+    };
+    if (next === 2) patch.stance_b = cleaned.text;
+    if (next > 2) {
+      patch.round_transcript = appendRound(row?.round_transcript, {
+        round: next,
+        author_id: session.userId,
+        content: cleaned.text,
+      });
     }
 
     const { data: filed, error } = await session.admin
       .from("arena_debates")
-      .update({
-        stance_b: stance,
-        status: "concluded",
-        updated_at: new Date().toISOString(),
-      })
+      .update(patch)
       .eq("id", debate.id)
       .eq("status", "active")
-      .eq("candidate_b_id", session.userId)
       .select("id")
       .maybeSingle();
     if (error) return { error: error.message };
     if (!filed) return { error: "That seat is not waiting on a rebuttal." };
 
+    if (!closing) {
+      refreshArena();
+      const upcoming = DEBATE_ROUNDS[next];
+      return {
+        message: upcoming
+          ? `${round.label} filed. ${upcoming.label} is next.`
+          : `${round.label} filed.`,
+      };
+    }
+
     try {
       const judged = await adjudicateDebate(debate.id);
       await incrementDebatesLogged(session.admin, debate.primary_id, [
         debate.candidate_a_id,
-        session.userId,
+        debate.candidate_b_id ?? session.userId,
       ]);
       refreshArena();
-      return { judgment: judged.b, message: "The exchange is closed." };
+      const mine = session.userId === debate.candidate_a_id ? judged.a : judged.b;
+      return { judgment: mine, message: "The exchange is closed." };
     } catch (caught) {
       await session.admin
         .from("arena_debates")
-        .update({ status: "active", updated_at: new Date().toISOString() })
+        .update({ status: "active", exchange_round: completed, updated_at: new Date().toISOString() })
         .eq("id", debate.id)
         .is("candidate_a_score", null);
       return { error: caught instanceof Error ? caught.message : "Could not file that rebuttal." };
     }
   } catch (caught) {
+    return { error: caught instanceof Error ? caught.message : "Could not file that rebuttal." };
+  }
+}
+
+async function fileLegacyRebuttal(
+  session: { userId: string; admin: PlatformAdmin },
+  debate: NonNullable<Awaited<ReturnType<typeof loadArenaById>>>,
+  stanceText: string,
+): Promise<DebateActionResult> {
+  if (debate.candidate_b_id !== session.userId) {
+    return { error: "Only the challenger files the rebuttal." };
+  }
+  const cleaned = cleanRoundText(stanceText, "Rebuttal 1");
+  if ("error" in cleaned) return { error: cleaned.error };
+  const { data: filed, error } = await session.admin
+    .from("arena_debates")
+    .update({
+      stance_b: cleaned.text,
+      status: "concluded",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", debate.id)
+    .eq("status", "active")
+    .eq("candidate_b_id", session.userId)
+    .select("id")
+    .maybeSingle();
+  if (error) return { error: error.message };
+  if (!filed) return { error: "That seat is not waiting on a rebuttal." };
+  try {
+    const judged = await adjudicateDebate(debate.id);
+    await incrementDebatesLogged(session.admin, debate.primary_id, [
+      debate.candidate_a_id,
+      session.userId,
+    ]);
+    refreshArena();
+    return { judgment: judged.b, message: "The exchange is closed." };
+  } catch (caught) {
+    await session.admin
+      .from("arena_debates")
+      .update({ status: "active", updated_at: new Date().toISOString() })
+      .eq("id", debate.id)
+      .is("candidate_a_score", null);
     return { error: caught instanceof Error ? caught.message : "Could not file that rebuttal." };
   }
 }

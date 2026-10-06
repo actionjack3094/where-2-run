@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { InfoTooltip, PLEDGED_ESCROW_TIP } from "@/components/InfoTooltip";
 import { enlistForCampaign, pledgeWarChest } from "@/lib/actions/support";
 import { formatUsd } from "@/lib/pledges";
 import { cn } from "@/lib/utils";
@@ -48,8 +49,9 @@ export function BallotSupportBar({
 
   return (
     <div className="mt-3">
-      <p className="text-[11px] uppercase tracking-widest text-zinc-500">
-        War chest {formatUsd(warChest)}
+      <p className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-zinc-500">
+        Pledged Escrow {formatUsd(warChest)}
+        <InfoTooltip label="Pledged Escrow" text={PLEDGED_ESCROW_TIP} />
       </p>
       <div className="mt-2 flex flex-wrap gap-2">
         <button

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CampaignRoadmap } from "@/components/campaign/CampaignRoadmap";
+import { DropoutButton } from "@/components/pledges/DropoutButton";
 import { loadRoadmapInputs } from "@/lib/campaign/hq";
 import { campaignMilestones } from "@/lib/campaign/milestones";
 import { getServerUser } from "@/lib/db/supabase-server";
@@ -25,9 +26,17 @@ export default async function CampaignHubPage() {
     filed: false,
   });
   let setup: string | null = null;
+  let primaryId: string | null = null;
   try {
     const inputs = await loadRoadmapInputs(platformAdmin(), user.id);
     milestones = campaignMilestones(inputs);
+    const standing = await platformAdmin()
+      .from("primary_standings")
+      .select("primary_id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .maybeSingle();
+    primaryId = standing.error ? null : ((standing.data as { primary_id: string } | null)?.primary_id ?? null);
   } catch (caught) {
     setup = caught instanceof Error ? caught.message : "Could not load the roadmap.";
   }
@@ -49,6 +58,7 @@ export default async function CampaignHubPage() {
           </p>
         </header>
         {setup ? <p className="mt-8 text-sm leading-6 text-zinc-300">{setup}</p> : <CampaignRoadmap milestones={milestones} />}
+        {primaryId ? <DropoutButton primaryId={primaryId} /> : null}
       </div>
     </main>
   );

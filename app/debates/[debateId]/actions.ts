@@ -5,6 +5,7 @@ import { TOTAL_ROUNDS } from "@/lib/arena/time";
 import { recordSpectatorVote } from "@/lib/actions/debate-votes";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 import { createServerSupabase } from "@/lib/db/supabase-server";
+import { cleanRoundText } from "@/lib/debates/structure";
 import { argumentFor, isSimUsername, turnFor, type ArgumentRow } from "@/lib/debates/round-state";
 import { assertSpectatorCivicFence } from "@/lib/spectator-civic-fence";
 
@@ -46,6 +47,8 @@ export async function submitArgument(debateId: string, formData: FormData) {
   if (!argument) {
     throw new Error("Write an argument before submitting.");
   }
+  const filed = cleanRoundText(argument, "This round");
+  if ("error" in filed) throw new Error(filed.error);
 
   const supabase = await createServerSupabase();
   const {

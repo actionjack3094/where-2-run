@@ -41,6 +41,15 @@ export type WarChest = {
   primaryId: string;
   label: string;
   amount: number;
+  institutional: number;
+};
+
+export type PublicPledge = {
+  id: string;
+  entityName: string;
+  entitySlug: string;
+  amount: number;
+  status: string;
 };
 
 export type ArenaPublicProfile = {
@@ -56,6 +65,10 @@ export type ArenaPublicProfile = {
   standings: ProfileStanding[];
   warChests: WarChest[];
   history: ProfileDebate[];
+  unbought: PublicPledge[];
+  pendingPledges: PublicPledge[];
+  civicCredit: number;
+  lastStanceAt: string | null;
 };
 
 function publicName(profile: {
@@ -107,6 +120,10 @@ export async function loadArenaPublicProfile(userId: string): Promise<ArenaPubli
         standings: [],
         warChests: [],
         history: [],
+        unbought: [],
+        pendingPledges: [],
+        civicCredit: 0,
+        lastStanceAt: null,
       };
     }
     throw new Error(standingError.message);
@@ -263,27 +280,82 @@ export async function loadArenaPublicProfile(userId: string): Promise<ArenaPubli
     : ((bioResult.data as { bio?: string | null } | null)?.bio?.trim() || null);
   const chestResult = await admin
     .from("primary_standings")
-    .select("primary_id, pledged_war_chest")
+    .select("primary_id, pledged_war_chest, institutional_war_chest")
     .eq("user_id", userId);
-  const chestAmounts = new Map<string, number>();
+  const chestAmounts = new Map<string, { amount: number; institutional: number }>();
   if (!chestResult.error) {
     for (const row of (chestResult.data ?? []) as {
       primary_id: string;
       pledged_war_chest: number | string | null;
+      institutional_war_chest?: number | string | null;
     }[]) {
-      chestAmounts.set(row.primary_id, Number(row.pledged_war_chest ?? 0));
+      chestAmounts.set(row.primary_id, {
+        amount: Number(row.pledged_war_chest ?? 0),
+        institutional: Number(row.institutional_war_chest ?? 0),
+      });
+    }
+  } else if (isMissingSchema(chestResult.error)) {
+    const fallback = await admin
+      .from("primary_standings")
+      .select("primary_id, pledged_war_chest")
+      .eq("user_id", userId);
+    if (!fallback.error) {
+      for (const row of (fallback.data ?? []) as {
+        primary_id: string;
+        pledged_war_chest: number | string | null;
+      }[]) {
+        chestAmounts.set(row.primary_id, { amount: Number(row.pledged_war_chest ?? 0), institutional: 0 });
+      }
     }
   }
-  const warChests: WarChest[] = [...chestAmounts.entries()].map(([primaryId, amount]) => {
+  const warChests: WarChest[] = [...chestAmounts.entries()].map(([primaryId, chest]) => {
     const standing = standings.find((row) => row.primaryId === primaryId);
     const primary = primaries.get(primaryId);
     const seat = primary?.district ? `${primary.state}-${primary.district}` : primary?.state ?? "";
     return {
       primaryId,
       label: standing?.label ?? (primary ? `${seat} · ${primary.office_name}` : "Primary"),
-      amount,
+      amount: chest.amount,
+      institutional: chest.institutional,
     };
   });
+
+  const pledgeRows = await admin
+    .from("institutional_pledges")
+    .select("id, entity_id, amount, status")
+    .eq("candidate_id", userId);
+  const entities = new Map<string, { name: string; slug: string }>();
+  const entityIds = [
+    ...new Set(
+      ((pledgeRows.data ?? []) as { entity_id: string }[]).map((row) => row.entity_id),
+    ),
+  ];
+  if (!pledgeRows.error && entityIds.length > 0) {
+    const named = await admin.from("entities").select("id, name, slug").in("id", entityIds);
+    if (!named.error) {
+      for (const row of (named.data ?? []) as { id: string; name: string; slug: string }[]) {
+        entities.set(row.id, { name: row.name, slug: row.slug });
+      }
+    }
+  }
+  const pledges = pledgeRows.error
+    ? []
+    : ((pledgeRows.data ?? []) as { id: string; entity_id: string; amount: number | string; status: string }[]).map(
+        (row) => ({
+          id: row.id,
+          entityName: entities.get(row.entity_id)?.name ?? "Institution",
+          entitySlug: entities.get(row.entity_id)?.slug ?? row.entity_id,
+          amount: Number(row.amount),
+          status: row.status,
+        }),
+      );
+  const credit = await admin.from("civic_credits").select("balance").eq("user_id", userId).maybeSingle();
+  const activity = await admin
+    .from("arena_debates")
+    .select("updated_at")
+    .or(`candidate_a_id.eq.${userId},candidate_b_id.eq.${userId}`)
+    .order("updated_at", { ascending: false })
+    .limit(1);
 
   return {
     id: profile.id,
@@ -298,5 +370,11 @@ export async function loadArenaPublicProfile(userId: string): Promise<ArenaPubli
     standings,
     warChests,
     history,
+    unbought: pledges.filter((row) => row.status === "rejected"),
+    pendingPledges: pledges.filter((row) => row.status === "pending"),
+    civicCredit: credit.error ? 0 : Number((credit.data as { balance?: number | string } | null)?.balance ?? 0),
+    lastStanceAt: activity.error
+      ? null
+      : ((activity.data ?? []) as { updated_at: string }[])[0]?.updated_at ?? null,
   };
 }

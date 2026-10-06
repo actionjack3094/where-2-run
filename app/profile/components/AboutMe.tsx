@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent } from "rea
 import { ingestAuthoredPrompt } from "@/app/actions/debates/classify-prompt";
 import { updateVector } from "@/app/actions/vector";
 import { IdeologyRadar } from "@/app/profile/components/IdeologyRadar";
+import { CIVIC_STANDING_TIP, InfoTooltip } from "@/components/InfoTooltip";
 import { StanceModal } from "@/components/debate/StanceModal";
 import { QUIZ_QUESTIONS, type PolicyOption } from "@/lib/ideology/questions";
 import { SIX_AXIS_IDS, SIX_AXIS_LABELS, type SixAxisId } from "@/lib/ideology/six-axis";
@@ -70,7 +71,7 @@ export function AboutMe({
         </h2>
         <Stat label="Debates Logged" value={String(profile.wins + profile.losses)} />
         <Stat label="Policy Consistency" value="100%" />
-        <Stat label="Civic Standing" value={String(profile.eloRating)} />
+        <Stat label="Civic Standing" value={String(profile.eloRating)} tip={CIVIC_STANDING_TIP} />
       </section>
 
       <IdeologyRadar
@@ -83,10 +84,13 @@ export function AboutMe({
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, tip }: { label: string; value: string; tip?: string }) {
   return (
-    <article className="rounded-xl border border-gold/50 bg-zinc-900 px-5 py-4">
-      <p className="text-xs font-medium uppercase tracking-widest text-gold">{label}</p>
+    <article className="rounded-xl border border-amber-500/30 bg-zinc-900 px-5 py-4">
+      <p className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest text-gold">
+        {label}
+        {tip ? <InfoTooltip label={label} text={tip} /> : null}
+      </p>
       <p className="mt-2 font-display text-3xl font-semibold tabular-nums tracking-tight text-parchment">
         {value}
       </p>

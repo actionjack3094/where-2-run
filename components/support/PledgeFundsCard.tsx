@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { InfoTooltip, PLEDGED_ESCROW_TIP } from "@/components/InfoTooltip";
+import { BackingBar } from "@/components/pledges/BackingBar";
 import { pledgeWarChest } from "@/lib/actions/support";
 import { formatUsd, MAX_PLEDGE_AMOUNT } from "@/lib/pledges";
 
@@ -13,10 +15,12 @@ export function PledgeFundsCard({
 }: {
   candidateId: string;
   signedIn: boolean;
-  chests: { primaryId: string; label: string; amount: number }[];
+  chests: { primaryId: string; label: string; amount: number; institutional?: number }[];
 }) {
   const router = useRouter();
-  const total = chests.reduce((sum, chest) => sum + chest.amount, 0);
+  const grassroots = chests.reduce((sum, chest) => sum + chest.amount, 0);
+  const institutional = chests.reduce((sum, chest) => sum + (chest.institutional ?? 0), 0);
+  const total = grassroots + institutional;
   const [primaryId, setPrimaryId] = useState(chests[0]?.primaryId ?? "");
   const [amount, setAmount] = useState("25");
   const [pending, setPending] = useState(false);
@@ -24,14 +28,18 @@ export function PledgeFundsCard({
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <section className="mt-8 rounded-2xl border border-gold bg-zinc-900 px-6 py-6">
-      <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">Pledged war chest</p>
+    <section className="mt-8 rounded-2xl border border-amber-500/30 bg-zinc-900 px-6 py-6">
+      <p className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+        Pledged Escrow
+        <InfoTooltip label="Pledged Escrow" text={PLEDGED_ESCROW_TIP} />
+      </p>
       <p className="mt-3 font-display text-4xl font-semibold tracking-tight text-parchment">
         {formatUsd(total)}
       </p>
       <p className="mt-2 text-sm leading-6 text-zinc-400">
-        Grassroots dollars pledged to this campaign. Funds stay on the ledger until escrow releases.
+        Grassroots dollars and institutional backing stay on separate segments of the war chest.
       </p>
+      <BackingBar grassroots={grassroots} institutional={institutional} />
       {chests.length > 1 ? (
         <ul className="mt-4 grid gap-1 text-sm text-zinc-300">
           {chests.map((chest) => (

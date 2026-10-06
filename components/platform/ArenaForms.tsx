@@ -7,6 +7,7 @@ import {
   type PlatformFormState,
 } from "@/app/actions/platform";
 import { acceptDebateChallenge, createPrimaryDebatePrompt, submitRebuttal } from "@/lib/actions/debates";
+import { ROUND_CHAR_LIMIT } from "@/lib/debates/structure";
 import { Button } from "@/components/ui/button";
 import { formatCoordinate, type PublicJudgment } from "@/lib/platform/types";
 
@@ -57,11 +58,12 @@ export function OpeningForm({
         />
       </label>
       <label className="grid gap-2 text-sm text-zinc-300">
-        Opening stance
+        Opening Statement
         <textarea
           name="stance"
           required
           minLength={20}
+          maxLength={ROUND_CHAR_LIMIT}
           rows={5}
           className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-parchment"
         />
@@ -122,7 +124,13 @@ export function SeatLockCountdown({ until }: { until: string }) {
   return <p className="text-sm text-zinc-400">{label}</p>;
 }
 
-export function RebuttalForm({ debateId }: { debateId: string }) {
+export function RebuttalForm({
+  debateId,
+  label = "Rebuttal 1",
+}: {
+  debateId: string;
+  label?: string;
+}) {
   const [state, action, pending] = useActionState(
     async (_prev: PlatformFormState, formData: FormData) =>
       submitRebuttal(debateId, String(formData.get("stance") ?? "")),
@@ -131,12 +139,12 @@ export function RebuttalForm({ debateId }: { debateId: string }) {
   return (
     <form action={action} className="mt-4 grid gap-3">
       <label className="grid gap-2 text-sm text-zinc-300">
-        Rebuttal
+        {label}
         <textarea
           name="stance"
           required
           minLength={20}
-          maxLength={2000}
+          maxLength={ROUND_CHAR_LIMIT}
           rows={5}
           className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-parchment"
         />
@@ -153,10 +161,12 @@ export function LockedSeat({
   debateId,
   until,
   isHolder,
+  label = "Rebuttal 1",
 }: {
   debateId: string;
   until: string;
   isHolder: boolean;
+  label?: string;
 }) {
   const [remaining, setRemaining] = useState<number | null>(null);
   useEffect(() => {
@@ -169,7 +179,7 @@ export function LockedSeat({
   return (
     <div className="mt-4">
       <SeatLockCountdown until={until} />
-      {isHolder && open ? <RebuttalForm debateId={debateId} /> : null}
+      {isHolder && open ? <RebuttalForm debateId={debateId} label={label} /> : null}
     </div>
   );
 }
@@ -192,7 +202,10 @@ export function BallotEngage({
 
   return (
     <div className="mt-5 border-t border-zinc-800 pt-4">
-      <div className="flex flex-wrap gap-2">
+      <p className="text-[11px] uppercase tracking-widest text-zinc-500">
+        Likes widen reach. Civic Standing stays put.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
         {[sideA, sideB].map((side) => (
           <form key={side.id} action={likeAction}>
             <input type="hidden" name="debateId" value={debateId} />

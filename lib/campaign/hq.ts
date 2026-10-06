@@ -197,5 +197,11 @@ export async function loadRoadmapInputs(admin: PlatformAdmin, userId: string) {
     throw new Error(targets.error.message);
   }
 
-  return { concludedDebates, civicStanding, pledged, filed };
+  const gauntlet = await admin
+    .from("gauntlet_stances")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+  const gauntletFiled = gauntlet.error ? 0 : (gauntlet.count ?? 0);
+
+  return { concludedDebates, civicStanding, pledged, filed, gauntletFiled };
 }

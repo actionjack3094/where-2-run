@@ -1,16 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { MatchConfidence } from "@/components/ballot/MatchConfidence";
+import { SoapboxSnippet } from "@/components/ballot/SoapboxSnippet";
 import { BallotEngage } from "@/components/platform/ArenaForms";
 import { ReportDebateButton } from "@/components/platform/ReportDebateButton";
 import { TownHall } from "@/components/platform/TownHall";
 import { CandidateAvatar } from "@/components/profile/CandidateAvatar";
 import { BallotSupportBar } from "@/components/support/BallotSupportBar";
+import { loadBallotDecorations, type SoapboxFeedPost } from "@/lib/ballot/load-feed";
+import { rankFeedItems } from "@/lib/ballot/feed";
 import { isMissingSchema } from "@/lib/db/schema-errors";
 import { getServerUser } from "@/lib/db/supabase-server";
 import { loadBallot } from "@/lib/platform/queries";
 import { loadProfile, platformAdmin } from "@/lib/platform/records";
+import { constituentAccess } from "@/lib/platform/tier2";
 import { loadTownHalls } from "@/lib/platform/town-hall";
-import { tierLabel } from "@/lib/platform/types";
+import { tierLabel, type BallotMatch } from "@/lib/platform/types";
 
 export const dynamic = "force-dynamic";
 
@@ -35,14 +40,41 @@ export default async function BallotPage() {
     const message = caught instanceof Error ? caught.message : "Could not load My Ballot.";
     setup = isMissingSchema({ message }) ? "Apply the platform architecture migration, then reload." : message;
   }
+  let viewerPoint: { id: string; x: number; y: number } | null = null;
   if (user && board) {
     try {
       const profile = await loadProfile(platformAdmin(), user.id);
-      verified = Boolean(profile?.is_verified);
+      const access = await constituentAccess(platformAdmin(), user.id);
+      verified = access.ok;
+      if (profile?.ideology_x != null && profile.ideology_y != null) {
+        viewerPoint = { id: user.id, x: profile.ideology_x, y: profile.ideology_y };
+      }
     } catch {
       verified = false;
     }
   }
+  let soapbox: SoapboxFeedPost[] = [];
+  let freshness = new Map<string, { stale: boolean; percent: number | null }>();
+  let ranked = rankFeedItems(
+    (board?.matches ?? []).map((match) => ({
+      kind: "debate" as const,
+      id: match.id,
+      likes: 0,
+      createdAt: match.createdAt,
+    })),
+  );
+  if (board && !board.signedOut && !board.needsAddress) {
+    try {
+      const decorations = await loadBallotDecorations(platformAdmin(), viewerPoint, board.matches);
+      soapbox = decorations.soapbox;
+      freshness = decorations.freshness;
+      ranked = decorations.ranked;
+    } catch {
+      soapbox = [];
+    }
+  }
+  const matchesById = new Map<string, BallotMatch>((board?.matches ?? []).map((match) => [match.id, match]));
+  const soapboxById = new Map(soapbox.map((post) => [post.id, post]));
   const halls = board
     ? await loadTownHalls(
         board.matches.filter((match) => match.status === "concluded").map((match) => match.id),
@@ -60,8 +92,8 @@ export default async function BallotPage() {
             My Ballot
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
-            Matches on your verified OCD-ID, and only after two contenders are seated.
-            Likes and comments stay here. Challenges live in Debates.
+            Soapbox speeches and debate snippets from the candidates matched to your address.
+            A like widens that post. It does not move Civic Standing. Challenges live in Debates.
           </p>
         </header>
 
@@ -87,14 +119,34 @@ export default async function BallotPage() {
             </p>
           </Link>
         ) : null}
-        {board && !board.signedOut && !board.needsAddress && board.matches.length === 0 ? (
+        {board && !board.signedOut && !board.needsAddress && ranked.length === 0 ? (
           <p className="mt-8 text-sm leading-6 text-zinc-400">
-            No seated matches on your ballot yet.
+            No seated matches or Soapbox speeches on your ballot yet.
           </p>
         ) : null}
 
         <div className="mt-8 grid gap-6">
-          {board?.matches.map((match) => (
+          {ranked.map((item) => {
+            if (item.kind === "soapbox") {
+              const post = soapboxById.get(item.id);
+              if (!post) return null;
+              return (
+                <SoapboxSnippet
+                  key={post.id}
+                  postId={post.id}
+                  authorId={post.authorId}
+                  authorName={post.authorName}
+                  text={post.text}
+                  likes={post.likes}
+                  matchPercent={post.matchPercent}
+                  stale={post.stale}
+                  signedIn={Boolean(user)}
+                />
+              );
+            }
+            const match = matchesById.get(item.id);
+            if (!match) return null;
+            return (
             <article key={match.id} className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-5">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500">
@@ -142,6 +194,12 @@ export default async function BallotPage() {
                     <p className="mt-3 text-sm leading-6 text-zinc-300">
                       {index === 0 ? match.stanceA : match.stanceB || "Rebuttal not filed yet."}
                     </p>
+                    {freshness.get(side.id)?.percent != null ? (
+                      <MatchConfidence
+                        percent={freshness.get(side.id)?.percent ?? 0}
+                        stale={freshness.get(side.id)?.stale === true}
+                      />
+                    ) : null}
                     <BallotSupportBar
                       candidateId={side.id}
                       primaryId={match.primaryId}
@@ -198,7 +256,8 @@ export default async function BallotPage() {
                 comments={match.comments}
               />
             </article>
-          ))}
+            );
+          })}
         </div>
       </div>
     </main>

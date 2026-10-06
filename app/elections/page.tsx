@@ -1,46 +1,80 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ElectionLeaderboard } from "@/components/elections/ElectionLeaderboard";
+import { FilingCountdown } from "@/components/elections/FilingCountdown";
 import {
   CIVIC_STANDING_TIP,
   DISTRICT_AGENDA_TIP,
-  IDEOLOGY_COMPASS_TIP,
+  IDEOLOGY_VECTOR_TIP,
   InfoTooltip,
+  PLEDGED_ESCROW_TIP,
   TOWN_HALL_TIP,
 } from "@/components/InfoTooltip";
 import { loadElectionLeaderboard } from "@/lib/elections/leaderboard";
+import { loadNextFilingClock } from "@/lib/platform/freeze";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Elections · WHERE 2 RUN",
-  description: "Find a race by state, or open the elections on your ballot.",
+  description: "Leaderboards, the races on your ballot, and every election on the map.",
 };
 
 const definitions = [
   { label: "Civic Standing", text: CIVIC_STANDING_TIP },
-  { label: "Ideology Compass", text: IDEOLOGY_COMPASS_TIP },
+  { label: "Pledged Escrow", text: PLEDGED_ESCROW_TIP },
+  { label: "Ideology Vectors", text: IDEOLOGY_VECTOR_TIP },
   { label: "District Agenda", text: DISTRICT_AGENDA_TIP },
   { label: "Town Hall Q&A", text: TOWN_HALL_TIP },
+] as const;
+
+const actions = [
+  {
+    href: "/elections?tab=leaderboard",
+    title: "Leaderboards",
+    body: "Rank the field by Civic Standing and pledged escrow.",
+    id: "leaderboard",
+  },
+  {
+    href: "/elections/my-ballot",
+    title: "My Ballot Elections",
+    body: "Races whose district matches your verified home address.",
+    id: "ballot",
+  },
+  {
+    href: "/elections/states",
+    title: "All Elections",
+    body: "Browse all 50 states, then filter federal, state, and local seats.",
+    id: "all",
+  },
 ] as const;
 
 export default async function ElectionsHubPage(props: {
   searchParams: Promise<{ tab?: string }>;
 }) {
   const tab = (await props.searchParams).tab === "leaderboard" ? "leaderboard" : "browse";
-  const board = tab === "leaderboard" ? await loadElectionLeaderboard().catch(() => []) : [];
+  const [clock, board] = await Promise.all([
+    loadNextFilingClock().catch((caught: unknown) => {
+      console.error(
+        "Could not roll a concluded primary.",
+        caught instanceof Error ? caught.message : "Unknown error",
+      );
+      return null;
+    }),
+    tab === "leaderboard" ? loadElectionLeaderboard().catch(() => []) : Promise.resolve([]),
+  ]);
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
         <header>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">Discovery</p>
-          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-amber-700">Discovery</p>
+          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-stone-900">
             Elections
           </h1>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
-            Every seat has its own primary. Start with the whole map, or the races on your verified address.
+          <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
+            Every seat has its own primary. When a cycle concludes, the next one opens with a filing clock.
           </p>
-          <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-zinc-400">
+          <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-stone-600">
             {definitions.map((item) => (
               <li key={item.label} className="inline-flex items-center gap-1.5">
                 {item.label}
@@ -50,61 +84,42 @@ export default async function ElectionsHubPage(props: {
           </ul>
         </header>
 
-        <div role="tablist" aria-label="Elections" className="mt-8 flex flex-wrap gap-2">
-          <Link
-            href="/elections"
-            role="tab"
-            aria-selected={tab === "browse"}
-            className={cn(
-              "inline-flex h-10 items-center justify-center rounded-full px-4 text-[11px] font-medium uppercase tracking-widest",
-              tab === "browse"
-                ? "bg-gold-strong text-zinc-950"
-                : "border border-gold/40 text-zinc-400 hover:border-gold hover:text-parchment",
-            )}
-          >
-            Browse
-          </Link>
-          <Link
-            href="/elections?tab=leaderboard"
-            role="tab"
-            aria-selected={tab === "leaderboard"}
-            className={cn(
-              "inline-flex h-10 items-center justify-center rounded-full px-4 text-[11px] font-medium uppercase tracking-widest",
-              tab === "leaderboard"
-                ? "bg-gold-strong text-zinc-950"
-                : "border border-gold/40 text-zinc-400 hover:border-gold hover:text-parchment",
-            )}
-          >
-            Leaderboard
-          </Link>
+        {clock ? (
+          <FilingCountdown cycleYear={clock.cycleYear} deadline={clock.deadline} startedAt={Date.now()} />
+        ) : null}
+
+        <div className="mt-8 flex flex-col gap-3">
+          {actions.map((action) => {
+            const active = action.id === "leaderboard" && tab === "leaderboard";
+            return (
+              <Link
+                key={action.href}
+                href={action.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "flex w-full flex-col rounded-2xl border px-6 py-6 transition-colors",
+                  active
+                    ? "border-amber-500 bg-amber-500 text-stone-950"
+                    : "border-amber-500/30 bg-white text-stone-900 hover:border-amber-500/60",
+                )}
+              >
+                <span
+                  className={cn(
+                    "font-display text-2xl font-semibold tracking-tight",
+                    active ? "text-stone-950" : "text-stone-900",
+                  )}
+                >
+                  {action.title}
+                </span>
+                <span className={cn("mt-2 text-sm leading-6", active ? "text-stone-800" : "text-stone-600")}>
+                  {action.body}
+                </span>
+              </Link>
+            );
+          })}
         </div>
 
-        {tab === "leaderboard" ? (
-          <ElectionLeaderboard rows={board} />
-        ) : (
-          <div className="mt-10 grid gap-4">
-            <Link
-              href="/elections/states"
-              className="rounded-2xl border border-gold bg-zinc-900 px-6 py-10 transition-colors hover:bg-zinc-800"
-            >
-              <p className="text-[11px] uppercase tracking-[0.2em] text-gold">Nationwide</p>
-              <p className="mt-3 font-display text-4xl font-semibold tracking-tight text-parchment">
-                All Elections
-              </p>
-              <p className="mt-2 text-sm text-zinc-400">Browse all 50 states, then filter federal, state, and local seats.</p>
-            </Link>
-            <Link
-              href="/elections/my-ballot"
-              className="rounded-2xl border border-zinc-700 bg-zinc-900 px-6 py-10 transition-colors hover:border-zinc-500"
-            >
-              <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Your address</p>
-              <p className="mt-3 font-display text-4xl font-semibold tracking-tight text-parchment">
-                My Ballot Elections
-              </p>
-              <p className="mt-2 text-sm text-zinc-400">Races whose district matches your verified home address.</p>
-            </Link>
-          </div>
-        )}
+        {tab === "leaderboard" ? <ElectionLeaderboard rows={board} /> : null}
       </div>
     </main>
   );

@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   daysUntilPrimary,
+  filingDeadlineFromPrimary,
   formatPrimaryDate,
+  nextFilingClock,
   pickNominee,
+  planPrimaryRollovers,
   primaryClosed,
 } from "@/lib/platform/cycle";
 
@@ -22,6 +25,59 @@ describe("primary cycle", () => {
     expect(formatPrimaryDate("2026-03-03T20:00:00Z")).toBe("March 3, 2026");
     expect(formatPrimaryDate("2025-06-24T21:00:00Z")).toBe("June 24, 2025");
     expect(formatPrimaryDate("2026-08-18T20:00:00Z")).toBe("August 18, 2026");
+  });
+
+  it("rolls a concluded primary into the next open cycle and clocks the filing deadline", () => {
+    const now = Date.parse("2026-10-06T15:00:00Z");
+    const closed = {
+      slug: "tx-house-02-dem",
+      cycle_year: 2026,
+      primary_date: "2026-03-03T20:00:00.000Z",
+      general_election_date: "2026-11-03T00:00:00.000Z",
+      term_length_years: 2,
+      status: "frozen" as const,
+    };
+
+    const [next] = planPrimaryRollovers([closed], now);
+    expect(next?.cycle_year).toBe(2028);
+    expect(next?.status).toBe("active");
+    expect(new Date(next!.primary_date).getUTCFullYear()).toBe(2028);
+    expect(Date.parse(next!.primary_date) - Date.parse(filingDeadlineFromPrimary(next!.primary_date))).toBe(
+      90 * 86_400_000,
+    );
+    expect(nextFilingClock([next!], now)?.cycleYear).toBe(2028);
+    expect(planPrimaryRollovers([closed, next!], now)).toEqual([]);
+  });
+
+  it("keeps walking closed cycles until the next primary date is still ahead", () => {
+    const now = Date.parse("2026-10-06T15:00:00Z");
+    const [next] = planPrimaryRollovers(
+      [
+        {
+          slug: "tx-house-02-dem",
+          cycle_year: 2022,
+          primary_date: "2022-03-03T20:00:00.000Z",
+          term_length_years: 2,
+          status: "frozen",
+        },
+      ],
+      now,
+    );
+    expect(next?.cycle_year).toBe(2028);
+
+    const [senate] = planPrimaryRollovers(
+      [
+        {
+          slug: "tx-senate-dem",
+          cycle_year: 2026,
+          primary_date: "2026-03-03T20:00:00.000Z",
+          term_length_years: 6,
+          status: "active",
+        },
+      ],
+      now,
+    );
+    expect(senate?.cycle_year).toBe(2032);
   });
 
   it("crowns the highest-Elo verified debater", () => {

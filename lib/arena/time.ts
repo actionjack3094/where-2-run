@@ -20,4 +20,4 @@ export function getExpiryState(expiresAt: string, now = Date.now()) {
   };
 }
 
-export const TOTAL_ROUNDS = 3;
+export { TOTAL_ROUNDS } from "@/lib/debates/structure";

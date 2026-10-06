@@ -6,8 +6,9 @@ import { isUuid } from "@/lib/arena/display";
 import { isMissingSchema } from "@/lib/db/schema-errors";
 import { createServerSupabase } from "@/lib/db/supabase-server";
 import { cleanAgendaContent, cleanAgendaTitle } from "@/lib/platform/agenda";
+import { constituentAccess } from "@/lib/platform/tier2";
 import { primaryClosed } from "@/lib/platform/cycle";
-import { loadProfile, platformAdmin } from "@/lib/platform/records";
+import { platformAdmin } from "@/lib/platform/records";
 import type { Primary } from "@/types/database.types";
 
 export type AgendaResult = {
@@ -21,10 +22,8 @@ async function verifiedVoter() {
   const userId = await requireActionUserId();
   if (!userId) return { error: "Sign in to take part in the district agenda.", userId: null, admin: null };
   const admin = platformAdmin();
-  const profile = await loadProfile(admin, userId);
-  if (!profile?.is_verified) {
-    return { error: "Stripe verification is required to file or upvote an issue.", userId, admin };
-  }
+  const access = await constituentAccess(admin, userId);
+  if (!access.ok) return { error: access.error, userId, admin };
   return { error: null, userId, admin };
 }
 

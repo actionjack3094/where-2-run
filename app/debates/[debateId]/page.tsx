@@ -342,7 +342,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
                 >
                   {turn === "complete"
                     ? "Both arguments are in. Advancing the debate..."
-                    : `Waiting for opponent's response... (Round ${Math.min(debate.current_round ?? 1, TOTAL_ROUNDS)} of ${TOTAL_ROUNDS})`}
+                    : `Waiting for opponent's response... (${Math.min(debate.current_round ?? 1, TOTAL_ROUNDS)} of ${TOTAL_ROUNDS})`}
                 </p>
               ) : null}
             </>

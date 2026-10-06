@@ -205,7 +205,7 @@ export function DraftReveal({ onBack }: { onBack: () => void }) {
           disabled={loading || busy}
           onClick={() => void enterArena()}
         >
-          {busy ? "Entering the arena…" : "Enter the Arena"}
+          {busy ? "Entering Debates…" : "Enter Debates"}
         </Button>
         <Button type="button" variant="ghost" size="sm" disabled={busy} onClick={onBack}>
           Back

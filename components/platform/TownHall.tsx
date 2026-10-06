@@ -34,6 +34,9 @@ export function TownHall({
         Town Hall Q&A
         <InfoTooltip label="Town Hall Q&A" text={TOWN_HALL_TIP} />
       </h3>
+      <p className="mt-2 text-sm leading-6 text-zinc-400">
+        Verified voters ask. Candidates reply. Voters cannot reply to each other.
+      </p>
       {questions.length === 0 ? (
         <p className="mt-3 text-sm text-zinc-400">No questions yet.</p>
       ) : (

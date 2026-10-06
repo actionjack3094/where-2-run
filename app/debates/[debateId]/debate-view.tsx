@@ -30,6 +30,7 @@ import {
 import { ensureArenaUser, type ArenaUser } from "@/lib/arena/identity";
 import { displayTally, formatWeightedSubtitle } from "@/lib/vote-weight";
 import { getExpiryState, TOTAL_ROUNDS } from "@/lib/arena/time";
+import { ROUND_CHAR_LIMIT, roundLabel } from "@/lib/debates/structure";
 import { supabase } from "@/lib/db/supabase";
 import { STORAGE_KEYS } from "@/lib/session";
 import {
@@ -522,7 +523,7 @@ export function DebateView({
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <Badge>
-          Round {Math.min(debate.current_round, TOTAL_ROUNDS)} of {TOTAL_ROUNDS}
+          {roundLabel(Math.min(debate.current_round, TOTAL_ROUNDS))} · {Math.min(debate.current_round, TOTAL_ROUNDS)} of {TOTAL_ROUNDS}
         </Badge>
         {expiry && (
           <Badge
@@ -572,7 +573,7 @@ export function DebateView({
           return (
             <div key={round} className="flex flex-col gap-3">
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
-                Round {round}
+                {roundLabel(round)}
               </p>
               <ArgumentSlot
                 label={candidateA?.username ?? "Candidate A"}
@@ -941,7 +942,8 @@ function ArgumentSlot({
           >
             <textarea
               value={composer.draft}
-              onChange={(event) => composer.setDraft(event.target.value)}
+              onChange={(event) => composer.setDraft(event.target.value.slice(0, ROUND_CHAR_LIMIT))}
+              maxLength={ROUND_CHAR_LIMIT}
               rows={5}
               disabled={composer.busy}
               placeholder="Lock in this round’s argument…"

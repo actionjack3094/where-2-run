@@ -37,23 +37,23 @@ export const getOnboardingProgress = cache(async function getOnboardingProgress(
 
   const hasHome = asOcdIds(data?.home_ocd_ids).length > 0;
   const hasStance = hasStanceVector(data?.stance_vector);
-  return { signedIn: true, hasHome, hasStance, complete: hasHome && hasStance };
+  return { signedIn: true, hasHome, hasStance, complete: hasStance };
 });
 
-const EXEMPT_PREFIXES = ["/onboarding", "/auth", "/about", "/api"];
+const EXEMPT_PREFIXES = ["/onboarding", "/townhall", "/auth", "/about", "/api"];
 
 function isOnboardingExempt(pathname: string) {
   if (!pathname || pathname === "/") return true;
   return EXEMPT_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
-/** Send signed-in users without a district or stance vector to `/onboarding`. */
+/** Send signed-in users who have not filed the Townhall to `/townhall`. */
 export async function redirectIfOnboardingIncomplete() {
   const pathname = (await headers()).get("x-pathname") ?? "";
   if (isOnboardingExempt(pathname)) return;
 
   const progress = await getOnboardingProgress();
   if (progress.signedIn && !progress.complete) {
-    redirect("/onboarding");
+    redirect("/townhall");
   }
 }

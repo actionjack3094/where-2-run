@@ -61,6 +61,18 @@ export async function pledgeWarChest(
       .eq("id", row.id);
     if (updated.error) return { error: updated.error.message };
 
+    const ledger = await admin.from("platform_pledges").insert({
+      donor_id: userId,
+      candidate_id: candidateId,
+      primary_id: primaryId,
+      amount: gift,
+      source: "grassroots",
+      status: "pledged",
+    });
+    if (ledger.error && !isMissingSchema(ledger.error)) {
+      return { error: ledger.error.message };
+    }
+
     revalidatePath("/ballot");
     revalidatePath("/elections");
     revalidatePath(`/profile/${candidateId}`);

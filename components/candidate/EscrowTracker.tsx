@@ -1,4 +1,5 @@
 import { Carrot } from "lucide-react";
+import { InfoTooltip, PLEDGED_ESCROW_TIP } from "@/components/InfoTooltip";
 import {
   Card,
   CardContent,
@@ -28,8 +29,9 @@ export function EscrowTracker({
 
   return (
     <section aria-labelledby="escrow-heading">
-      <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-        War chest
+      <p className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+        Pledged Escrow
+        <InfoTooltip label="Pledged Escrow" text={PLEDGED_ESCROW_TIP} />
       </p>
       <h2
         id="escrow-heading"

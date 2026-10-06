@@ -40,6 +40,7 @@ export type BallotMatch = {
   sideA: ArenaSide;
   sideB: ArenaSide;
   status: string;
+  createdAt: string;
   isTie: boolean;
   winnerId: string | null;
   crowd: CrowdFavorite;
@@ -64,6 +65,7 @@ export type ArenaCard = {
   sideA: ArenaSide;
   sideB: ArenaSide | null;
   status: string;
+  exchangeRound: number;
   seatLockedUntil: string | null;
   isTie: boolean;
   winnerId: string | null;

@@ -115,7 +115,7 @@ export function ArenaProvingGround() {
             id="proving-ground-heading"
             className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment"
           >
-            Arena Proving Ground
+            Debates
           </h2>
           <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
             Cosine distance on your five-axis stance vector finds the {PRIMARY_OPPONENT_LIMIT}{" "}

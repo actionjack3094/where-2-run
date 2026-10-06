@@ -5,7 +5,11 @@ import { CIVIC_STANDING_TIP, IDEOLOGY_COMPASS_TIP, InfoTooltip } from "@/compone
 import { ReportDebateButton } from "@/components/platform/ReportDebateButton";
 import { TownHall } from "@/components/platform/TownHall";
 import { CandidateAvatar } from "@/components/profile/CandidateAvatar";
+import { MatchConfidence } from "@/components/ballot/MatchConfidence";
+import { PledgeDecisions } from "@/components/pledges/PledgeDecisions";
 import { PledgeFundsCard } from "@/components/support/PledgeFundsCard";
+import { stanceIsStale } from "@/lib/ballot/fading";
+import { formatUsd } from "@/lib/pledges";
 import type { PublishedPlatform } from "@/lib/actions/campaign";
 import type { ArenaPublicProfile } from "@/lib/platform/public-profile";
 import { tierLabel } from "@/lib/platform/types";
@@ -45,6 +49,28 @@ export function ArenaPublicProfileView({
         signedIn={Boolean(viewerId)}
         chests={profile.warChests}
       />
+      {profile.ideologyX != null && profile.ideologyY != null ? (
+        <MatchConfidence percent={null} stale={stanceIsStale(profile.lastStanceAt)} />
+      ) : null}
+      {viewerId === profile.id && profile.civicCredit > 0 ? (
+        <p className="mt-4 text-sm text-zinc-300">Civic Credit {formatUsd(profile.civicCredit)}</p>
+      ) : null}
+      {viewerId === profile.id ? <PledgeDecisions pledges={profile.pendingPledges} /> : null}
+      {profile.unbought.length > 0 ? (
+        <section className="mt-8">
+          <h2 className="font-display text-xl text-parchment">Unbought</h2>
+          <ul className="mt-3 grid gap-2">
+            {profile.unbought.map((pledge) => (
+              <li key={pledge.id} className="text-sm text-zinc-300">
+                Rejected {formatUsd(pledge.amount)} from{" "}
+                <Link href={`/entities/${pledge.entitySlug}`} className="text-gold">
+                  {pledge.entityName}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <section className="mt-10">
         <h2 className="inline-flex items-center gap-2 font-display text-xl text-parchment">

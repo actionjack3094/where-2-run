@@ -10,18 +10,6 @@ import { INBOX_PREVIEW, INBOX_UPDATED_EVENT, type InboxItem } from "@/lib/notifi
 import { formatRelativeTime } from "@/lib/pledges";
 import { cn } from "@/lib/utils";
 
-function UnreadBadge({ count }: { count: number }) {
-  if (count <= 0) return null;
-  return (
-    <span
-      aria-label={`${count} unread ${count === 1 ? "alert" : "alerts"}`}
-      className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-brass px-1 text-[9px] font-semibold tabular-nums text-charcoal"
-    >
-      {count > 9 ? "9+" : count}
-    </span>
-  );
-}
-
 function InboxRow({
   item,
   onOpen,
@@ -152,12 +140,11 @@ export function InboxMenu() {
         aria-controls={panelId}
         onClick={() => setOpen((current) => !current)}
         className={cn(
-          "relative inline-flex items-center transition-colors",
-          active || open ? "text-brass" : "text-brass-dark hover:text-brass",
+          "relative inline-flex h-8 w-8 items-center justify-center transition-colors",
+          active || open ? "text-amber-700" : "text-amber-800/80 hover:text-amber-700",
         )}
       >
-        <LibertyBell className="transition-colors" />
-        <UnreadBadge count={unread} />
+        <LibertyBell unread={unread > 0} className="h-6 w-6 overflow-visible" />
       </button>
       {open ? (
         <div

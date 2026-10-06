@@ -43,7 +43,7 @@ export function DebateHistory({ matches }: { matches: ProfileMatch[] }) {
   return (
     <section aria-labelledby="debate-history-heading">
       <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-        Arena archive
+        Debates archive
       </p>
       <h2
         id="debate-history-heading"

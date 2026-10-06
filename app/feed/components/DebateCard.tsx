@@ -73,7 +73,7 @@ function TrackDebateCard({ item, viewerId }: { item: OcdTrackDebate; viewerId: s
               : "border-red-400/30 bg-red-500/10 text-red-200",
           )}
         >
-          {backyard ? "The Backyard" : "The Arena"}
+          {backyard ? "The Backyard" : "Debates"}
         </span>
         <span className="rounded-full border border-white/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-zinc-400">
           {statusLabel(item.status)}

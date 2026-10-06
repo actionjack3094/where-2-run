@@ -5,7 +5,8 @@ import { requireActionUserId } from "@/lib/arena/auth";
 import { isUuid } from "@/lib/arena/display";
 import { isMissingSchema } from "@/lib/db/schema-errors";
 import { createServerSupabase } from "@/lib/db/supabase-server";
-import { loadProfile, platformAdmin } from "@/lib/platform/records";
+import { platformAdmin } from "@/lib/platform/records";
+import { constituentAccess } from "@/lib/platform/tier2";
 import { ANSWER_MAX, QUESTION_MAX, cleanTownHallText } from "@/lib/platform/town-hall";
 
 export type TownHallResult = {
@@ -28,8 +29,8 @@ export async function submitConstituentQuestion(debateId: string, contentText: s
   const userId = await requireActionUserId();
   if (!userId) return { error: "Sign in to ask a question." };
   const admin = platformAdmin();
-  const profile = await loadProfile(admin, userId);
-  if (!profile?.is_verified) return { error: "Stripe verification is required to ask a question." };
+  const access = await constituentAccess(admin, userId);
+  if (!access.ok) return { error: access.error };
 
   const debate = await admin
     .from("arena_debates")
@@ -99,7 +100,7 @@ export async function submitCandidateAnswer(questionId: string, contentText: str
   } | null;
   if (!row || row.status !== "concluded") return { error: "Town Hall opens after the debate is judged." };
   if (userId !== row.candidate_a_id && userId !== row.candidate_b_id) {
-    return { error: "Only the seated candidates can answer." };
+    return { error: "Voters cannot reply to each other. Only the seated candidates can answer." };
   }
 
   const supabase = await createServerSupabase();

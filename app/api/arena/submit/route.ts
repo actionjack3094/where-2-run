@@ -3,6 +3,7 @@ import { applyDebateGrade } from "@/lib/arena/apply-grade";
 import { requireAuthenticatedUserId } from "@/lib/arena/auth";
 import { evaluateConsistency } from "@/lib/arena/consistency";
 import { TOTAL_ROUNDS } from "@/lib/arena/time";
+import { ROUND_CHAR_LIMIT, roundLabel } from "@/lib/debates/structure";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 
 export async function POST(request: Request) {
@@ -25,7 +26,16 @@ export async function POST(request: Request) {
       );
     }
     if (roundNumber < 1 || roundNumber > TOTAL_ROUNDS) {
-      return NextResponse.json({ error: "Round must be 1, 2, or 3." }, { status: 400 });
+      return NextResponse.json(
+        { error: `${roundLabel(roundNumber)} is outside the four-round debate.` },
+        { status: 400 },
+      );
+    }
+    if (argumentText.length > ROUND_CHAR_LIMIT) {
+      return NextResponse.json(
+        { error: `${roundLabel(roundNumber)} is ${ROUND_CHAR_LIMIT} characters at most.` },
+        { status: 400 },
+      );
     }
 
     const userId = await requireAuthenticatedUserId(request);
