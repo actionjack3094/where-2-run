@@ -1,3 +1,9 @@
+const YOKE =
+  "M215 4L188 15L181 29L217 139L235 137L246 131L266 131L279 138L296 139L331 24L320 13L296 4L216 4Z M67 31L40 37L25 60L25 176L10 178L2 187L2 252L14 262L94 262L103 258L112 246L132 187L152 171L181 165L187 153L201 144L166 32L68 31Z M348 31L312 141L330 165L356 170L376 183L401 249L410 259L419 262L500 262L510 251L510 189L502 178L487 177L486 170L485 54L474 39L460 32L349 31Z M218 583L215 585L218 602L238 620L240 644L250 650L270 646L273 621L291 606L296 585L219 583Z";
+
+const BELL =
+  "M247 131L227 139L206 140L187 153L181 165L191 209L159 220L145 230L131 248L124 272L112 383L97 442L77 478L44 508L27 542L27 560L39 569L131 570L240 569L248 561L245 539L212 473L201 436L199 376L200 356L204 350L210 350L214 354L214 421L218 447L230 480L251 516L266 567L469 570L478 568L485 559L485 544L474 519L427 468L410 429L397 368L386 263L379 244L365 228L351 219L321 208L330 164L313 141L283 139L266 131L248 131Z M231 168L239 168L238 202L222 202L217 181L220 171L231 169Z M273 168L288 170L295 177L290 201L274 202L273 169Z";
+
 export function LibertyBell({
   unread = false,
   className,
@@ -8,33 +14,14 @@ export function LibertyBell({
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 120 140"
+      viewBox="0 0 513 653"
       aria-hidden
       className={className}
     >
-      <path
-        fill="#111111"
-        d="M28 4h22L36 44H16C6 44 2 34 2 22 2 10 12 4 28 4z"
-      />
-      <path
-        fill="#111111"
-        d="M92 4H70l14 40h20c10 0 14-10 14-22C118 10 108 4 92 4z"
-      />
-      <path
-        fill="var(--gold)"
-        fillRule="evenodd"
-        d="M60 34c12 0 18 6 18 14 2 2 8 6 14 16 10 16 16 32 12 44-4 8-22 10-44 10s-40-2-44-10c-4-12 2-28 12-44 6-10 12-14 14-16 0-8 6-14 18-14zM50 40h4.2v12H50zm15.8 0H70v12h-4.2z"
-      />
-      <path
-        d="M57 56C51 74 49 96 55 116"
-        fill="none"
-        stroke="#fafaf9"
-        strokeWidth="5.5"
-        strokeLinecap="round"
-      />
-      <path fill="#111111" d="M52 114h16v4c0 8-3 12-8 12s-8-4-8-12z" />
+      <path fill="#111111" fillRule="evenodd" d={YOKE} />
+      <path fill="var(--gold)" fillRule="evenodd" d={BELL} />
       {unread ? (
-        <circle cx="108" cy="12" r="8" fill="#dc2626" stroke="#fafaf9" strokeWidth="3" />
+        <circle cx="492" cy="48" r="34" fill="#dc2626" stroke="#fafaf9" strokeWidth="10" />
       ) : null}
     </svg>
   );
