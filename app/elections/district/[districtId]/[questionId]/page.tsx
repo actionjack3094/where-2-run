@@ -210,9 +210,9 @@ export default async function DebateQuestionPage({ params }: QuestionPageProps) 
 
   if (error && !question) {
     return (
-      <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+      <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
         <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
-          <p className="mt-8 text-sm leading-6 text-zinc-400">
+          <p className="mt-8 text-sm leading-6 text-stone-600">
             Could not load this question. {error}
           </p>
         </div>
@@ -225,39 +225,39 @@ export default async function DebateQuestionPage({ params }: QuestionPageProps) 
   }
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
         <header>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-gold">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-amber-800">
             Debate question
           </p>
-          <h1 className="mt-3 font-display text-3xl font-semibold leading-tight tracking-tight text-parchment sm:text-4xl">
+          <h1 className="mt-3 font-display text-3xl font-semibold leading-tight tracking-tight text-stone-900 sm:text-4xl">
             {question.prompt}
           </h1>
           <Link
             href={`/elections/district/${districtId}`}
-            className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-widest text-gold hover:text-parchment"
+            className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-widest text-amber-800 hover:text-stone-900"
           >
             All questions
           </Link>
         </header>
 
         {ownDebate ? (
-          <div className="mt-8 rounded-xl border border-gold/50 bg-zinc-900 px-5 py-4">
-            <p className="text-sm font-medium uppercase tracking-[0.16em] text-gold">
+          <div className="mt-8 rounded-xl border border-gold/50 bg-white px-5 py-4">
+            <p className="text-sm font-medium uppercase tracking-[0.16em] text-amber-800">
               Stance Recorded / You have the floor
             </p>
           </div>
         ) : stanceError ? (
-          <p className="mt-8 text-sm leading-6 text-zinc-400">
+          <p className="mt-8 text-sm leading-6 text-stone-600">
             Could not check whether you already have the floor. {stanceError}
           </p>
         ) : (
-          <section className="mt-8 rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4">
-            <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
+          <section className="mt-8 rounded-xl border border-amber-500/30 bg-white px-5 py-4">
+            <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
               Take a stance
             </h2>
-            <p className="mt-2 text-sm leading-6 text-zinc-300">
+            <p className="mt-2 text-sm leading-6 text-stone-600">
               Record your stance to enter this question as candidate A and open the floor.
             </p>
             <TakeStanceButton questionId={question.id} />
@@ -265,15 +265,15 @@ export default async function DebateQuestionPage({ params }: QuestionPageProps) 
         )}
 
         <section className="mt-10">
-          <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
+          <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
             Waiting opponents
           </h2>
           {opponentError ? (
-            <p className="mt-4 text-sm leading-6 text-zinc-400">
+            <p className="mt-4 text-sm leading-6 text-stone-600">
               Could not load opponents in this district. {opponentError}
             </p>
           ) : opponents.length === 0 ? (
-            <p className="mt-4 text-sm leading-6 text-zinc-400">
+            <p className="mt-4 text-sm leading-6 text-stone-600">
               No opponents are waiting on this question in this district.
             </p>
           ) : (
@@ -281,16 +281,16 @@ export default async function DebateQuestionPage({ params }: QuestionPageProps) 
               {opponents.map((opponent) => (
                 <li
                   key={opponent.debateId}
-                  className="flex flex-col gap-4 rounded-xl border border-red-500/40 bg-zinc-900 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-4 rounded-xl border border-red-500/40 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div>
-                    <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+                    <p className="font-mono text-[10px] uppercase tracking-widest text-stone-600">
                       Viability rank {opponent.rank}
                     </p>
-                    <p className="mt-2 text-base font-semibold text-parchment">
+                    <p className="mt-2 text-base font-semibold text-stone-900">
                       {opponent.username}
                     </p>
-                    <p className="mt-1 text-sm text-zinc-400">
+                    <p className="mt-1 text-sm text-stone-600">
                       Viability {opponent.viabilityScore}
                     </p>
                   </div>

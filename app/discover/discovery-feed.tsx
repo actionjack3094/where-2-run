@@ -180,7 +180,7 @@ export function DiscoveryFeed({ debates }: { debates: DiscoveryDebate[] }) {
       </div>
 
       {visible.length === 0 ? (
-        <p className="mt-8 text-sm leading-6 text-zinc-400">
+        <p className="mt-8 text-sm leading-6 text-stone-600">
           No debates in this lane yet.
         </p>
       ) : (
@@ -238,7 +238,7 @@ function DiscoveryCard({
       </div>
 
       <Link href={`/debates/${debate.id}`} className="group mt-4 block">
-        <h2 className="font-serif text-2xl font-semibold leading-snug tracking-tight text-parchment group-hover:text-primary">
+        <h2 className="font-serif text-2xl font-semibold leading-snug tracking-tight text-stone-900 group-hover:text-primary">
           {debate.topic}
         </h2>
       </Link>
@@ -248,17 +248,17 @@ function DiscoveryCard({
         <Seat label="Candidate B" seat={debate.candidateB} votes={tally.b} align="end" />
       </div>
 
-      <p className="mt-4 font-mono text-xs tabular-nums text-parchment">
+      <p className="mt-4 font-mono text-xs tabular-nums text-stone-900">
         Spectator votes · {debate.candidateA?.username ?? "A"} {tally.a} ·{" "}
         {debate.candidateB?.username ?? "B"} {tally.b}
       </p>
 
       {bucket === "concluded" ? (
-        <div className="mt-4 rounded-lg border border-primary/25 bg-zinc-950/60 px-4 py-3">
+        <div className="mt-4 rounded-lg border border-primary/25 bg-white/60 px-4 py-3">
           <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-primary">
             AI judge
           </p>
-          <p className="mt-2 text-sm leading-6 text-parchment">
+          <p className="mt-2 text-sm leading-6 text-stone-900">
             {winner ? `${winner} is the winner.` : "The match ended in a tie."}
           </p>
           {judgeReasoning ? (
@@ -297,7 +297,7 @@ function Seat({
         >
           <CandidateAvatar name={seat.username} size="md" />
           <span className="min-w-0">
-            <span className="block font-serif text-base font-semibold text-parchment hover:text-primary">
+            <span className="block font-serif text-base font-semibold text-stone-900 hover:text-primary">
               {seat.username}
             </span>
             <span className="mt-1 block font-mono text-xs tabular-nums text-primary">

@@ -84,13 +84,13 @@ export function VerificationDesk() {
   const next = nextVerificationTier(tier);
 
   if (stage === "booting") {
-    return <p className="mt-10 text-sm leading-6 text-zinc-400">Opening the verification ledger…</p>;
+    return <p className="mt-10 text-sm leading-6 text-stone-600">Opening the verification ledger…</p>;
   }
 
   if (stage === "error") {
     return (
       <div className="mt-10 space-y-4">
-        <p className="text-sm leading-6 text-zinc-400">{error}</p>
+        <p className="text-sm leading-6 text-stone-600">{error}</p>
         <Button
           type="button"
           variant="outline"
@@ -120,7 +120,7 @@ export function VerificationDesk() {
     <section className="mt-10 flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+          <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
             Current standing
           </p>
           <CardTitle className="mt-2 flex items-center gap-2 text-2xl">
@@ -137,7 +137,7 @@ export function VerificationDesk() {
         </CardHeader>
       </Card>
 
-      {error ? <p className="text-sm leading-6 text-red-300">{error}</p> : null}
+      {error ? <p className="text-sm leading-6 text-red-700">{error}</p> : null}
 
       <ol className="flex flex-col gap-3">
         {VERIFICATION_STEPS.map((step) => {
@@ -149,27 +149,27 @@ export function VerificationDesk() {
             <li key={step.tier}>
               <article
                 className={cn(
-                  "rounded-xl border bg-zinc-900 p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)]",
+                  "rounded-xl border bg-white p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)]",
                   complete ? "border-gold/70" : "border-gold/40",
                 )}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+                    <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
                       Step {step.step} · {step.method}
                     </p>
-                    <h2 className="mt-2 flex items-center gap-2 font-display text-lg font-semibold tracking-tight text-parchment">
+                    <h2 className="mt-2 flex items-center gap-2 font-display text-lg font-semibold tracking-tight text-stone-900">
                       {step.title}
                       {complete ? (
-                        <ShieldCheck aria-hidden className="h-4 w-4 text-gold" />
+                        <ShieldCheck aria-hidden className="h-4 w-4 text-amber-800" />
                       ) : null}
                     </h2>
-                    <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">{step.unlocks}</p>
+                    <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">{step.unlocks}</p>
                   </div>
                   <p
                     className={cn(
                       "shrink-0 text-[11px] font-medium uppercase tracking-widest",
-                      complete ? "text-gold" : locked ? "text-zinc-500" : "text-parchment",
+                      complete ? "text-amber-800" : locked ? "text-stone-600" : "text-stone-900",
                     )}
                   >
                     {complete ? "Cleared" : isNext ? "Ready" : "Locked"}

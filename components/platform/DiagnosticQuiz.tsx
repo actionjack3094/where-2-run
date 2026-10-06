@@ -52,13 +52,13 @@ export function DiagnosticQuiz() {
 
   return (
     <section className="mt-10 flex flex-1 flex-col">
-      <div className="h-1 overflow-hidden rounded-full bg-zinc-800">
+      <div className="h-1 overflow-hidden rounded-full bg-stone-100">
         <div className="h-full bg-gold transition-all" style={{ width: `${progress}%` }} />
       </div>
-      <p className="mt-4 text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500">
+      <p className="mt-4 text-[11px] font-medium uppercase tracking-[0.2em] text-stone-600">
         {question.topic} · {step + 1} of {DIAGNOSTIC_QUESTIONS.length}
       </p>
-      <h2 className="mt-3 font-display text-2xl font-semibold leading-snug text-parchment">
+      <h2 className="mt-3 font-display text-2xl font-semibold leading-snug text-stone-900">
         {question.prompt}
       </h2>
       <div className="mt-6 grid gap-3" role="radiogroup" aria-label={question.prompt}>
@@ -74,8 +74,8 @@ export function DiagnosticQuiz() {
               className={cn(
                 "rounded-xl border px-4 py-4 text-left text-sm leading-6 transition-colors",
                 active
-                  ? "border-gold bg-zinc-900 text-parchment"
-                  : "border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-600",
+                  ? "border-gold bg-white text-stone-900"
+                  : "border-amber-500/30 bg-white text-stone-600 hover:border-amber-600",
               )}
             >
               {option.label}
@@ -83,7 +83,7 @@ export function DiagnosticQuiz() {
           );
         })}
       </div>
-      {error ? <p className="mt-4 text-sm text-zinc-300">{error}</p> : null}
+      {error ? <p className="mt-4 text-sm text-stone-600">{error}</p> : null}
       <div className="mt-8 flex items-center gap-3">
         <Button
           type="button"

@@ -119,25 +119,25 @@ export default async function CandidateHqPage(props: {
   const point = compassFromPlane(ideologyX, ideologyY);
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 py-10 pb-16">
         <header>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">Candidate</p>
-          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">Candidate</p>
+          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-stone-900">
             Candidate HQ
           </h1>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+          <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
             The queue, your Soapbox, and the people who enlisted. The milestone map lives in{" "}
-            <Link href="/campaign" className="text-gold">
+            <Link href="/campaign" className="text-amber-800">
               Campaign Hub
             </Link>
             .
           </p>
           <p className="mt-3 flex flex-wrap gap-4 text-[11px] uppercase tracking-widest">
-            <Link href="/dashboard?tab=identity" className="text-zinc-500 hover:text-gold">
+            <Link href="/dashboard?tab=identity" className="text-stone-600 hover:text-amber-800">
               Identity
             </Link>
-            <Link href="/dashboard?tab=platform" className="text-zinc-500 hover:text-gold">
+            <Link href="/dashboard?tab=platform" className="text-stone-600 hover:text-amber-800">
               Platform
             </Link>
           </p>
@@ -155,8 +155,8 @@ export default async function CandidateHqPage(props: {
                 className={cn(
                   "inline-flex h-10 items-center justify-center rounded-full px-4 text-[11px] font-medium uppercase tracking-widest transition-colors",
                   selected
-                    ? "bg-gold-strong text-zinc-950"
-                    : "border border-gold/40 text-zinc-400 hover:border-gold hover:text-parchment",
+                    ? "bg-gold-strong text-stone-900"
+                    : "border border-gold/40 text-stone-600 hover:border-gold hover:text-stone-900",
                 )}
               >
                 {item.label}
@@ -167,9 +167,9 @@ export default async function CandidateHqPage(props: {
 
         {tab === "queue" ? (
           <section className="mt-8">
-            {queueError ? <p className="text-sm leading-6 text-zinc-300">{queueError}</p> : null}
+            {queueError ? <p className="text-sm leading-6 text-stone-600">{queueError}</p> : null}
             {!queueError && queue.length === 0 ? (
-              <p className="text-sm leading-6 text-zinc-400">
+              <p className="text-sm leading-6 text-stone-600">
                 Nothing is waiting. Open a stance in Debates or accept a Soapbox challenge and it lands here.
               </p>
             ) : null}
@@ -178,13 +178,13 @@ export default async function CandidateHqPage(props: {
                 <li key={item.id}>
                   <Link
                     href={`/debates/${item.id}`}
-                    className="block rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4 transition-colors hover:border-gold/50"
+                    className="block rounded-xl border border-amber-500/30 bg-white px-5 py-4 transition-colors hover:border-gold/50"
                   >
-                    <p className="text-[11px] uppercase tracking-widest text-gold">
+                    <p className="text-[11px] uppercase tracking-widest text-amber-800">
                       {item.role} · {item.office}
                     </p>
-                    <p className="mt-2 text-sm font-medium text-parchment">{item.prompt}</p>
-                    <p className="mt-1 text-sm text-zinc-400">vs {item.opponent}</p>
+                    <p className="mt-2 text-sm font-medium text-stone-900">{item.prompt}</p>
+                    <p className="mt-1 text-sm text-stone-600">vs {item.opponent}</p>
                   </Link>
                 </li>
               ))}
@@ -203,8 +203,8 @@ export default async function CandidateHqPage(props: {
               />
             </div>
             {soapbox.posts.length === 0 ? (
-              <p className="mt-6 text-sm leading-6 text-zinc-400">
-                <Link href="/soapbox" className="text-gold">
+              <p className="mt-6 text-sm leading-6 text-stone-600">
+                <Link href="/soapbox" className="text-amber-800">
                   Post a stump speech
                 </Link>{" "}
                 and the counts show up here.
@@ -212,9 +212,9 @@ export default async function CandidateHqPage(props: {
             ) : (
               <ul className="mt-6 grid gap-3">
                 {soapbox.posts.map((post) => (
-                  <li key={post.id} className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4">
-                    <p className="text-sm leading-6 text-parchment">{post.content}</p>
-                    <p className="mt-2 text-[11px] uppercase tracking-widest text-zinc-500">
+                  <li key={post.id} className="rounded-xl border border-amber-500/30 bg-white px-5 py-4">
+                    <p className="text-sm leading-6 text-stone-900">{post.content}</p>
+                    <p className="mt-2 text-[11px] uppercase tracking-widest text-stone-600">
                       {post.upvotes.toLocaleString("en-US")} upvotes
                       {post.tags.length > 0 ? ` · ${post.tags.join(" · ")}` : ""}
                     </p>
@@ -225,34 +225,34 @@ export default async function CandidateHqPage(props: {
           </section>
         ) : null}
         {tab === "soapbox" && soapboxError ? (
-          <p className="mt-8 text-sm leading-6 text-zinc-300">{soapboxError}</p>
+          <p className="mt-8 text-sm leading-6 text-stone-600">{soapboxError}</p>
         ) : null}
 
         {tab === "identity" ? (
           <section className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]">
             <div className="grid gap-6">
-              {setup ? <p className="text-sm leading-6 text-zinc-300">{setup}</p> : null}
+              {setup ? <p className="text-sm leading-6 text-stone-600">{setup}</p> : null}
               {setup ? null : (
                 <>
                   <AvatarUpload userId={user.id} name={name} avatarUrl={avatarUrl} />
                   <DisplayNameForm name={name} />
-                  <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-5">
-                    <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500">
+                  <div className="rounded-xl border border-amber-500/30 bg-white px-5 py-5">
+                    <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-stone-600">
                       Stripe KYC
                     </p>
                     {verified ? (
-                      <p className="mt-3 inline-flex rounded-full border border-gold px-3 py-1 text-[11px] uppercase tracking-widest text-gold">
+                      <p className="mt-3 inline-flex rounded-full border border-gold px-3 py-1 text-[11px] uppercase tracking-widest text-amber-800">
                         Verified
                       </p>
                     ) : (
                       <>
-                        <p className="mt-3 text-sm leading-6 text-zinc-300">
+                        <p className="mt-3 text-sm leading-6 text-stone-600">
                           Stripe verification and a legal name are required before a primary leaderboard
                           can list you as a Declared Candidate or Frontrunner.
                         </p>
                         <Link
                           href="/verify"
-                          className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+                          className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800 hover:text-stone-900"
                         >
                           Verify identity
                         </Link>
@@ -262,8 +262,8 @@ export default async function CandidateHqPage(props: {
                 </>
               )}
             </div>
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-5">
-              <p className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500">
+            <div className="rounded-xl border border-amber-500/30 bg-white px-5 py-5">
+              <p className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-stone-600">
                 Ideology Vectors
                 <InfoTooltip label="Ideology Vectors" text={IDEOLOGY_VECTOR_TIP} />
               </p>
@@ -273,7 +273,7 @@ export default async function CandidateHqPage(props: {
                   className="mx-auto w-full max-w-sm"
                 />
               </div>
-              <p className="mt-4 text-center text-sm leading-6 text-zinc-400">
+              <p className="mt-4 text-center text-sm leading-6 text-stone-600">
                 {hasCoordinate
                   ? `Economic ${ideologyX.toFixed(2)} · Social ${ideologyY.toFixed(2)}`
                   : "Your coordinate appears after onboarding. Debate scores move only your own point."}
@@ -284,17 +284,17 @@ export default async function CandidateHqPage(props: {
 
         {tab === "platform" ? (
           <section className="mt-8 max-w-xl">
-            {platformError ? <p className="text-sm leading-6 text-zinc-300">{platformError}</p> : null}
+            {platformError ? <p className="text-sm leading-6 text-stone-600">{platformError}</p> : null}
             {!platformError && races.length === 0 ? (
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-6">
-                <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500">Locked</p>
-                <p className="mt-3 text-sm leading-6 text-parchment">
+              <div className="rounded-xl border border-amber-500/30 bg-white px-5 py-6">
+                <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-stone-600">Locked</p>
+                <p className="mt-3 text-sm leading-6 text-stone-900">
                   The platform editor opens at Declared Candidate: top 50% Civic Standing in a primary,
                   with Stripe verification and a legal name on the profile.
                 </p>
                 <Link
                   href="/verify"
-                  className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+                  className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800 hover:text-stone-900"
                 >
                   Verify identity
                 </Link>
@@ -307,20 +307,20 @@ export default async function CandidateHqPage(props: {
         {tab === "volunteers" ? (
           <section className="mt-8">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <p className="max-w-xl text-sm leading-6 text-zinc-400">
+              <p className="max-w-xl text-sm leading-6 text-stone-600">
                 People who enlisted for this campaign. Districts come from each volunteer&apos;s ballot.
                 The street address stays private.
               </p>
               {groundError || volunteers.length === 0 ? null : (
                 <a
                   href="/api/export/volunteers"
-                  className="inline-flex h-10 items-center justify-center rounded-md bg-gold-strong px-4 font-display text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-950"
+                  className="inline-flex h-10 items-center justify-center rounded-md bg-gold-strong px-4 font-display text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-900"
                 >
                   Export to CSV
                 </a>
               )}
             </div>
-            {groundError ? <p className="mt-8 text-sm leading-6 text-zinc-300">{groundError}</p> : null}
+            {groundError ? <p className="mt-8 text-sm leading-6 text-stone-600">{groundError}</p> : null}
             {!groundError ? <VolunteerTable rows={volunteers} /> : null}
           </section>
         ) : null}
@@ -331,9 +331,9 @@ export default async function CandidateHqPage(props: {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-4">
-      <p className="text-[11px] uppercase tracking-widest text-zinc-500">{label}</p>
-      <p className="mt-2 font-display text-2xl text-parchment">{value}</p>
+    <div className="rounded-xl border border-amber-500/30 bg-white px-4 py-4">
+      <p className="text-[11px] uppercase tracking-widest text-stone-600">{label}</p>
+      <p className="mt-2 font-display text-2xl text-stone-900">{value}</p>
     </div>
   );
 }

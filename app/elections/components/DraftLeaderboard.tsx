@@ -17,16 +17,16 @@ export function DraftLeaderboard({
   return (
     <section aria-labelledby="draft-leaderboard-heading">
       <header>
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-gold">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-amber-800">
           The field
         </p>
         <h2
           id="draft-leaderboard-heading"
-          className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment"
+          className="mt-3 font-display text-2xl font-semibold tracking-tight text-stone-900"
         >
           Draft leaderboard
         </h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
           Prospective candidates ranked by Civic Standing. Primary match is cosine
           alignment with this district&apos;s median voter.
         </p>
@@ -43,22 +43,22 @@ export function DraftLeaderboard({
           </CardHeader>
         </Card>
       ) : (
-        <ol className="mt-6 divide-y divide-gold/20 overflow-hidden rounded-xl border border-gold/40 bg-zinc-900">
+        <ol className="mt-6 divide-y divide-gold/20 overflow-hidden rounded-xl border border-gold/40 bg-white">
           {candidates.map((candidate, index) => (
             <li key={candidate.id}>
               <Link
                 href={`/candidate/${candidate.id}`}
-                className="flex flex-wrap items-center gap-4 px-5 py-4 transition-colors hover:bg-zinc-950"
+                className="flex flex-wrap items-center gap-4 px-5 py-4 transition-colors hover:bg-stone-100"
               >
-                <span className="w-8 font-display text-lg font-semibold tabular-nums text-gold">
+                <span className="w-8 font-display text-lg font-semibold tabular-nums text-amber-800">
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <CandidateAvatar name={candidate.username} size="md" />
                 <span className="min-w-0 flex-1">
-                  <span className="block font-display text-base font-semibold tracking-tight text-parchment">
+                  <span className="block font-display text-base font-semibold tracking-tight text-stone-900">
                     {candidate.username}
                   </span>
-                  <span className="mt-1 block text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                  <span className="mt-1 block text-[11px] font-medium uppercase tracking-widest text-stone-600">
                     {candidate.wins + candidate.losses} Debates Logged
                   </span>
                 </span>
@@ -85,14 +85,14 @@ function Stat({
 }) {
   return (
     <span className="w-24 shrink-0 text-right">
-      <span className="block text-[10px] font-medium uppercase tracking-widest text-zinc-500">
+      <span className="block text-[10px] font-medium uppercase tracking-widest text-stone-600">
         {label}
       </span>
       <span
         className={
           accent
-            ? "mt-1 block font-display text-lg font-semibold tabular-nums text-gold"
-            : "mt-1 block font-display text-lg font-semibold tabular-nums text-parchment"
+            ? "mt-1 block font-display text-lg font-semibold tabular-nums text-amber-800"
+            : "mt-1 block font-display text-lg font-semibold tabular-nums text-stone-900"
         }
       >
         {value}

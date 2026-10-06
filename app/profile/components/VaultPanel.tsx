@@ -95,34 +95,34 @@ export function VaultPanel({
   return (
     <section
       aria-label={`Campaign vault for ${officeName}`}
-      className="mt-4 rounded-lg border border-zinc-800 bg-zinc-950 px-4 py-4"
+      className="mt-4 rounded-lg border border-amber-500/30 bg-white px-4 py-4"
     >
-      <h4 className="font-display text-base font-semibold tracking-tight text-parchment">
+      <h4 className="font-display text-base font-semibold tracking-tight text-stone-900">
         Campaign Vault &amp; Disbursements
       </h4>
 
       <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div>
-          <dt className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+          <dt className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
             Available balance
           </dt>
-          <dd className="mt-1 font-display text-3xl font-semibold tabular-nums tracking-tight text-gold">
+          <dd className="mt-1 font-display text-3xl font-semibold tabular-nums tracking-tight text-amber-800">
             {usd(balance.available)}
           </dd>
         </div>
         <div>
-          <dt className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+          <dt className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
             Locked in escrow
           </dt>
-          <dd className="mt-1 font-display text-3xl font-semibold tabular-nums tracking-tight text-parchment">
+          <dd className="mt-1 font-display text-3xl font-semibold tabular-nums tracking-tight text-stone-900">
             {usd(balance.locked)}
           </dd>
         </div>
         <div>
-          <dt className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+          <dt className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
             Lifetime Disbursed
           </dt>
-          <dd className="mt-1 font-display text-3xl font-semibold tabular-nums tracking-tight text-parchment">
+          <dd className="mt-1 font-display text-3xl font-semibold tabular-nums tracking-tight text-stone-900">
             {usd(balance.disbursed)}
           </dd>
         </div>
@@ -134,24 +134,24 @@ export function VaultPanel({
             type="button"
             disabled={!canRequest || pending}
             onClick={requestPayout}
-            className="inline-flex h-10 items-center justify-center rounded-md bg-gold-strong px-4 text-[11px] font-semibold uppercase tracking-widest text-zinc-950 transition-colors hover:bg-gold disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-10 items-center justify-center rounded-md bg-gold-strong px-4 text-[11px] font-semibold uppercase tracking-widest text-stone-900 transition-colors hover:bg-gold disabled:cursor-not-allowed disabled:opacity-50"
           >
             {pending ? "Requesting…" : canRequest ? "Request Payout" : "No funds to pay out"}
           </button>
-          <p className="text-xs leading-5 text-zinc-500">
+          <p className="text-xs leading-5 text-stone-600">
             Payouts transfer to the bank account linked on Stripe.
           </p>
         </div>
       ) : (
         <div className="mt-4">
-          <p className="text-sm leading-6 text-zinc-400">
+          <p className="text-sm leading-6 text-stone-600">
             Link a bank account through Stripe before this vault can pay out released escrow.
           </p>
           <button
             type="button"
             disabled={pending}
             onClick={connectBank}
-            className="mt-4 inline-flex h-10 items-center justify-center rounded-md bg-gold-strong px-4 text-[11px] font-semibold uppercase tracking-widest text-zinc-950 transition-colors hover:bg-gold disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-4 inline-flex h-10 items-center justify-center rounded-md bg-gold-strong px-4 text-[11px] font-semibold uppercase tracking-widest text-stone-900 transition-colors hover:bg-gold disabled:cursor-not-allowed disabled:opacity-50"
           >
             {pending ? "Connecting…" : "Connect Bank Account"}
           </button>
@@ -169,7 +169,7 @@ export function VaultPanel({
           role="status"
           className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-6"
         >
-          <p className="rounded-full border border-gold bg-zinc-950 px-4 py-2 text-sm text-gold shadow-lg">
+          <p className="rounded-full border border-gold bg-white px-4 py-2 text-sm text-amber-800 shadow-lg">
             {toast}
           </p>
         </div>

@@ -30,34 +30,34 @@ export function MyContests({
   return (
     <section aria-labelledby="my-contests-heading">
       <header>
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-gold">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-amber-800">
           Dashboard
         </p>
         <h2
           id="my-contests-heading"
-          className="mt-2 font-display text-2xl font-semibold tracking-tight text-parchment"
+          className="mt-2 font-display text-2xl font-semibold tracking-tight text-stone-900"
         >
           My Contests
         </h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
           Recommended races ranked by how well this campaign fits the seat. Open a
           row to drop into that race dossier.
         </p>
       </header>
 
       {error ? (
-        <p className="mt-8 text-sm leading-6 text-zinc-400">
+        <p className="mt-8 text-sm leading-6 text-stone-600">
           Could not load these contests. {error}
         </p>
       ) : !signedIn ? (
         <div className="mt-8 space-y-4">
-          <p className="text-sm leading-6 text-zinc-400">
+          <p className="text-sm leading-6 text-stone-600">
             Sign in or file a campaign to see recommended races scored against
             your ideology vector.
           </p>
           <Link
             href="/onboarding"
-            className="inline-flex h-10 items-center justify-center rounded-md border border-gold/60 bg-zinc-950 px-4 text-xs font-medium uppercase tracking-widest text-parchment transition-colors hover:border-gold hover:bg-zinc-900"
+            className="inline-flex h-10 items-center justify-center rounded-md border border-gold/60 bg-white px-4 text-xs font-medium uppercase tracking-widest text-stone-900 transition-colors hover:border-gold hover:bg-stone-100"
           >
             Open onboarding
           </Link>
@@ -80,8 +80,8 @@ export function MyContests({
                   className={cn(
                     "inline-flex h-9 items-center justify-center rounded-full px-3.5 text-[11px] font-medium uppercase tracking-widest transition-colors",
                     active
-                      ? "bg-gold-strong text-zinc-950"
-                      : "border border-gold/40 text-zinc-400 hover:border-gold hover:text-parchment",
+                      ? "bg-gold-strong text-stone-900"
+                      : "border border-gold/40 text-stone-600 hover:border-gold hover:text-stone-900",
                   )}
                 >
                   {option.label}
@@ -91,12 +91,12 @@ export function MyContests({
           </div>
 
           {rows.length === 0 ? (
-            <p className="mt-8 text-sm leading-6 text-zinc-400">
+            <p className="mt-8 text-sm leading-6 text-stone-600">
               No recommended races yet. File a district or take a stance to open this
               board.
             </p>
           ) : (
-            <ol className="mt-5 max-h-[70vh] divide-y divide-gold/20 overflow-y-auto overflow-x-hidden rounded-xl border border-gold/40 bg-zinc-900">
+            <ol className="mt-5 max-h-[70vh] divide-y divide-gold/20 overflow-y-auto overflow-x-hidden rounded-xl border border-gold/40 bg-white">
               {rows.map((contest) => (
                 <li
                   key={contest.electionId}
@@ -107,10 +107,10 @@ export function MyContests({
                     className="flex min-w-0 flex-1 flex-col gap-4 transition-colors hover:opacity-90 sm:flex-row sm:items-center"
                   >
                     <span className="min-w-0 flex-1">
-                      <span className="block font-display text-base font-semibold tracking-tight text-parchment">
+                      <span className="block font-display text-base font-semibold tracking-tight text-stone-900">
                         {contest.officeName}
                       </span>
-                      <span className="mt-1 block text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                      <span className="mt-1 block text-[11px] font-medium uppercase tracking-widest text-stone-600">
                         {contest.historicalLean ?? "Lean unpublished"}
                         {contest.incumbentName
                           ? ` · Incumbent ${contest.incumbentName}`
@@ -159,14 +159,14 @@ function Stat({
 }) {
   return (
     <span className="min-w-[5.5rem] sm:text-right">
-      <span className="block text-[10px] font-medium uppercase tracking-widest text-zinc-500">
+      <span className="block text-[10px] font-medium uppercase tracking-widest text-stone-600">
         {label}
       </span>
       <span
         className={
           accent
-            ? "mt-1 block font-display text-lg font-semibold tabular-nums text-gold"
-            : "mt-1 block font-display text-lg font-semibold tabular-nums text-parchment"
+            ? "mt-1 block font-display text-lg font-semibold tabular-nums text-amber-800"
+            : "mt-1 block font-display text-lg font-semibold tabular-nums text-stone-900"
         }
       >
         {value}

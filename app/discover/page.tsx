@@ -11,22 +11,22 @@ export default async function DiscoverPage() {
   const { debates, error } = await loadDiscoveryDebates();
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
         <header>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
             Every district
           </p>
-          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment">
+          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-stone-900">
             Discover
           </h1>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+          <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
             Debates from every OCD division, busiest floors first and the newest
             matches after that.
           </p>
         </header>
 
-        {error ? <p className="mt-8 text-sm leading-6 text-zinc-400">{error}</p> : null}
+        {error ? <p className="mt-8 text-sm leading-6 text-stone-600">{error}</p> : null}
         {error ? null : <DiscoveryFeed debates={debates} />}
       </div>
     </main>

@@ -42,19 +42,19 @@ function CountdownMetric({
   const passed = value !== null && value < 0;
 
   return (
-    <div className="rounded-xl border border-gold/40 bg-zinc-950 px-5 py-5">
+    <div className="rounded-xl border border-gold/40 bg-white px-5 py-5">
       <p
         className={cn(
-          "font-display text-5xl font-bold tabular-nums tracking-tight text-parchment sm:text-6xl",
-          passed && "text-zinc-500",
+          "font-display text-5xl font-bold tabular-nums tracking-tight text-stone-900 sm:text-6xl",
+          passed && "text-stone-600",
         )}
       >
         {formatDays(value)}
       </p>
-      <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-gold">
+      <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-800">
         {label}
       </p>
-      <p className="mt-1 text-sm text-zinc-500">{deadlineCaption(value)}</p>
+      <p className="mt-1 text-sm text-stone-600">{deadlineCaption(value)}</p>
     </div>
   );
 }
@@ -68,15 +68,15 @@ function RoadmapDashboard({ timers }: { timers: RoadmapTimers }) {
     level === "local" ? "Local" : level === "state" ? "State" : level === "federal" ? "Federal" : "Seat";
 
   return (
-    <Card className="bg-zinc-900">
+    <Card className="bg-white">
       <CardHeader className="border-b border-gold/30">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-gold">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-amber-800">
           Top matched race
         </p>
-        <CardTitle className="font-display text-xl text-parchment">
+        <CardTitle className="font-display text-xl text-stone-900">
           <Link
             href={`/district/${timers.electionId}`}
-            className="transition-colors hover:text-gold"
+            className="transition-colors hover:text-amber-800"
           >
             {timers.office}
           </Link>
@@ -88,12 +88,12 @@ function RoadmapDashboard({ timers }: { timers: RoadmapTimers }) {
         {timers.matchPercent !== null || timers.electability !== null ? (
           <div className="mt-3 flex flex-wrap gap-2">
             {timers.matchPercent !== null ? (
-              <span className="rounded-full border border-gold/40 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-widest text-zinc-400">
+              <span className="rounded-full border border-gold/40 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-widest text-stone-600">
                 Match {formatMatchPct(timers.matchPercent)}
               </span>
             ) : null}
             {timers.electability !== null ? (
-              <span className="rounded-full bg-gold-strong px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-widest text-zinc-950">
+              <span className="rounded-full bg-gold-strong px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-widest text-stone-900">
                 Electability {formatElectability(timers.electability)}
               </span>
             ) : null}
@@ -115,17 +115,17 @@ function RoadmapDashboard({ timers }: { timers: RoadmapTimers }) {
         <div className="mt-6">
           <div className="flex items-end justify-between gap-3">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-800">
                 Tokenized escrow
               </p>
-              <p className="mt-2 font-display text-lg font-semibold tracking-tight text-parchment">
+              <p className="mt-2 font-display text-lg font-semibold tracking-tight text-stone-900">
                 {formatUsd(pledged)} of {goal > 0 ? formatUsd(goal) : "an unpublished goal"}
               </p>
             </div>
-            <p className="text-sm font-semibold tabular-nums text-parchment">{pct}%</p>
+            <p className="text-sm font-semibold tabular-nums text-stone-900">{pct}%</p>
           </div>
           <div
-            className="mt-3 h-3 overflow-hidden rounded-full bg-zinc-800"
+            className="mt-3 h-3 overflow-hidden rounded-full bg-stone-100"
             role="progressbar"
             aria-valuemin={0}
             aria-valuemax={goal || 100}
@@ -137,7 +137,7 @@ function RoadmapDashboard({ timers }: { timers: RoadmapTimers }) {
               style={{ width: `${pct}%` }}
             />
           </div>
-          <p className="mt-2 text-sm leading-6 text-zinc-500">
+          <p className="mt-2 text-sm leading-6 text-stone-600">
             {goal > 0
               ? pledged >= goal
                 ? "Escrow goal met. Grassroots backing is on the ledger."
@@ -188,10 +188,10 @@ function FileAndCaptureEscrow({ candidateId }: { candidateId: string }) {
 
   return (
     <div className="mt-6 border-t border-gold/30 pt-5">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-800">
         Official filing
       </p>
-      <p className="mt-2 text-sm leading-6 text-zinc-400">
+      <p className="mt-2 text-sm leading-6 text-stone-600">
         After papers are filed, capture vaulted cards off-session.
       </p>
       <Button
@@ -203,8 +203,8 @@ function FileAndCaptureEscrow({ candidateId }: { candidateId: string }) {
       >
         {busy ? "Capturing escrow…" : "I've filed — capture escrow"}
       </Button>
-      {result ? <p className="mt-3 text-sm text-parchment">{result}</p> : null}
-      {error ? <p className="mt-3 text-sm text-red-300">{error}</p> : null}
+      {result ? <p className="mt-3 text-sm text-stone-900">{result}</p> : null}
+      {error ? <p className="mt-3 text-sm text-red-700">{error}</p> : null}
     </div>
   );
 }
@@ -217,9 +217,9 @@ function EmptyRoadmap({
   body: string;
 }) {
   return (
-    <Card className="bg-zinc-900">
+    <Card className="bg-white">
       <CardHeader>
-        <CardTitle className="font-display text-lg text-parchment">{title}</CardTitle>
+        <CardTitle className="font-display text-lg text-stone-900">{title}</CardTitle>
         <CardDescription>{body}</CardDescription>
       </CardHeader>
     </Card>

@@ -63,17 +63,17 @@ export default async function StateElectionsPage(props: StatePageProps) {
   const cards = [...seats.values()].sort((a, b) => a[0].office_name.localeCompare(b[0].office_name));
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
-        <Link href="/elections/states" className="text-[11px] uppercase tracking-[0.2em] text-gold">
+        <Link href="/elections/states" className="text-[11px] uppercase tracking-[0.2em] text-amber-800">
           All states
         </Link>
         <header className="mt-4">
-          <h1 className="inline-flex items-center gap-2 font-display text-3xl font-semibold tracking-tight text-parchment">
+          <h1 className="inline-flex items-center gap-2 font-display text-3xl font-semibold tracking-tight text-stone-900">
             {match.name}
             <InfoTooltip label="Civic Standing" text={CIVIC_STANDING_TIP} />
           </h1>
-          <p className="mt-2 text-sm text-zinc-400">Elections filed in {match.code}.</p>
+          <p className="mt-2 text-sm text-stone-600">Elections filed in {match.code}.</p>
         </header>
 
         <nav className="mt-6 flex gap-2" aria-label="Election level">
@@ -86,8 +86,8 @@ export default async function StateElectionsPage(props: StatePageProps) {
                 aria-current={active ? "page" : undefined}
                 className={
                   active
-                    ? "rounded-full bg-gold px-4 py-2 text-xs font-semibold uppercase tracking-widest text-zinc-950"
-                    : "rounded-full border border-zinc-700 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-zinc-300 hover:border-zinc-500"
+                    ? "rounded-full bg-gold px-4 py-2 text-xs font-semibold uppercase tracking-widest text-stone-900"
+                    : "rounded-full border border-amber-500/30 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-stone-600 hover:border-amber-600"
                 }
               >
                 {tab.label}
@@ -96,9 +96,9 @@ export default async function StateElectionsPage(props: StatePageProps) {
           })}
         </nav>
 
-        {setup ? <p className="mt-8 text-sm text-zinc-300">{setup}</p> : null}
+        {setup ? <p className="mt-8 text-sm text-stone-600">{setup}</p> : null}
         {cards.length === 0 && !setup ? (
-          <p className="mt-8 text-sm text-zinc-400">No {level} elections in {match.name} yet.</p>
+          <p className="mt-8 text-sm text-stone-600">No {level} elections in {match.name} yet.</p>
         ) : (
           <ul className="mt-8 grid gap-3">
             {cards.map((rows) => {
@@ -108,13 +108,13 @@ export default async function StateElectionsPage(props: StatePageProps) {
                 <li key={primary.general_slug}>
                   <Link
                     href={`/elections/${primary.slug}`}
-                    className="block rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4 transition-colors hover:border-zinc-600"
+                    className="block rounded-xl border border-amber-500/30 bg-white px-5 py-4 transition-colors hover:border-amber-600"
                   >
-                    <p className="text-sm font-medium text-parchment">
+                    <p className="text-sm font-medium text-stone-900">
                       {primary.office_name}
                       {` · ${seat}`}
                     </p>
-                    <p className="mt-1 text-xs uppercase tracking-widest text-zinc-500">
+                    <p className="mt-1 text-xs uppercase tracking-widest text-stone-600">
                       {rows.map((row) => partyLabel(row.party)).join(" · ")}
                     </p>
                   </Link>

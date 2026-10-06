@@ -33,9 +33,9 @@ export default async function ElectionPage({ params }: ElectionPageProps) {
 
   if (error) {
     return (
-      <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+      <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
         <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 py-10 pb-16">
-          <p className="mt-8 text-sm leading-6 text-zinc-400">
+          <p className="mt-8 text-sm leading-6 text-stone-600">
             Could not load this election. {error}
           </p>
         </div>
@@ -48,22 +48,22 @@ export default async function ElectionPage({ params }: ElectionPageProps) {
   }
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-16 px-6 py-10 pb-16">
         <header>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-gold">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-amber-800">
             Race profile
           </p>
-          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment sm:text-4xl">
+          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-stone-900 sm:text-4xl">
             {hub.election.office_name}
           </h1>
           <Link
             href={`/elections/district/${districtId}`}
-            className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-widest text-gold hover:text-parchment"
+            className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-widest text-amber-800 hover:text-stone-900"
           >
             Debate questions
           </Link>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600">
             {hub.election.incumbent_name
               ? `Incumbent ${hub.election.incumbent_name}. `
               : "Open or unpublished incumbent. "}

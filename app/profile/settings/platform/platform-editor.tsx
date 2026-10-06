@@ -44,12 +44,12 @@ export function PlatformEditor({ races }: { races: CampaignRace[] }) {
   return (
     <form className="mt-8 grid gap-4" onSubmit={(event) => void submit(event)}>
       {races.length > 1 ? (
-        <label className="grid gap-2 text-sm text-zinc-300">
+        <label className="grid gap-2 text-sm text-stone-600">
           Primary
           <select
             value={primaryId}
             onChange={(event) => choosePrimary(event.target.value)}
-            className="h-12 rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-parchment"
+            className="h-12 rounded-lg border border-amber-500/30 bg-white px-3 text-stone-900"
           >
             {races.map((race) => (
               <option key={race.primaryId} value={race.primaryId}>
@@ -59,11 +59,11 @@ export function PlatformEditor({ races }: { races: CampaignRace[] }) {
           </select>
         </label>
       ) : (
-        <p className="text-sm text-zinc-300">
+        <p className="text-sm text-stone-600">
           {current.label} · {tierLabel(current.tier)}
         </p>
       )}
-      <label className="grid gap-2 text-sm text-zinc-300">
+      <label className="grid gap-2 text-sm text-stone-600">
         Manifesto
         <textarea
           required
@@ -72,11 +72,11 @@ export function PlatformEditor({ races }: { races: CampaignRace[] }) {
           rows={8}
           value={manifesto}
           onChange={(event) => setManifesto(event.target.value)}
-          className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-parchment"
+          className="rounded-lg border border-amber-500/30 bg-white px-3 py-2 text-stone-900"
         />
       </label>
       {policies.map((policy, index) => (
-        <label key={index} className="grid gap-2 text-sm text-zinc-300">
+        <label key={index} className="grid gap-2 text-sm text-stone-600">
           Policy pillar {index + 1}
           <input
             maxLength={180}
@@ -86,15 +86,15 @@ export function PlatformEditor({ races }: { races: CampaignRace[] }) {
               next[index] = event.target.value;
               setPolicies(next);
             }}
-            className="h-12 rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-parchment"
+            className="h-12 rounded-lg border border-amber-500/30 bg-white px-3 text-stone-900"
           />
         </label>
       ))}
       <Button type="submit" variant="gold" disabled={pending}>
         {pending ? "Publishing…" : "Publish platform"}
       </Button>
-      {message ? <p className="text-sm leading-6 text-parchment">{message}</p> : null}
-      {error ? <p className="text-sm leading-6 text-zinc-300">{error}</p> : null}
+      {message ? <p className="text-sm leading-6 text-stone-900">{message}</p> : null}
+      {error ? <p className="text-sm leading-6 text-stone-600">{error}</p> : null}
     </form>
   );
 }

@@ -28,7 +28,7 @@ export function CandidateSeat({
           <Link
             href={`/candidate/${candidate.id}`}
             className={cn(
-              "text-xs text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-50",
+              "text-xs text-stone-600 hover:text-stone-900  ",
               nameClassName,
             )}
           >
@@ -37,7 +37,7 @@ export function CandidateSeat({
           <BackCandidateButton candidate={candidate} />
         </>
       ) : (
-        <span className={cn("text-xs text-zinc-400", nameClassName)}>{emptyLabel}</span>
+        <span className={cn("text-xs text-stone-600", nameClassName)}>{emptyLabel}</span>
       )}
     </div>
   );

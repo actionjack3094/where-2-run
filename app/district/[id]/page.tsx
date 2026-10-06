@@ -88,13 +88,13 @@ function DistrictLeaderboard({ districtId }: { districtId: string }) {
     <main className="mx-auto flex min-h-full w-full max-w-2xl flex-1 flex-col px-6 py-10">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
             Leaderboard
           </p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">
             {district?.name ?? (view === "loading" ? "Loading…" : "District")}
           </h1>
-          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="mt-2 text-sm text-stone-600 ">
             {district
               ? `Candidates in this district, ranked by debate wins.${
                   district.historical_lean ? ` ${district.historical_lean}.` : ""
@@ -108,12 +108,12 @@ function DistrictLeaderboard({ districtId }: { districtId: string }) {
       </div>
 
       {view === "loading" && (
-        <p className="mt-16 text-sm text-zinc-500">Tallying the field…</p>
+        <p className="mt-16 text-sm text-stone-600">Tallying the field…</p>
       )}
 
       {view === "error" && (
         <section className="mt-16 space-y-4">
-          <p className="text-sm text-zinc-600 dark:text-zinc-300">
+          <p className="text-sm text-stone-600 ">
             {error ?? "Could not load this leaderboard."}
           </p>
           <Button type="button" onClick={retry}>
@@ -164,12 +164,12 @@ function LeaderboardCard({
 }) {
   return (
     <Link href={`/candidate/${candidate.id}`} className="block">
-      <Card className="transition-colors hover:border-zinc-400 dark:hover:border-zinc-500">
+      <Card className="transition-colors hover:border-amber-600 ">
         <CardHeader className="gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <Badge>#{rank}</Badge>
             {candidate.is_verified ? (
-              <Badge className="border-zinc-950 text-zinc-950 dark:border-zinc-50 dark:text-zinc-50">
+              <Badge className="border-stone-900 text-stone-900  ">
                 Verified
               </Badge>
             ) : null}
@@ -187,7 +187,7 @@ function LeaderboardCard({
             <p className="text-sm font-medium tabular-nums">
               {candidate.debates_won} {candidate.debates_won === 1 ? "win" : "wins"}
             </p>
-            <p className="text-xs tabular-nums text-zinc-400">
+            <p className="text-xs tabular-nums text-stone-600">
               {candidate.total_votes} {candidate.total_votes === 1 ? "vote" : "votes"}
             </p>
           </div>
@@ -207,7 +207,7 @@ function Badge({
   return (
     <span
       className={cn(
-        "rounded-full border border-zinc-200 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-widest text-zinc-500 dark:border-zinc-800 dark:text-zinc-400",
+        "rounded-full border border-stone-200 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-widest text-stone-600  ",
         className,
       )}
     >

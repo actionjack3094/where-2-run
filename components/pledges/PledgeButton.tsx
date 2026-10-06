@@ -55,11 +55,11 @@ export function PledgeButton({ candidateId }: { candidateId: string }) {
         type="button"
         onClick={() => void handleClick()}
         disabled={busy || !candidateId}
-        className="inline-flex h-9 items-center justify-center rounded-md bg-zinc-100 px-3 text-xs font-medium uppercase tracking-widest text-zinc-950 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex h-9 items-center justify-center rounded-md bg-stone-100 px-3 text-xs font-medium uppercase tracking-widest text-stone-900 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
       >
         {busy ? "Pledging..." : "Pledge $50"}
       </button>
-      {error ? <p className="max-w-[16rem] text-xs text-red-300">{error}</p> : null}
+      {error ? <p className="max-w-[16rem] text-xs text-red-700">{error}</p> : null}
     </div>
   );
 }

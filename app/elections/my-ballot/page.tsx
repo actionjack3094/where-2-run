@@ -22,14 +22,14 @@ export default async function MyBallotElectionsPage() {
 
   if (!user) {
     return (
-      <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+      <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
         <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10">
-          <Link href="/elections" className="text-[11px] uppercase tracking-[0.2em] text-gold">
+          <Link href="/elections" className="text-[11px] uppercase tracking-[0.2em] text-amber-800">
             Elections
           </Link>
-          <h1 className="mt-4 font-display text-3xl font-semibold text-parchment">My Ballot Elections</h1>
-          <p className="mt-4 text-sm text-zinc-300">
-            <Link href="/auth/login" className="text-gold">
+          <h1 className="mt-4 font-display text-3xl font-semibold text-stone-900">My Ballot Elections</h1>
+          <p className="mt-4 text-sm text-stone-600">
+            <Link href="/auth/login" className="text-amber-800">
               Sign in
             </Link>{" "}
             to see the races on your address.
@@ -61,28 +61,28 @@ export default async function MyBallotElectionsPage() {
   }
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
-        <Link href="/elections" className="text-[11px] uppercase tracking-[0.2em] text-gold">
+        <Link href="/elections" className="text-[11px] uppercase tracking-[0.2em] text-amber-800">
           Elections
         </Link>
         <header className="mt-4">
-          <h1 className="inline-flex items-center gap-2 font-display text-3xl font-semibold tracking-tight text-parchment">
+          <h1 className="inline-flex items-center gap-2 font-display text-3xl font-semibold tracking-tight text-stone-900">
             My Ballot Elections
             <InfoTooltip label="District Agenda" text={DISTRICT_AGENDA_TIP} />
           </h1>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+          <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
             Seats whose district is on your verified home address.
           </p>
         </header>
-        {setup ? <p className="mt-8 text-sm text-zinc-300">{setup}</p> : null}
+        {setup ? <p className="mt-8 text-sm text-stone-600">{setup}</p> : null}
         {needsAddress ? (
-          <Link href="/onboarding/address" className="mt-8 block rounded-xl border border-gold px-5 py-4 text-sm text-parchment">
+          <Link href="/onboarding/address" className="mt-8 block rounded-xl border border-gold px-5 py-4 text-sm text-stone-900">
             Add your home address to unlock these races.
           </Link>
         ) : null}
         {!setup && !needsAddress && seats.size === 0 ? (
-          <p className="mt-8 text-sm text-zinc-400">No elections match your address yet.</p>
+          <p className="mt-8 text-sm text-stone-600">No elections match your address yet.</p>
         ) : (
           <ul className="mt-8 grid gap-3">
             {[...seats.values()].map((rows) => {
@@ -92,12 +92,12 @@ export default async function MyBallotElectionsPage() {
                 <li key={primary.general_slug}>
                   <Link
                     href={`/elections/${primary.slug}`}
-                    className="block rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4 transition-colors hover:border-zinc-600"
+                    className="block rounded-xl border border-amber-500/30 bg-white px-5 py-4 transition-colors hover:border-amber-600"
                   >
-                    <p className="text-sm font-medium text-parchment">
+                    <p className="text-sm font-medium text-stone-900">
                       {primary.office_name} · {seat}
                     </p>
-                    <p className="mt-1 text-xs uppercase tracking-widest text-zinc-500">
+                    <p className="mt-1 text-xs uppercase tracking-widest text-stone-600">
                       {rows.map((row) => partyLabel(row.party)).join(" · ")}
                     </p>
                   </Link>

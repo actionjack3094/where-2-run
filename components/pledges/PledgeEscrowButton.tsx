@@ -77,16 +77,16 @@ export function PledgeEscrowButton({
     <div className={cn("w-full max-w-sm", className)}>
       {open ? (
         <form
-          className="rounded-xl border border-gold/50 bg-zinc-900 p-5"
+          className="rounded-xl border border-gold/50 bg-white p-5"
           onSubmit={(event) => void startCheckout(event)}
         >
-          <p className="text-xs font-medium uppercase tracking-widest text-gold">
+          <p className="text-xs font-medium uppercase tracking-widest text-amber-800">
             Conditional escrow
           </p>
-          <p className="mt-2 font-display text-base font-semibold tracking-tight text-parchment">
+          <p className="mt-2 font-display text-base font-semibold tracking-tight text-stone-900">
             Pledge {candidateName}
           </p>
-          <p className="mt-1 text-sm leading-6 text-zinc-400">
+          <p className="mt-1 text-sm leading-6 text-stone-600">
             Vault a card now. Nothing is charged until this campaign files.
           </p>
 
@@ -116,7 +116,7 @@ export function PledgeEscrowButton({
 
           {preset === "custom" ? (
             <label className="mt-3 flex flex-col gap-1.5 text-sm">
-              <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">
+              <span className="text-xs font-medium uppercase tracking-widest text-stone-600">
                 Custom amount
               </span>
               <input
@@ -128,12 +128,12 @@ export function PledgeEscrowButton({
                 autoFocus
                 value={customAmount}
                 onChange={(event) => setCustomAmount(event.target.value)}
-                className="h-10 rounded-lg border border-gold/40 bg-zinc-950 px-3 text-sm text-parchment outline-none focus:border-gold"
+                className="h-10 rounded-lg border border-gold/40 bg-white px-3 text-sm text-stone-900 outline-none focus:border-gold"
               />
             </label>
           ) : null}
 
-          {error ? <p className="mt-3 text-sm text-red-300">{error}</p> : null}
+          {error ? <p className="mt-3 text-sm text-red-700">{error}</p> : null}
 
           <div className="mt-4 flex gap-2">
             <Button type="submit" variant="gold" className="flex-1" disabled={busy}>

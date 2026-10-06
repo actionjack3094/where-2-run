@@ -56,11 +56,11 @@ export default async function CheckoutSuccessPage(
 
   return (
     <main className="mx-auto flex min-h-full w-full max-w-lg flex-1 flex-col px-6 py-16">
-      <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
+      <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
         Stripe escrow
       </p>
       <h1 className="mt-3 text-4xl font-semibold tracking-tight">Pledge authorized.</h1>
-      <p className="mt-4 text-base leading-7 text-zinc-500 dark:text-zinc-400">
+      <p className="mt-4 text-base leading-7 text-stone-600 ">
         {heldInEscrow
           ? "The card was authorized, not captured. This hold stays in escrow until the campaign captures it."
           : "Stripe sent you back after checkout. The authorization is held in escrow until capture — nothing is transferred yet."}
@@ -77,12 +77,12 @@ export default async function CheckoutSuccessPage(
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {amountLabel && (
-            <p className="text-sm text-zinc-600 dark:text-zinc-300">
-              Authorized amount: <span className="font-medium text-zinc-950 dark:text-zinc-50">{amountLabel}</span>
+            <p className="text-sm text-stone-600 ">
+              Authorized amount: <span className="font-medium text-stone-900 ">{amountLabel}</span>
             </p>
           )}
           {sessionId && (
-            <p className="truncate text-xs text-zinc-400">Session {sessionId}</p>
+            <p className="truncate text-xs text-stone-600">Session {sessionId}</p>
           )}
           <div className="flex flex-wrap gap-3">
             {candidateId ? (

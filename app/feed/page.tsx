@@ -31,16 +31,16 @@ export default async function FeedPage(props: PageProps<"/feed">) {
   const hasBallot = viewer.homeOcdIds.length > 0 || viewer.matchedOcdIds.length > 0;
   if (viewer.userId && !hasBallot && viewer.districtId == null) {
     return (
-      <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+      <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
         <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
           <Link
             href="/onboarding"
-            className="block w-full rounded-xl border border-gold bg-zinc-900 px-6 py-8 shadow-[inset_3px_0_0_0_var(--gold-strong)] transition-colors hover:border-gold hover:bg-zinc-900/80"
+            className="block w-full rounded-xl border border-gold bg-white px-6 py-8 shadow-[inset_3px_0_0_0_var(--gold-strong)] transition-colors hover:border-gold hover:bg-stone-50"
           >
-            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800">
               Verify district
             </p>
-            <p className="mt-3 font-display text-2xl font-semibold leading-snug tracking-tight text-parchment">
+            <p className="mt-3 font-display text-2xl font-semibold leading-snug tracking-tight text-stone-900">
               Welcome! To unlock your live civic feed and voter matchmaking, please verify your
               local district.
             </p>
@@ -67,26 +67,26 @@ export default async function FeedPage(props: PageProps<"/feed">) {
   const districtLabel = viewer.districtName ?? "your district";
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
         {showCalibration ? <CalibrationBanner /> : null}
-        <div className="mb-8 rounded-xl border border-gold/50 bg-zinc-900 px-5 py-4 shadow-[inset_3px_0_0_0_var(--gold-strong)]">
-          <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+        <div className="mb-8 rounded-xl border border-gold/50 bg-white px-5 py-4 shadow-[inset_3px_0_0_0_var(--gold-strong)]">
+          <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800">
             Local Context
           </p>
-          <p className="mt-2 text-sm leading-6 text-parchment">
+          <p className="mt-2 text-sm leading-6 text-stone-900">
             Viewing live activity for: {districtLabel}
           </p>
         </div>
 
         <header>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
             Civic Feed
           </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-parchment">
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-stone-900">
             Endless Social Feed
           </h1>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+          <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
             Blue cards are debates on your physical ballot. Red cards are debates in races that match your ideology.
           </p>
         </header>
@@ -98,7 +98,7 @@ export default async function FeedPage(props: PageProps<"/feed">) {
         <DebateComposer />
 
         {error ? (
-          <p className="mt-10 text-sm leading-6 text-zinc-400">{error}</p>
+          <p className="mt-10 text-sm leading-6 text-stone-600">{error}</p>
         ) : (
           <InfiniteFeed
             page={page}

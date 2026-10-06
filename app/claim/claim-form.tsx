@@ -17,7 +17,7 @@ export type ClaimTarget = {
 };
 
 const FIELD_CLASS =
-  "mt-2 h-10 w-full rounded-md border border-brass/40 bg-zinc-950 px-3 text-sm text-parchment outline-none focus-visible:ring-2 focus-visible:ring-brass/50";
+  "mt-2 h-10 w-full rounded-md border border-brass/40 bg-white px-3 text-sm text-stone-900 outline-none focus-visible:ring-2 focus-visible:ring-brass/50";
 
 export function ClaimForm({
   targets,
@@ -59,9 +59,9 @@ export function ClaimForm({
   }
 
   return (
-    <section className="mt-8 rounded-xl border border-brass/40 bg-zinc-900 px-5 py-5">
+    <section className="mt-8 rounded-xl border border-brass/40 bg-white px-5 py-5">
       {targets.length > 1 ? (
-        <label className="block text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+        <label className="block text-[11px] font-medium uppercase tracking-widest text-stone-600">
           Locked race
           <select
             value={selected.id}
@@ -76,9 +76,9 @@ export function ClaimForm({
           </select>
         </label>
       ) : (
-        <p className="text-sm leading-6 text-zinc-300">{selected.label}</p>
+        <p className="text-sm leading-6 text-stone-600">{selected.label}</p>
       )}
-      <p className="mt-3 text-sm leading-6 text-zinc-400">
+      <p className="mt-3 text-sm leading-6 text-stone-600">
         Escrow on this race is ${selected.pledgedEscrow.toFixed(2)}.
       </p>
 
@@ -89,7 +89,7 @@ export function ClaimForm({
       ) : null}
 
       {selected.escrowStatus === "verification_pending" && selected.committeeName ? (
-        <p className="mt-4 text-sm leading-6 text-zinc-300">
+        <p className="mt-4 text-sm leading-6 text-stone-600">
           {selected.committeeName}
           {selected.officialCandidateId ? ` · ${selected.officialCandidateId}` : ""} is in review.
         </p>
@@ -97,7 +97,7 @@ export function ClaimForm({
 
       {selected.escrowStatus === "released" ? (
         <div className="mt-4">
-          <p className="text-sm leading-6 text-zinc-300">
+          <p className="text-sm leading-6 text-stone-600">
             This escrow has been released to the committee.
           </p>
           {donationHref ? (
@@ -121,7 +121,7 @@ export function ClaimForm({
             void onSubmit();
           }}
         >
-          <label className="block text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+          <label className="block text-[11px] font-medium uppercase tracking-widest text-stone-600">
             FEC ID or state registration link
             <input
               value={filing}
@@ -149,7 +149,7 @@ export function ClaimForm({
       ) : null}
       <Link
         href="/my-campaign"
-        className="mt-6 inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+        className="mt-6 inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800 hover:text-stone-900"
       >
         Back to the war room
       </Link>

@@ -40,7 +40,7 @@ export function ClaimForm({ profiles }: { profiles: SeededProfile[] }) {
 
   if (profiles.length === 0) {
     return (
-      <p className="mt-8 text-sm leading-6 text-zinc-400">
+      <p className="mt-8 text-sm leading-6 text-stone-600">
         No unclaimed seeded profiles are on the ledger yet.
       </p>
     );
@@ -54,12 +54,12 @@ export function ClaimForm({ profiles }: { profiles: SeededProfile[] }) {
         void onSubmit();
       }}
     >
-      <label className="block text-sm text-zinc-300">
+      <label className="block text-sm text-stone-600">
         Seeded profile
         <select
           value={candidateId}
           onChange={(event) => setCandidateId(event.target.value)}
-          className="mt-2 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-parchment"
+          className="mt-2 w-full rounded-md border border-amber-500/30 bg-white px-3 py-2 text-sm text-stone-900"
         >
           {profiles.map((profile) => (
             <option key={profile.id} value={profile.id}>
@@ -69,33 +69,33 @@ export function ClaimForm({ profiles }: { profiles: SeededProfile[] }) {
           ))}
         </select>
       </label>
-      <label className="block text-sm text-zinc-300">
+      <label className="block text-sm text-stone-600">
         Government ID reference
         <input
           value={governmentIdReference}
           onChange={(event) => setGovernmentIdReference(event.target.value)}
           placeholder="Review case or last-four token"
-          className="mt-2 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-parchment"
+          className="mt-2 w-full rounded-md border border-amber-500/30 bg-white px-3 py-2 text-sm text-stone-900"
         />
       </label>
-      <label className="block text-sm text-zinc-300">
+      <label className="block text-sm text-stone-600">
         Name on the local ballot
         <input
           value={ballotName}
           onChange={(event) => setBallotName(event.target.value)}
-          className="mt-2 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-parchment"
+          className="mt-2 w-full rounded-md border border-amber-500/30 bg-white px-3 py-2 text-sm text-stone-900"
         />
       </label>
-      <label className="block text-sm text-zinc-300">
+      <label className="block text-sm text-stone-600">
         Ballot OCD-ID
         <input
           value={ballotOcdId}
           onChange={(event) => setBallotOcdId(event.target.value)}
           placeholder="ocd-division/country:us/state:tx/cd:37"
-          className="mt-2 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-parchment"
+          className="mt-2 w-full rounded-md border border-amber-500/30 bg-white px-3 py-2 text-sm text-stone-900"
         />
       </label>
-      {error ? <p className="text-sm leading-6 text-red-300">{error}</p> : null}
+      {error ? <p className="text-sm leading-6 text-red-700">{error}</p> : null}
         <Button type="button" variant="gold" disabled={pending} onClick={() => void onSubmit()}>
         {pending ? "Filing claim…" : "Submit claim"}
       </Button>

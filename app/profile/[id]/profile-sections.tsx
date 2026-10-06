@@ -25,14 +25,14 @@ function DebateHistory({
   viewerVerified: boolean;
 }) {
   if (history.length === 0) {
-    return <p className="mt-3 text-sm text-zinc-400">No concluded debates yet.</p>;
+    return <p className="mt-3 text-sm text-stone-600">No concluded debates yet.</p>;
   }
   return (
     <ul className="mt-4 grid gap-4">
       {history.map((debate) => (
-        <li key={debate.id} className="rounded-xl border border-zinc-800 px-4 py-4">
+        <li key={debate.id} className="rounded-xl border border-amber-500/30 px-4 py-4">
           <div className="flex items-start justify-between gap-3">
-            <p className="text-[11px] uppercase tracking-widest text-zinc-500">
+            <p className="text-[11px] uppercase tracking-widest text-stone-600">
               {debate.office} · {debate.result} · vs {debate.opponentName}
             </p>
             <ReportDebateButton
@@ -41,8 +41,8 @@ function DebateHistory({
               participants={[{ id: profileId, name: profileName }]}
             />
           </div>
-          <h3 className="mt-2 text-sm font-medium text-parchment">{debate.prompt}</h3>
-          {debate.ownStance ? <p className="mt-2 text-sm leading-6 text-zinc-300">{debate.ownStance}</p> : null}
+          <h3 className="mt-2 text-sm font-medium text-stone-900">{debate.prompt}</h3>
+          {debate.ownStance ? <p className="mt-2 text-sm leading-6 text-stone-600">{debate.ownStance}</p> : null}
           <TownHall
             debateId={debate.id}
             questions={debate.questions}
@@ -76,7 +76,7 @@ function VolunteerButton({
     return (
       <Link
         href={`/auth/login?next=${encodeURIComponent(`/profile/${campaignUserId}`)}`}
-        className="mt-5 inline-flex h-12 w-full items-center justify-center rounded-md bg-gold-strong font-display text-sm font-semibold uppercase tracking-[0.18em] text-zinc-950"
+        className="mt-5 inline-flex h-12 w-full items-center justify-center rounded-md bg-gold-strong font-display text-sm font-semibold uppercase tracking-[0.18em] text-stone-900"
       >
         Volunteer for Campaign
       </Link>
@@ -101,8 +101,8 @@ function VolunteerButton({
       <Button type="submit" variant="gold" size="full" disabled={pending || Boolean(message)}>
         {message ? "✓ Enlisted" : pending ? "Sending…" : "Volunteer for Campaign"}
       </Button>
-      {message ? <p className="mt-3 text-sm leading-6 text-parchment">{message}</p> : null}
-      {error ? <p className="mt-3 text-sm leading-6 text-zinc-300">{error}</p> : null}
+      {message ? <p className="mt-3 text-sm leading-6 text-stone-900">{message}</p> : null}
+      {error ? <p className="mt-3 text-sm leading-6 text-stone-600">{error}</p> : null}
     </form>
   );
 }
@@ -145,8 +145,8 @@ export function ProfileSections({
             className={cn(
               "inline-flex h-10 items-center justify-center rounded-full px-4 text-[11px] font-medium uppercase tracking-widest transition-colors",
               tab === id
-                ? "bg-gold-strong text-zinc-950"
-                : "border border-gold/40 text-zinc-400 hover:border-gold hover:text-parchment",
+                ? "bg-gold-strong text-stone-900"
+                : "border border-gold/40 text-stone-600 hover:border-gold hover:text-stone-900",
             )}
           >
             {label}
@@ -156,7 +156,7 @@ export function ProfileSections({
 
       {tab === "history" ? (
         <div className="mt-6">
-          <h2 className="font-display text-xl text-parchment">Debate history</h2>
+          <h2 className="font-display text-xl text-stone-900">Debate history</h2>
           <DebateHistory
             history={history}
             profileId={campaignUserId}
@@ -167,16 +167,16 @@ export function ProfileSections({
         </div>
       ) : (
         <div className="mt-6 grid gap-4">
-          <h2 className="font-display text-xl text-parchment">Campaign Platform</h2>
+          <h2 className="font-display text-xl text-stone-900">Campaign Platform</h2>
           {platforms.map((platform) => (
-            <article key={platform.primaryId} className="rounded-xl border border-gold/40 bg-zinc-900 px-5 py-5">
-              <p className="text-[11px] uppercase tracking-widest text-gold">
+            <article key={platform.primaryId} className="rounded-xl border border-gold/40 bg-white px-5 py-5">
+              <p className="text-[11px] uppercase tracking-widest text-amber-800">
                 {platform.label} · {tierLabel(platform.tier)}
               </p>
-              <p className="mt-3 text-sm leading-6 text-parchment">{platform.manifesto}</p>
+              <p className="mt-3 text-sm leading-6 text-stone-900">{platform.manifesto}</p>
               <ul className="mt-4 grid gap-2">
                 {platform.keyPolicies.map((policy) => (
-                  <li key={policy} className="text-sm leading-6 text-zinc-300">
+                  <li key={policy} className="text-sm leading-6 text-stone-600">
                     {policy}
                   </li>
                 ))}
@@ -192,7 +192,7 @@ export function ProfileSections({
               {viewerId === campaignUserId ? (
                 <Link
                   href="/dashboard?tab=platform"
-                  className="mt-5 inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+                  className="mt-5 inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800 hover:text-stone-900"
                 >
                   Edit platform
                 </Link>

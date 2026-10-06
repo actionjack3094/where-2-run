@@ -187,7 +187,7 @@ export function DebateCard({ debate }: { debate: ArenaFeedDebate }) {
           <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-primary">
             Policy prompt
           </p>
-          <h2 className="mt-2 font-serif text-2xl font-semibold leading-snug tracking-tight text-parchment group-hover:text-primary">
+          <h2 className="mt-2 font-serif text-2xl font-semibold leading-snug tracking-tight text-stone-900 group-hover:text-primary">
             {debate.topic}
           </h2>
         </Link>
@@ -209,13 +209,13 @@ export function DebateCard({ debate }: { debate: ArenaFeedDebate }) {
           />
         </div>
 
-        <section className="rounded-lg border border-primary/25 bg-zinc-950/60 px-4 py-3">
+        <section className="rounded-lg border border-primary/25 bg-white/60 px-4 py-3">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-primary">
                 AI rubric score
               </p>
-              <p className="mt-1 font-serif text-lg font-semibold tracking-tight text-parchment">
+              <p className="mt-1 font-serif text-lg font-semibold tracking-tight text-stone-900">
                 {governing
                   ? `${parseScore(governing.primary_score).toFixed(1)} · ${threshold.label}`
                   : threshold.label}
@@ -258,7 +258,7 @@ function CandidatePane({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 bg-zinc-950/40 p-4",
+        "flex flex-col gap-3 bg-white/40 p-4",
         align === "end" && "sm:items-end sm:text-right",
       )}
     >
@@ -274,7 +274,7 @@ function CandidatePane({
           )}
         >
           <CandidateAvatar name={candidate.username} size="md" />
-          <span className="min-w-0 font-serif text-base font-semibold tracking-tight text-parchment hover:text-primary">
+          <span className="min-w-0 font-serif text-base font-semibold tracking-tight text-stone-900 hover:text-primary">
             {candidate.username}
           </span>
         </Link>
@@ -313,7 +313,7 @@ function ConfidenceMeter({
   return (
     <div className="mt-3">
       <div
-        className="relative h-2 overflow-hidden rounded-full bg-zinc-800"
+        className="relative h-2 overflow-hidden rounded-full bg-stone-100"
         role="meter"
         aria-label="AI confidence score"
         aria-valuemin={0}
@@ -325,11 +325,11 @@ function ConfidenceMeter({
           style={{ width: hasEvaluation ? `${clamped * 100}%` : "0%" }}
         />
         <span
-          className="absolute inset-y-0 w-px bg-zinc-500"
+          className="absolute inset-y-0 w-px bg-stone-400"
           style={{ left: `${MARGINAL_CONFIDENCE_MIN * 100}%` }}
         />
         <span
-          className="absolute inset-y-0 w-px bg-zinc-500"
+          className="absolute inset-y-0 w-px bg-stone-400"
           style={{ left: `${MARGINAL_CONFIDENCE_MAX * 100}%` }}
         />
         <span
@@ -409,12 +409,12 @@ function PledgeActionRow({
         <p className="mt-1 text-xs leading-5 text-muted-foreground">
           Logged for this district topic. It does not decide the debate.
         </p>
-        <p className="mt-2 font-mono text-xs tabular-nums text-parchment">
+        <p className="mt-2 font-mono text-xs tabular-nums text-stone-900">
           {candidateA?.username ?? "A"} {tally.a} · {candidateB?.username ?? "B"} {tally.b}
         </p>
       </div>
       {floorLocked ? (
-        <p className="text-sm leading-6 text-parchment">
+        <p className="text-sm leading-6 text-stone-900">
           {winnerName ? `${winnerName} is the winner.` : "The match ended in a tie."}
         </p>
       ) : null}

@@ -22,12 +22,12 @@ export function WarRoomMetrics({ metrics }: { metrics: Metrics }) {
 
   return (
     <section aria-label="Campaign analytics" className="grid gap-3 sm:grid-cols-2">
-      <Card className="bg-zinc-900">
+      <Card className="bg-white">
         <CardHeader>
-          <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+          <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
             Vault
           </p>
-          <CardTitle className="mt-2 font-display text-3xl font-semibold tabular-nums tracking-tight text-gold sm:text-4xl">
+          <CardTitle className="mt-2 font-display text-3xl font-semibold tabular-nums tracking-tight text-amber-800 sm:text-4xl">
             {formatUsd(metrics.escrowTotal)}
           </CardTitle>
           <CardDescription className="inline-flex items-center gap-1.5">
@@ -36,7 +36,7 @@ export function WarRoomMetrics({ metrics }: { metrics: Metrics }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm leading-6 text-zinc-400">
+          <p className="text-sm leading-6 text-stone-600">
             {metrics.escrowCount === 0
               ? "No uncaptured SetupIntents in the vault yet."
               : `${metrics.escrowCount} ${
@@ -46,12 +46,12 @@ export function WarRoomMetrics({ metrics }: { metrics: Metrics }) {
         </CardContent>
       </Card>
 
-      <Card className="bg-zinc-900">
+      <Card className="bg-white">
         <CardHeader>
-          <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+          <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
             Debates
           </p>
-          <CardTitle className="mt-2 font-display text-3xl font-semibold tabular-nums tracking-tight text-gold sm:text-4xl">
+          <CardTitle className="mt-2 font-display text-3xl font-semibold tabular-nums tracking-tight text-amber-800 sm:text-4xl">
             {metrics.eloRating}
           </CardTitle>
           <CardDescription className="inline-flex items-center gap-1.5">
@@ -60,7 +60,7 @@ export function WarRoomMetrics({ metrics }: { metrics: Metrics }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm leading-6 text-zinc-400">{eloCaption}</p>
+          <p className="text-sm leading-6 text-stone-600">{eloCaption}</p>
         </CardContent>
       </Card>
     </section>

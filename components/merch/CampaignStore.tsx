@@ -104,15 +104,15 @@ export function CampaignStore({ candidateId }: { candidateId: string }) {
 
   return (
     <section className="mt-6">
-      <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Store</p>
+      <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">Store</p>
       <h2 className="mt-3 text-2xl font-semibold tracking-tight">Campaign Store</h2>
-      <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+      <p className="mt-2 text-sm text-stone-600 ">
         Print-on-demand yard signs, bumper stickers, and tees generated from this candidate’s
         name and district.
       </p>
 
       {stage === "loading" && (
-        <p className="mt-6 text-sm text-zinc-500">Syncing the Printful mock catalog…</p>
+        <p className="mt-6 text-sm text-stone-600">Syncing the Printful mock catalog…</p>
       )}
 
       {stage === "error" && (
@@ -131,7 +131,7 @@ export function CampaignStore({ candidateId }: { candidateId: string }) {
 
       {stage === "ready" && catalog && (
         <>
-          <p className="mt-4 text-xs uppercase tracking-widest text-zinc-400">
+          <p className="mt-4 text-xs uppercase tracking-widest text-stone-600">
             Printful mock · {catalog.candidate.name} · {catalog.district.name}
           </p>
           <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -194,7 +194,7 @@ function ProductCard({
       <CardHeader className="gap-3">
         <ProductMockup product={product} variant={variant} />
         <div>
-          <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+          <p className="text-xs font-medium uppercase tracking-widest text-stone-600">
             {labelFor(product.type)}
           </p>
           <CardTitle className="mt-1 text-base leading-snug">{product.name}</CardTitle>
@@ -224,8 +224,8 @@ function ProductCard({
                   className={cn(
                     "h-7 w-7 rounded-full border",
                     active
-                      ? "border-zinc-950 ring-2 ring-zinc-950 ring-offset-2 dark:border-zinc-50 dark:ring-zinc-50"
-                      : "border-zinc-200 dark:border-zinc-700",
+                      ? "border-stone-900 ring-2 ring-zinc-950 ring-offset-2  "
+                      : "border-stone-200 ",
                   )}
                   style={{ backgroundColor: option?.colorHex ?? "#e4e4e7" }}
                 />
@@ -259,15 +259,15 @@ function ProductCard({
         )}
 
         {sizes.length <= 1 && colors.length <= 1 && (
-          <p className="text-xs uppercase tracking-widest text-zinc-400">{variant.name}</p>
+          <p className="text-xs uppercase tracking-widest text-stone-600">{variant.name}</p>
         )}
 
-        {error && <p className="text-sm text-zinc-600 dark:text-zinc-300">{error}</p>}
+        {error && <p className="text-sm text-stone-600 ">{error}</p>}
 
         {order ? (
-          <div className="rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-800">
+          <div className="rounded-lg border border-stone-200 px-3 py-2 text-sm ">
             <p className="font-medium">Printful draft queued</p>
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="mt-1 text-xs text-stone-600 ">
               {formatUsd(order.retailCosts.total)} · {order.item.variantName}
             </p>
           </div>
@@ -284,7 +284,7 @@ function ProductCard({
 function OptionRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">{label}</p>
+      <p className="text-xs font-medium uppercase tracking-widest text-stone-600">{label}</p>
       <div className="flex flex-wrap gap-2">{children}</div>
     </div>
   );
@@ -319,17 +319,17 @@ function ProductMockup({
 
   if (product.type === "yard_sign") {
     return (
-      <div className="flex aspect-[4/3] items-end justify-center rounded-lg bg-zinc-100 px-3 pb-3 pt-4 dark:bg-zinc-900">
+      <div className="flex aspect-[4/3] items-end justify-center rounded-lg bg-stone-100 px-3 pb-3 pt-4 ">
         <div className="flex h-full w-[88%] flex-col items-center">
-          <div className="flex w-full flex-1 flex-col items-center justify-center border-4 border-zinc-950 bg-white px-2 py-2 text-center shadow-sm dark:border-zinc-50 dark:bg-zinc-50">
-            <p className="text-[11px] font-semibold uppercase leading-tight tracking-tight break-words text-zinc-950">
+          <div className="flex w-full flex-1 flex-col items-center justify-center border-4 border-stone-900 bg-white px-2 py-2 text-center shadow-sm  ">
+            <p className="text-[11px] font-semibold uppercase leading-tight tracking-tight break-words text-stone-900">
               {product.design.headline}
             </p>
-            <p className="mt-1 text-[8px] font-medium uppercase leading-snug tracking-widest break-words text-zinc-500">
+            <p className="mt-1 text-[8px] font-medium uppercase leading-snug tracking-widest break-words text-stone-600">
               {product.design.subline}
             </p>
           </div>
-          <div className="h-5 w-1.5 bg-zinc-400 dark:bg-zinc-600" />
+          <div className="h-5 w-1.5 bg-stone-400 " />
         </div>
       </div>
     );
@@ -337,16 +337,16 @@ function ProductMockup({
 
   if (product.type === "bumper_sticker") {
     return (
-      <div className="flex aspect-[4/3] items-center justify-center rounded-lg bg-zinc-100 px-4 dark:bg-zinc-900">
+      <div className="flex aspect-[4/3] items-center justify-center rounded-lg bg-stone-100 px-4 ">
         <div
-          className="flex min-h-16 w-full max-w-[230px] items-center justify-center rounded-full border-2 border-zinc-700 px-3 py-2 text-center shadow-sm"
+          className="flex min-h-16 w-full max-w-[230px] items-center justify-center rounded-full border-2 border-amber-500/30 px-3 py-2 text-center shadow-sm"
           style={{ backgroundColor: variant.colorHex ?? "#18181b" }}
         >
           <div className="min-w-0">
             <p
               className={cn(
                 "text-[11px] font-semibold uppercase leading-tight tracking-wide break-words",
-                dark ? "text-zinc-50" : "text-zinc-950",
+                dark ? "text-stone-900" : "text-stone-900",
               )}
             >
               {product.design.headline}
@@ -354,7 +354,7 @@ function ProductMockup({
             <p
               className={cn(
                 "mt-0.5 text-[8px] uppercase leading-snug tracking-widest break-words",
-                dark ? "text-zinc-300" : "text-zinc-500",
+                dark ? "text-stone-600" : "text-stone-600",
               )}
             >
               {product.design.subline}
@@ -366,7 +366,7 @@ function ProductMockup({
   }
 
   return (
-    <div className="flex aspect-[4/3] items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-900">
+    <div className="flex aspect-[4/3] items-center justify-center rounded-lg bg-stone-100 ">
       <div className="relative h-[78%] w-[58%]">
         <div
           className="absolute inset-x-[18%] top-0 h-[12%] rounded-t-md"
@@ -388,7 +388,7 @@ function ProductMockup({
           <p
             className={cn(
               "text-[10px] font-semibold uppercase leading-tight tracking-tight break-words",
-              dark ? "text-zinc-50" : "text-zinc-950",
+              dark ? "text-stone-900" : "text-stone-900",
             )}
           >
             {product.design.headline}
@@ -396,7 +396,7 @@ function ProductMockup({
           <p
             className={cn(
               "mt-0.5 text-[7px] uppercase leading-snug tracking-widest break-words",
-              dark ? "text-zinc-300" : "text-zinc-500",
+              dark ? "text-stone-600" : "text-stone-600",
             )}
           >
             {product.design.subline}

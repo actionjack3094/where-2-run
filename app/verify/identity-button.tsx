@@ -56,11 +56,11 @@ export function IdentityVerifyButton() {
   }
 
   return (
-    <div className="mt-8 rounded-xl border border-gold/50 bg-zinc-900 px-5 py-5">
-      <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+    <div className="mt-8 rounded-xl border border-gold/50 bg-white px-5 py-5">
+      <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800">
         Stripe Identity
       </p>
-      <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-300">
+      <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
         Confirm a government ID so this account can be ranked under a legal name. Stripe
         collects the document. Where 2 Run stores the verification result.
       </p>
@@ -73,7 +73,7 @@ export function IdentityVerifyButton() {
       >
         {pending ? "Opening Stripe…" : "Verify Identity with Stripe"}
       </Button>
-      {error ? <p className="mt-3 text-sm leading-6 text-zinc-400">{error}</p> : null}
+      {error ? <p className="mt-3 text-sm leading-6 text-stone-600">{error}</p> : null}
     </div>
   );
 }

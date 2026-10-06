@@ -61,39 +61,39 @@ export function SoapboxPost({
   }
 
   return (
-    <article className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-5">
+    <article className="rounded-xl border border-amber-500/30 bg-white px-5 py-5">
       <div className="flex items-start gap-3">
         <CandidateAvatar name={post.name} avatarUrl={post.avatarUrl} size="md" />
         <div className="min-w-0">
-          <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500">
+          <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-stone-600">
             {post.legalName ? "Legal name" : "Public name"}
           </p>
-          <Link href={`/profile/${post.authorId}`} className="text-sm font-medium text-parchment hover:text-gold">
+          <Link href={`/profile/${post.authorId}`} className="text-sm font-medium text-stone-900 hover:text-amber-800">
             {post.name}
           </Link>
-          <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500">
+          <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-stone-600">
             Civic Standing
             <InfoTooltip label="Civic Standing" text={CIVIC_STANDING_TIP} />
           </p>
-          <p className="text-sm text-parchment">{standing}</p>
-          <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500">
+          <p className="text-sm text-stone-900">{standing}</p>
+          <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-stone-600">
             Ideology Vectors
             <InfoTooltip label="Ideology Vectors" text={IDEOLOGY_VECTOR_TIP} />
           </p>
-          <p className="text-sm text-parchment">{coordinate}</p>
+          <p className="text-sm text-stone-900">{coordinate}</p>
         </div>
-        <time className="ml-auto shrink-0 text-[11px] uppercase tracking-widest text-zinc-500" dateTime={post.createdAt}>
+        <time className="ml-auto shrink-0 text-[11px] uppercase tracking-widest text-stone-600" dateTime={post.createdAt}>
           {postedOn(post.createdAt)}
         </time>
       </div>
 
-      <p className="mt-4 text-sm leading-6 text-zinc-200">{post.content}</p>
+      <p className="mt-4 text-sm leading-6 text-stone-700">{post.content}</p>
       {post.tags.length > 0 ? (
         <ul className="mt-3 flex flex-wrap gap-2">
           {post.tags.map((tag) => (
             <li
               key={tag}
-              className="rounded-full border border-gold/40 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-gold"
+              className="rounded-full border border-gold/40 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-amber-800"
             >
               {tag}
             </li>
@@ -120,13 +120,13 @@ export function SoapboxPost({
           type="button"
           disabled={mine}
           onClick={() => setChallengeOpen(true)}
-          className="inline-flex h-10 items-center justify-center rounded-md bg-gold-strong px-4 text-[11px] font-semibold uppercase tracking-widest text-zinc-950 transition-colors hover:bg-gold disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-10 items-center justify-center rounded-md bg-gold-strong px-4 text-[11px] font-semibold uppercase tracking-widest text-stone-900 transition-colors hover:bg-gold disabled:cursor-not-allowed disabled:opacity-50"
         >
           ⚔️ Challenge Stance
         </button>
       </div>
-      {mine ? <p className="mt-2 text-xs text-zinc-500">You cannot challenge your own speech.</p> : null}
-      {voteError ? <p className="mt-2 text-sm text-zinc-300">{voteError}</p> : null}
+      {mine ? <p className="mt-2 text-xs text-stone-600">You cannot challenge your own speech.</p> : null}
+      {voteError ? <p className="mt-2 text-sm text-stone-600">{voteError}</p> : null}
 
       <ChallengeModal
         open={challengeOpen}
@@ -161,8 +161,8 @@ function VoteButton({
       className={cn(
         "inline-flex h-10 items-center justify-center rounded-md border px-3 text-[11px] font-medium uppercase tracking-widest transition-colors disabled:opacity-60",
         pressed
-          ? "border-gold bg-zinc-950 text-gold"
-          : "border-zinc-700 bg-zinc-950 text-zinc-300 hover:border-zinc-500",
+          ? "border-gold bg-white text-amber-800"
+          : "border-amber-500/30 bg-white text-stone-600 hover:border-amber-600",
       )}
     >
       {label}

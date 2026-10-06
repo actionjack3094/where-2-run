@@ -197,7 +197,7 @@ export function BountyModal({
         onClick={(event) => event.stopPropagation()}
       >
         <CardHeader>
-          <p className="text-xs font-medium uppercase tracking-widest text-gold">
+          <p className="text-xs font-medium uppercase tracking-widest text-amber-800">
             SetupIntent escrow
           </p>
           <CardTitle id={titleId}>
@@ -314,7 +314,7 @@ function BountyDetailsForm({
 
       {preset === "custom" ? (
         <label className="flex flex-col gap-1.5 text-sm">
-          <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">
+          <span className="text-xs font-medium uppercase tracking-widest text-stone-600">
             Dollar amount
           </span>
           <input
@@ -326,13 +326,13 @@ function BountyDetailsForm({
             autoFocus
             value={customAmount}
             onChange={(event) => onCustomAmount(event.target.value)}
-            className="h-10 rounded-lg border border-gold/40 bg-zinc-950 px-3 text-sm text-parchment outline-none focus:border-gold"
+            className="h-10 rounded-lg border border-gold/40 bg-white px-3 text-sm text-stone-900 outline-none focus:border-gold"
           />
         </label>
       ) : null}
 
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">
+        <span className="text-xs font-medium uppercase tracking-widest text-stone-600">
           Trigger condition
         </span>
         <select
@@ -340,7 +340,7 @@ function BountyDetailsForm({
           onChange={(event) =>
             onUnlockCondition(event.target.value as BountyUnlockConditionId)
           }
-          className="h-10 rounded-lg border border-gold/40 bg-zinc-950 px-3 text-sm text-parchment outline-none focus:border-gold"
+          className="h-10 rounded-lg border border-gold/40 bg-white px-3 text-sm text-stone-900 outline-none focus:border-gold"
         >
           {BOUNTY_UNLOCK_CONDITIONS.map((condition) => (
             <option key={condition.id} value={condition.id}>
@@ -350,7 +350,7 @@ function BountyDetailsForm({
         </select>
       </label>
 
-      {formError ? <p className="text-sm text-red-300">{formError}</p> : null}
+      {formError ? <p className="text-sm text-red-700">{formError}</p> : null}
 
       <div className="flex gap-2">
         <Button type="submit" variant="gold" className="flex-1" disabled={busy}>
@@ -439,12 +439,12 @@ function BountyCardForm({
 
   return (
     <form className="flex flex-col gap-4" onSubmit={(event) => void confirmBounty(event)}>
-      <p className="text-sm leading-6 text-zinc-400">
+      <p className="text-sm leading-6 text-stone-600">
         Vault {formatUsd(amount)} until the trigger fires. The platform can capture
         later while you are off-session.
       </p>
       <PaymentElement options={{ layout: "tabs" }} />
-      {formError ? <p className="text-sm text-red-300">{formError}</p> : null}
+      {formError ? <p className="text-sm text-red-700">{formError}</p> : null}
       <div className="flex gap-2">
         <Button
           type="submit"

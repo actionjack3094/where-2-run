@@ -85,7 +85,7 @@ export function TargetRaceButton({
         <button
           type="button"
           disabled
-          className="inline-flex max-w-xs items-start gap-2 rounded-md border border-zinc-700 px-3 py-2 text-left text-xs font-medium uppercase leading-5 tracking-widest text-zinc-500"
+          className="inline-flex max-w-xs items-start gap-2 rounded-md border border-amber-500/30 px-3 py-2 text-left text-xs font-medium uppercase leading-5 tracking-widest text-stone-600"
         >
           <Lock aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>Survive 10 ideological challenges to unlock targeting</span>

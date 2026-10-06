@@ -29,7 +29,7 @@ export function VerificationBadge({
       aria-hidden={decorative || undefined}
       aria-label={decorative ? undefined : label}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center text-gold",
+        "inline-flex shrink-0 items-center justify-center text-amber-800",
         className,
       )}
     >

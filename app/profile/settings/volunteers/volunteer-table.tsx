@@ -26,14 +26,14 @@ export function VolunteerTable({ rows }: { rows: VolunteerSignupRow[] }) {
   }
 
   if (rows.length === 0) {
-    return <p className="mt-8 text-sm leading-6 text-zinc-400">No pending or accepted volunteers yet.</p>;
+    return <p className="mt-8 text-sm leading-6 text-stone-600">No pending or accepted volunteers yet.</p>;
   }
 
   return (
     <div className="mt-8 overflow-x-auto">
       <table className="w-full min-w-[40rem] border-collapse text-left text-sm">
         <thead>
-          <tr className="border-b border-zinc-800 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+          <tr className="border-b border-amber-500/30 text-[11px] uppercase tracking-[0.16em] text-stone-600">
             <th className="py-3 pr-4 font-medium">Name</th>
             <th className="py-3 pr-4 font-medium">Primary</th>
             <th className="py-3 pr-4 font-medium">Status</th>
@@ -44,12 +44,12 @@ export function VolunteerTable({ rows }: { rows: VolunteerSignupRow[] }) {
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.id} className="border-b border-zinc-800 align-top">
-              <td className="py-3 pr-4 text-parchment">{row.name}</td>
-              <td className="py-3 pr-4 text-zinc-300">{row.primaryLabel}</td>
-              <td className="py-3 pr-4 capitalize text-zinc-300">{row.status}</td>
-              <td className="py-3 pr-4 text-zinc-300">{row.createdAt.slice(0, 10)}</td>
-              <td className="py-3 pr-4 text-zinc-300">{row.districts || "No districts filed"}</td>
+            <tr key={row.id} className="border-b border-amber-500/30 align-top">
+              <td className="py-3 pr-4 text-stone-900">{row.name}</td>
+              <td className="py-3 pr-4 text-stone-600">{row.primaryLabel}</td>
+              <td className="py-3 pr-4 capitalize text-stone-600">{row.status}</td>
+              <td className="py-3 pr-4 text-stone-600">{row.createdAt.slice(0, 10)}</td>
+              <td className="py-3 pr-4 text-stone-600">{row.districts || "No districts filed"}</td>
               <td className="py-3">
                 <div className="flex flex-wrap gap-2">
                   {ACTIONS.map((action) => (
@@ -70,7 +70,7 @@ export function VolunteerTable({ rows }: { rows: VolunteerSignupRow[] }) {
           ))}
         </tbody>
       </table>
-      {error ? <p className="mt-4 text-sm leading-6 text-zinc-300">{error}</p> : null}
+      {error ? <p className="mt-4 text-sm leading-6 text-stone-600">{error}</p> : null}
     </div>
   );
 }

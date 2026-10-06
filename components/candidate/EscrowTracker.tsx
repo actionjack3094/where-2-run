@@ -29,17 +29,17 @@ export function EscrowTracker({
 
   return (
     <section aria-labelledby="escrow-heading">
-      <p className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+      <p className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
         Pledged Escrow
         <InfoTooltip label="Pledged Escrow" text={PLEDGED_ESCROW_TIP} />
       </p>
       <h2
         id="escrow-heading"
-        className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment"
+        className="mt-3 font-display text-2xl font-semibold tracking-tight text-stone-900"
       >
         Escrow tracker
       </h2>
-      <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+      <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
         Uncaptured Stripe SetupIntents sitting in {candidateName}&apos;s vault. The
         carrot dangles until this campaign files — then the cards charge.
       </p>
@@ -47,10 +47,10 @@ export function EscrowTracker({
       <Card className="mt-6 overflow-hidden">
         <CardHeader className="gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
               Dangling carrot
             </p>
-            <CardTitle className="mt-2 font-display text-4xl font-semibold tabular-nums tracking-tight text-gold sm:text-5xl">
+            <CardTitle className="mt-2 font-display text-4xl font-semibold tabular-nums tracking-tight text-amber-800 sm:text-5xl">
               {formatUsd(raised)}
             </CardTitle>
             <CardDescription className="mt-2 max-w-md">
@@ -60,16 +60,16 @@ export function EscrowTracker({
             </CardDescription>
           </div>
           <div className="flex shrink-0 flex-col items-center px-2 pt-1" aria-hidden>
-            <Carrot className="h-8 w-8 animate-bounce text-gold" strokeWidth={1.75} />
+            <Carrot className="h-8 w-8 animate-bounce text-amber-800" strokeWidth={1.75} />
             <span className="mt-1 h-8 w-px bg-gradient-to-b from-gold to-gold/10" />
-            <span className="rounded-md border border-gold/50 bg-zinc-950 px-2 py-1 text-[10px] font-medium uppercase tracking-widest text-gold">
+            <span className="rounded-md border border-gold/50 bg-white px-2 py-1 text-[10px] font-medium uppercase tracking-widest text-amber-800">
               Vaulted
             </span>
           </div>
         </CardHeader>
         <CardContent>
           <div
-            className="h-3 overflow-hidden rounded-full bg-zinc-950"
+            className="h-3 overflow-hidden rounded-full bg-white"
             role="progressbar"
             aria-valuemin={0}
             aria-valuemax={GRASSROOTS_THRESHOLD}
@@ -84,7 +84,7 @@ export function EscrowTracker({
               style={{ width: `${barWidth}%` }}
             />
           </div>
-          <div className="mt-2 flex justify-between text-xs tabular-nums text-zinc-500">
+          <div className="mt-2 flex justify-between text-xs tabular-nums text-stone-600">
             <span>{percentLabel}% of {formatUsd(GRASSROOTS_THRESHOLD)}</span>
             <span>
               {cleared

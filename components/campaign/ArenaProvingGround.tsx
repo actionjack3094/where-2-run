@@ -59,11 +59,11 @@ function ChallengeToDebateButton({
         onClick={() => void handleClick()}
         disabled={busy}
         aria-label={`Challenge ${opponentName} to debate`}
-        className="inline-flex h-11 items-center justify-center rounded-md bg-gold-strong px-4 font-display text-xs font-semibold uppercase tracking-[0.18em] text-zinc-950 transition-colors hover:bg-gold disabled:pointer-events-none disabled:opacity-50"
+        className="inline-flex h-11 items-center justify-center rounded-md bg-gold-strong px-4 font-display text-xs font-semibold uppercase tracking-[0.18em] text-stone-900 transition-colors hover:bg-gold disabled:pointer-events-none disabled:opacity-50"
       >
         {busy ? "Opening arena…" : "Challenge to Debate"}
       </button>
-      {error ? <p className="max-w-[16rem] text-xs text-red-300">{error}</p> : null}
+      {error ? <p className="max-w-[16rem] text-xs text-red-700">{error}</p> : null}
     </div>
   );
 }
@@ -108,23 +108,23 @@ export function ArenaProvingGround() {
     <section aria-labelledby="proving-ground-heading" className="mb-12">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
             War Room
           </p>
           <h2
             id="proving-ground-heading"
-            className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment"
+            className="mt-3 font-display text-2xl font-semibold tracking-tight text-stone-900"
           >
             Debates
           </h2>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+          <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
             Cosine distance on your five-axis stance vector finds the {PRIMARY_OPPONENT_LIMIT}{" "}
             closest ideological matches — primary-lane rivals, not general-election opposites.
           </p>
         </div>
         <Link
           href="/onboarding/ideology"
-          className="inline-flex h-12 shrink-0 items-center justify-center rounded-md border border-gold/60 bg-zinc-950 px-5 font-display text-sm font-semibold uppercase tracking-[0.18em] text-parchment transition-colors hover:border-gold hover:bg-zinc-900"
+          className="inline-flex h-12 shrink-0 items-center justify-center rounded-md border border-gold/60 bg-white px-5 font-display text-sm font-semibold uppercase tracking-[0.18em] text-stone-900 transition-colors hover:border-gold hover:bg-stone-100"
         >
           Retake Stance Quiz
         </Link>
@@ -133,26 +133,26 @@ export function ArenaProvingGround() {
       <Tier2Verification />
 
       {stage === "booting" ? (
-        <p className="rounded-xl border border-gold/30 bg-zinc-900 px-5 py-6 text-sm text-zinc-400">
+        <p className="rounded-xl border border-gold/30 bg-white px-5 py-6 text-sm text-stone-600">
           Ranking the closest vectors…
         </p>
       ) : null}
 
       {stage === "error" ? (
-        <p className="rounded-xl border border-red-500/40 bg-zinc-900 px-5 py-6 text-sm text-red-300">
+        <p className="rounded-xl border border-red-500/40 bg-white px-5 py-6 text-sm text-red-700">
           {error ?? "Could not load ideological matches."}
         </p>
       ) : null}
 
       {stage === "ready" && !hasStance ? (
-        <div className="rounded-xl border border-gold/30 bg-zinc-900 px-5 py-6">
-          <p className="text-sm leading-6 text-zinc-400">
+        <div className="rounded-xl border border-gold/30 bg-white px-5 py-6">
+          <p className="text-sm leading-6 text-stone-600">
             File a baseline stance vector first. The proving ground ranks candidates by
             angular distance on those five axes.
           </p>
           <Link
             href="/onboarding/ideology"
-            className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+            className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800 hover:text-stone-900"
           >
             Open baseline stance quiz
           </Link>
@@ -160,7 +160,7 @@ export function ArenaProvingGround() {
       ) : null}
 
       {stage === "ready" && hasStance && matches.length === 0 ? (
-        <p className="rounded-xl border border-gold/30 bg-zinc-900 px-5 py-6 text-sm leading-6 text-zinc-400">
+        <p className="rounded-xl border border-gold/30 bg-white px-5 py-6 text-sm leading-6 text-stone-600">
           No other campaigns have filed a stance vector yet. Once they do, the closest
           three will land here.
         </p>
@@ -171,10 +171,10 @@ export function ArenaProvingGround() {
           {matches.map((opponent, index) => (
             <li
               key={opponent.id}
-              className="flex flex-col gap-4 rounded-xl border border-gold/40 bg-zinc-900 p-5 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-4 rounded-xl border border-gold/40 bg-white p-5 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0">
-                <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+                <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
                   {LANE_LABELS[index] ?? `Lane ${index + 1}`}
                 </p>
                 <div className="mt-3">
@@ -185,13 +185,13 @@ export function ArenaProvingGround() {
                     nameClassName="text-lg"
                   />
                 </div>
-                <p className="mt-3 text-sm tabular-nums text-zinc-400">
-                  <span className="font-display font-semibold text-parchment">
+                <p className="mt-3 text-sm tabular-nums text-stone-600">
+                  <span className="font-display font-semibold text-stone-900">
                     {opponent.matchPercent}% match
                   </span>
-                  <span className="mx-2 text-zinc-600">·</span>
+                  <span className="mx-2 text-stone-600">·</span>
                   cosine distance {opponent.cosine_distance.toFixed(3)}
-                  <span className="mx-2 text-zinc-600">·</span>
+                  <span className="mx-2 text-stone-600">·</span>
                   Civic Standing {opponent.elo_rating}
                 </p>
                 <EndorsementBadge count={opponent.endorsements} className="mt-3" />

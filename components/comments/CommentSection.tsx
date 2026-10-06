@@ -82,37 +82,37 @@ export function CommentSection({
 
   return (
     <section className="mt-12 border-t border-gold/40 pt-8">
-      <p className="text-xs font-medium uppercase tracking-[0.2em] text-gold">
+      <p className="text-xs font-medium uppercase tracking-[0.2em] text-amber-800">
         Public comments
       </p>
-      <h2 className="mt-2 font-display text-xl font-semibold tracking-tight text-parchment">
+      <h2 className="mt-2 font-display text-xl font-semibold tracking-tight text-stone-900">
         District floor
       </h2>
-      <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+      <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
         Spectators can weigh in under the debate. Stance grading lands later.
       </p>
 
       {optimisticComments.length === 0 ? (
-        <p className="mt-6 text-sm text-zinc-500">No public comments yet. Open the floor.</p>
+        <p className="mt-6 text-sm text-stone-600">No public comments yet. Open the floor.</p>
       ) : (
         <ul className="mt-6 flex flex-col gap-3">
           {optimisticComments.map((comment) => (
             <li
               key={comment.id}
               className={cn(
-                "rounded-lg border border-gold/30 bg-zinc-950 px-4 py-3",
+                "rounded-lg border border-gold/30 bg-white px-4 py-3",
                 comment.pending && "opacity-70",
               )}
             >
               <div className="flex items-baseline justify-between gap-3">
-                <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+                <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
                   {comment.author?.username ?? "Citizen"}
                 </p>
-                <p className="text-[11px] uppercase tracking-widest text-zinc-500">
+                <p className="text-[11px] uppercase tracking-widest text-stone-600">
                   {comment.pending ? "Posting" : formatCommentTime(comment.created_at)}
                 </p>
               </div>
-              <p className="mt-2 text-sm leading-6 text-zinc-200">{comment.body}</p>
+              <p className="mt-2 text-sm leading-6 text-stone-700">{comment.body}</p>
             </li>
           ))}
         </ul>
@@ -129,9 +129,9 @@ export function CommentSection({
           required
           maxLength={COMMENT_MAX_LENGTH}
           placeholder="Add a public comment for this district debate."
-          className="min-h-24 w-full resize-none rounded-lg border border-gold/40 bg-zinc-950 px-3 py-2 text-sm leading-6 text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-gold"
+          className="min-h-24 w-full resize-none rounded-lg border border-gold/40 bg-white px-3 py-2 text-sm leading-6 text-stone-900 outline-none placeholder:text-stone-400 focus:border-gold"
         />
-        {error ? <p className="text-sm text-red-300">{error}</p> : null}
+        {error ? <p className="text-sm text-red-700">{error}</p> : null}
         <CommentSubmitButton />
       </form>
     </section>

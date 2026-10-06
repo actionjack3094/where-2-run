@@ -123,7 +123,7 @@ export function VoterPostActions({
             "inline-flex h-9 items-center justify-center rounded-md border px-3 text-xs font-medium uppercase tracking-widest transition-colors",
             liked
               ? "border-accent bg-accent text-accent-foreground"
-              : "border-accent/50 bg-zinc-800 text-parchment hover:border-accent hover:bg-zinc-700",
+              : "border-accent/50 bg-stone-100 text-stone-900 hover:border-accent hover:bg-stone-200",
           )}
         >
           {liked ? "Liked" : "Like"}
@@ -139,7 +139,7 @@ export function VoterPostActions({
               setCommentOpen((open) => !open);
             }}
             disabled={fenced}
-            className="inline-flex h-9 items-center justify-center rounded-md border border-accent/50 bg-zinc-800 px-3 text-xs font-medium uppercase tracking-widest text-parchment transition-colors hover:border-accent hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-9 items-center justify-center rounded-md border border-accent/50 bg-stone-100 px-3 text-xs font-medium uppercase tracking-widest text-stone-900 transition-colors hover:border-accent hover:bg-stone-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Comment
           </button>
@@ -157,7 +157,7 @@ export function VoterPostActions({
                   "inline-flex h-9 items-center justify-center rounded-md border px-3 text-xs font-medium uppercase tracking-widest transition-colors disabled:cursor-not-allowed disabled:opacity-50",
                   votedFor === "a"
                     ? "border-accent bg-accent text-accent-foreground"
-                    : "border-accent/50 bg-zinc-800 text-parchment hover:border-accent hover:bg-zinc-700",
+                    : "border-accent/50 bg-stone-100 text-stone-900 hover:border-accent hover:bg-stone-200",
                 )}
               >
                 {votingFor === "a" ? "Voting…" : `Vote ${candidateA?.username ?? "A"}`}
@@ -174,7 +174,7 @@ export function VoterPostActions({
                   "inline-flex h-9 items-center justify-center rounded-md border px-3 text-xs font-medium uppercase tracking-widest transition-colors disabled:cursor-not-allowed disabled:opacity-50",
                   votedFor === "b"
                     ? "border-accent bg-accent text-accent-foreground"
-                    : "border-accent/50 bg-zinc-800 text-parchment hover:border-accent hover:bg-zinc-700",
+                    : "border-accent/50 bg-stone-100 text-stone-900 hover:border-accent hover:bg-stone-200",
                 )}
               >
                 {votingFor === "b" ? "Voting…" : `Vote ${candidateB?.username ?? "B"}`}
@@ -184,7 +184,7 @@ export function VoterPostActions({
         ) : (
           <Link
             href={`/debates/${debateId}`}
-            className="inline-flex h-9 items-center justify-center rounded-md border border-accent/50 bg-zinc-800 px-3 text-xs font-medium uppercase tracking-widest text-parchment transition-colors hover:border-accent hover:bg-zinc-700"
+            className="inline-flex h-9 items-center justify-center rounded-md border border-accent/50 bg-stone-100 px-3 text-xs font-medium uppercase tracking-widest text-stone-900 transition-colors hover:border-accent hover:bg-stone-200"
           >
             Watch debate
           </Link>
@@ -193,7 +193,7 @@ export function VoterPostActions({
 
       {fenced ? <CivicFenceNote /> : null}
 
-      {voteError ? <p className="text-xs text-red-300">{voteError}</p> : null}
+      {voteError ? <p className="text-xs text-red-700">{voteError}</p> : null}
 
       {commentOpen && !fenced ? (
         <form className="flex flex-col gap-2" onSubmit={submitComment}>
@@ -203,7 +203,7 @@ export function VoterPostActions({
             rows={3}
             autoFocus
             placeholder="Add a public note for this district debate."
-            className="resize-none rounded-md border border-accent/40 bg-zinc-950 px-3 py-2 text-sm leading-6 text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-accent"
+            className="resize-none rounded-md border border-accent/40 bg-white px-3 py-2 text-sm leading-6 text-stone-900 outline-none placeholder:text-stone-400 focus:border-accent"
           />
           <div className="flex gap-2">
             <button
@@ -215,7 +215,7 @@ export function VoterPostActions({
             <button
               type="button"
               onClick={() => setCommentOpen(false)}
-              className="inline-flex h-8 items-center justify-center rounded-md border border-zinc-700 px-3 text-[11px] font-medium uppercase tracking-widest text-zinc-400"
+              className="inline-flex h-8 items-center justify-center rounded-md border border-amber-500/30 px-3 text-[11px] font-medium uppercase tracking-widest text-stone-600"
             >
               Cancel
             </button>
@@ -226,7 +226,7 @@ export function VoterPostActions({
       {comments.length > 0 ? (
         <ul className="flex flex-col gap-2 border-t border-accent/20 pt-3">
           {comments.map((entry, index) => (
-            <li key={`${entry}-${index}`} className="text-sm leading-6 text-zinc-300">
+            <li key={`${entry}-${index}`} className="text-sm leading-6 text-stone-600">
               {entry}
             </li>
           ))}

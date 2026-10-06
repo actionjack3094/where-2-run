@@ -268,8 +268,8 @@ export function LeaderboardTriView({
               className={cn(
                 "inline-flex h-10 items-center justify-center rounded-full px-4 text-[11px] font-medium uppercase tracking-widest transition-colors",
                 selected
-                  ? "bg-gold-strong text-zinc-950"
-                  : "border border-gold/40 text-zinc-400 hover:border-gold hover:text-parchment",
+                  ? "bg-gold-strong text-stone-900"
+                  : "border border-gold/40 text-stone-600 hover:border-gold hover:text-stone-900",
               )}
             >
               {entry.title}
@@ -291,16 +291,16 @@ export function LeaderboardTriView({
             error={contestsError}
           />
         ) : stage === "loading" ? (
-          <p className="text-sm leading-6 text-zinc-400">Tallying the field…</p>
+          <p className="text-sm leading-6 text-stone-600">Tallying the field…</p>
         ) : stage === "error" ? (
           <div className="space-y-4">
-            <p className="text-sm leading-6 text-zinc-400">
+            <p className="text-sm leading-6 text-stone-600">
               {error ?? "Could not load these leaderboards."}
             </p>
             <button
               type="button"
               onClick={retry}
-              className="inline-flex h-9 items-center justify-center rounded-md border border-gold/50 bg-zinc-800 px-3 text-xs font-medium uppercase tracking-widest text-parchment"
+              className="inline-flex h-9 items-center justify-center rounded-md border border-gold/50 bg-stone-100 px-3 text-xs font-medium uppercase tracking-widest text-stone-900"
             >
               Try again
             </button>
@@ -350,22 +350,22 @@ function RankingTable({
   return (
     <section>
       <header>
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
           Ranking
         </p>
-        <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight text-parchment">
+        <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight text-stone-900">
           {title}
         </h2>
-        <p className="mt-2 text-sm leading-6 text-zinc-400">{hint}</p>
+        <p className="mt-2 text-sm leading-6 text-stone-600">{hint}</p>
       </header>
 
       {entries.length === 0 ? (
-        <p className="mt-6 text-sm leading-6 text-zinc-400">{empty}</p>
+        <p className="mt-6 text-sm leading-6 text-stone-600">{empty}</p>
       ) : (
-        <div className="mt-5 overflow-x-auto rounded-xl border border-gold/50 bg-zinc-900 shadow-[inset_3px_0_0_0_var(--gold-strong)]">
+        <div className="mt-5 overflow-x-auto rounded-xl border border-gold/50 bg-white shadow-[inset_3px_0_0_0_var(--gold-strong)]">
           <table className="w-full min-w-[40rem] text-left">
             <thead>
-              <tr className="border-b border-gold/30 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+              <tr className="border-b border-gold/30 text-[11px] font-medium uppercase tracking-widest text-stone-600">
                 <th className="px-5 py-3 pl-6 font-medium">Rank</th>
                 <th className="px-5 py-3 font-medium">Candidate</th>
                 <th className="px-5 py-3 font-medium">Debates Logged</th>
@@ -378,7 +378,7 @@ function RankingTable({
             <tbody>
               {entries.map((entry, index) => (
                 <tr key={entry.id} className="border-t border-gold/15">
-                  <td className="px-5 py-4 pl-6 align-middle font-mono text-sm tabular-nums text-zinc-500">
+                  <td className="px-5 py-4 pl-6 align-middle font-mono text-sm tabular-nums text-stone-600">
                     #{index + 1}
                   </td>
                   <td className="px-5 py-4 align-middle">
@@ -393,21 +393,21 @@ function RankingTable({
                       {showDistrict && entry.districtName && entry.electionSlug ? (
                         <Link
                           href={`/elections/district/${entry.electionSlug}/profile`}
-                          className="block pl-11 text-[11px] uppercase tracking-widest text-zinc-500 transition-colors hover:text-gold"
+                          className="block pl-11 text-[11px] uppercase tracking-widest text-stone-600 transition-colors hover:text-amber-800"
                         >
                           {entry.districtName}
                         </Link>
                       ) : showDistrict && entry.districtName ? (
-                        <p className="pl-11 text-[11px] uppercase tracking-widest text-zinc-500">
+                        <p className="pl-11 text-[11px] uppercase tracking-widest text-stone-600">
                           {entry.districtName}
                         </p>
                       ) : null}
                     </div>
                   </td>
-                  <td className="px-5 py-4 align-middle text-sm font-medium tabular-nums text-zinc-100">
+                  <td className="px-5 py-4 align-middle text-sm font-medium tabular-nums text-stone-900">
                     {entry.wins + entry.losses} logged
                   </td>
-                  <td className="px-5 py-4 align-middle text-sm font-medium tabular-nums text-gold">
+                  <td className="px-5 py-4 align-middle text-sm font-medium tabular-nums text-amber-800">
                     {formatElectability(entry.electability)}
                   </td>
                   <td className="px-5 py-4 align-middle">

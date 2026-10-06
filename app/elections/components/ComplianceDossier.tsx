@@ -36,16 +36,16 @@ export function ComplianceDossier({ election }: { election: Election }) {
   return (
     <section aria-labelledby="compliance-dossier-heading">
       <header>
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-gold">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-amber-800">
           Ballot access
         </p>
         <h2
           id="compliance-dossier-heading"
-          className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment"
+          className="mt-3 font-display text-2xl font-semibold tracking-tight text-stone-900"
         >
           Compliance dossier
         </h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
           Incumbent, filing calendar, and the treasurer appointment that has to
           land before this campaign can raise or spend.
         </p>
@@ -54,17 +54,17 @@ export function ComplianceDossier({ election }: { election: Election }) {
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
         <Card>
           <CardHeader>
-            <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
               Incumbent
             </p>
-            <CardTitle className="font-display text-xl text-parchment">
+            <CardTitle className="font-display text-xl text-stone-900">
               {election.incumbent_name?.trim() || "Open or unpublished"}
             </CardTitle>
             <CardDescription>
               {requirements.jurisdiction ?? election.office_name}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm leading-6 text-zinc-400">
+          <CardContent className="space-y-3 text-sm leading-6 text-stone-600">
             <p>
               {election.incumbent_name
                 ? `${election.incumbent_name} currently holds ${election.office_name}. Challengers still have to clear the same ballot-access tests.`
@@ -76,30 +76,30 @@ export function ComplianceDossier({ election }: { election: Election }) {
 
         <Card>
           <CardHeader>
-            <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
               Filing calendar
             </p>
-            <CardTitle className="font-display text-xl text-parchment">
+            <CardTitle className="font-display text-xl text-stone-900">
               {filingDeadline ?? "Deadline unpublished"}
             </CardTitle>
             <CardDescription>
               Application for a place on the ballot
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm leading-6 text-zinc-400">
+          <CardContent className="space-y-3 text-sm leading-6 text-stone-600">
             <p>
-              <span className="text-parchment">Residency deadline: </span>
+              <span className="text-stone-900">Residency deadline: </span>
               {residencyDeadline ?? "See clerk records"}
             </p>
             {requirements.filing_fee ? (
               <p>
-                <span className="text-parchment">Fee / petition: </span>
+                <span className="text-stone-900">Fee / petition: </span>
                 {requirements.filing_fee}
               </p>
             ) : null}
             {requirements.petition_signatures != null ? (
               <p>
-                <span className="text-parchment">Petition floor: </span>
+                <span className="text-stone-900">Petition floor: </span>
                 {requirements.petition_signatures} valid signatures
               </p>
             ) : null}
@@ -108,17 +108,17 @@ export function ComplianceDossier({ election }: { election: Election }) {
 
         <Card>
           <CardHeader>
-            <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
               Treasurer appointment
             </p>
-            <CardTitle className="font-display text-xl text-parchment">
+            <CardTitle className="font-display text-xl text-stone-900">
               {treasurer.form ?? "Campaign treasurer"}
             </CardTitle>
             <CardDescription>
               {treasurer.office ?? "File before accepting contributions"}
             </CardDescription>
           </CardHeader>
-          <CardContent className="text-sm leading-6 text-zinc-400">
+          <CardContent className="text-sm leading-6 text-stone-600">
             <p>
               {treasurer.notes ??
                 "Appoint a campaign treasurer and file the form with the ethics office before the campaign accepts money or makes expenditures."}
@@ -128,14 +128,14 @@ export function ComplianceDossier({ election }: { election: Election }) {
       </div>
 
       {ballotAccess.length > 0 ? (
-        <div className="mt-6 rounded-xl border border-gold/40 bg-zinc-900 px-5 py-5">
-          <h3 className="text-[11px] font-medium uppercase tracking-widest text-gold">
+        <div className="mt-6 rounded-xl border border-gold/40 bg-white px-5 py-5">
+          <h3 className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
             Ballot access requirements
           </h3>
           <ol className="mt-4 space-y-3">
             {ballotAccess.map((item, index) => (
-              <li key={item} className="flex gap-3 text-sm leading-6 text-zinc-300">
-                <span className="font-display text-sm font-semibold tabular-nums text-gold">
+              <li key={item} className="flex gap-3 text-sm leading-6 text-stone-600">
+                <span className="font-display text-sm font-semibold tabular-nums text-amber-800">
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <span>{item}</span>
@@ -146,14 +146,14 @@ export function ComplianceDossier({ election }: { election: Election }) {
       ) : null}
 
       {steps.length > 0 ? (
-        <div className="mt-4 rounded-xl border border-gold/40 bg-zinc-900 px-5 py-5">
-          <h3 className="text-[11px] font-medium uppercase tracking-widest text-gold">
+        <div className="mt-4 rounded-xl border border-gold/40 bg-white px-5 py-5">
+          <h3 className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
             Formal campaign treasurer appointment
           </h3>
           <ol className="mt-4 space-y-3">
             {steps.map((step, index) => (
-              <li key={step} className="flex gap-3 text-sm leading-6 text-zinc-300">
-                <span className="font-display text-sm font-semibold tabular-nums text-gold">
+              <li key={step} className="flex gap-3 text-sm leading-6 text-stone-600">
+                <span className="font-display text-sm font-semibold tabular-nums text-amber-800">
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <span>{step}</span>

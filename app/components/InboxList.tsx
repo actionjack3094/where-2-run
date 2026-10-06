@@ -54,11 +54,11 @@ export function InboxList({ items }: { items: InboxItem[] }) {
                 href={item.href}
                 onClick={() => void openItem(item)}
                 className={cn(
-                  "block rounded-xl border px-5 py-5 transition-colors hover:border-gold hover:bg-zinc-900/80",
-                  unread ? "border-sky-400/70 bg-zinc-900" : "border-gold/30 bg-zinc-950",
+                  "block rounded-xl border px-5 py-5 transition-colors hover:border-gold hover:bg-stone-50",
+                  unread ? "border-sky-400/70 bg-white" : "border-gold/30 bg-white",
                 )}
               >
-                <p className="flex items-start gap-3 text-sm leading-6 text-parchment">
+                <p className="flex items-start gap-3 text-sm leading-6 text-stone-900">
                   {unread ? (
                     <span
                       aria-hidden
@@ -71,7 +71,7 @@ export function InboxList({ items }: { items: InboxItem[] }) {
                     {item.message}
                   </span>
                 </p>
-                <p className="mt-2 pl-5 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                <p className="mt-2 pl-5 text-[11px] font-medium uppercase tracking-widest text-stone-600">
                   {formatRelativeTime(item.createdAt)}
                 </p>
               </Link>

@@ -33,9 +33,9 @@ export function StumpComposer({ signedIn }: { signedIn: boolean }) {
   }
 
   return (
-    <form onSubmit={(event) => void onSubmit(event)} className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-5">
+    <form onSubmit={(event) => void onSubmit(event)} className="rounded-xl border border-amber-500/30 bg-white px-5 py-5">
       <label className="flex flex-col gap-2" htmlFor="stump-speech">
-        <span className="text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500">
+        <span className="text-[11px] font-medium uppercase tracking-[0.2em] text-stone-600">
           Post a Stump Speech
         </span>
         <textarea
@@ -46,30 +46,30 @@ export function StumpComposer({ signedIn }: { signedIn: boolean }) {
           rows={4}
           required
           placeholder="280 characters. Say the thing you are willing to defend."
-          className="resize-none rounded-md border border-zinc-700 bg-zinc-950 px-3 py-3 text-sm leading-6 text-parchment outline-none placeholder:text-zinc-500 focus:border-gold"
+          className="resize-none rounded-md border border-amber-500/30 bg-white px-3 py-3 text-sm leading-6 text-stone-900 outline-none placeholder:text-stone-400 focus:border-gold"
         />
       </label>
       <div className="mt-3 flex items-center justify-between gap-3">
-        <p className="text-[11px] uppercase tracking-widest text-zinc-500">{remaining} left</p>
+        <p className="text-[11px] uppercase tracking-widest text-stone-600">{remaining} left</p>
         {signedIn ? (
           <button
             type="submit"
             disabled={pending || content.trim().length === 0}
-            className="inline-flex h-10 items-center justify-center rounded-md bg-gold-strong px-4 text-[11px] font-semibold uppercase tracking-widest text-zinc-950 transition-colors hover:bg-gold disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-10 items-center justify-center rounded-md bg-gold-strong px-4 text-[11px] font-semibold uppercase tracking-widest text-stone-900 transition-colors hover:bg-gold disabled:cursor-not-allowed disabled:opacity-60"
           >
             {pending ? "Posting…" : "Post"}
           </button>
         ) : (
           <Link
             href="/auth/login?next=%2Fsoapbox"
-            className="inline-flex h-10 items-center justify-center rounded-md bg-gold-strong px-4 text-[11px] font-semibold uppercase tracking-widest text-zinc-950"
+            className="inline-flex h-10 items-center justify-center rounded-md bg-gold-strong px-4 text-[11px] font-semibold uppercase tracking-widest text-stone-900"
           >
             Sign in to post
           </Link>
         )}
       </div>
-      {error ? <p className="mt-3 text-sm leading-6 text-zinc-300">{error}</p> : null}
-      {message ? <p className="mt-3 text-sm leading-6 text-parchment">{message}</p> : null}
+      {error ? <p className="mt-3 text-sm leading-6 text-stone-600">{error}</p> : null}
+      {message ? <p className="mt-3 text-sm leading-6 text-stone-900">{message}</p> : null}
     </form>
   );
 }

@@ -48,16 +48,16 @@ export async function BallotAccessRoadmap() {
 function RoadmapHeader() {
   return (
     <header>
-      <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+      <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
         Filing Board
       </p>
       <h2
         id="ballot-access-roadmap-heading"
-        className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment"
+        className="mt-3 font-display text-3xl font-semibold tracking-tight text-stone-900"
       >
         Ballot Access Roadmap
       </h2>
-      <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+      <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
         Countdown to residency and filing for your strongest matched race, with
         tokenized escrow plotted against the seat&apos;s goal.
       </p>

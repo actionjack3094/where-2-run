@@ -32,39 +32,39 @@ export default async function ProfileSettingsPage() {
   }
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-xl flex-1 flex-col px-6 py-10 pb-16">
         <header>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">Profile</p>
-          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">Profile</p>
+          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-stone-900">
             Profile photo
           </h1>
-          <p className="mt-2 text-sm leading-6 text-zinc-400">
+          <p className="mt-2 text-sm leading-6 text-stone-600">
             This photo appears on My Ballot, Debates, primary leaderboards, and your public profile.
           </p>
           <div className="mt-4 flex flex-wrap gap-4">
             <Link
               href="/profile/settings/platform"
-              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800 hover:text-stone-900"
             >
               Campaign platform
             </Link>
             <Link
               href="/profile/settings/volunteers"
-              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800 hover:text-stone-900"
             >
               Volunteers
             </Link>
             <Link
               href={`/profile/${user.id}`}
-              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800 hover:text-stone-900"
             >
               Public profile
             </Link>
           </div>
         </header>
 
-        {setup ? <p className="mt-8 text-sm leading-6 text-zinc-300">{setup}</p> : null}
+        {setup ? <p className="mt-8 text-sm leading-6 text-stone-600">{setup}</p> : null}
         {setup ? null : <AvatarUpload userId={user.id} name={name} avatarUrl={avatarUrl} />}
       </div>
     </main>

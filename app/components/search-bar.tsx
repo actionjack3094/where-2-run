@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 
 const INPUT_CLASS =
-  "h-12 w-full rounded-md border border-gold/40 bg-zinc-950 px-4 text-sm text-parchment outline-none placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-gold/60";
+  "h-12 w-full rounded-md border border-gold/40 bg-white px-4 text-sm text-stone-900 outline-none placeholder:text-stone-400 focus-visible:ring-2 focus-visible:ring-gold/60";
 
 function SearchBarField({ placeholder }: { placeholder: string }) {
   const router = useRouter();

@@ -110,9 +110,9 @@ export default async function ElectionHubPage({ params }: ElectionHubPageProps) 
 
   if (error && !election) {
     return (
-      <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+      <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
         <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 py-10 pb-16">
-          <p className="mt-8 text-sm leading-6 text-zinc-400">
+          <p className="mt-8 text-sm leading-6 text-stone-600">
             Could not load this election. {error}
           </p>
         </div>
@@ -127,32 +127,32 @@ export default async function ElectionHubPage({ params }: ElectionHubPageProps) 
   const title = election.office_name;
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-6 py-10 pb-16">
         <header>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-gold">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-amber-800">
             Election
           </p>
-          <h1 className="mt-3 font-display text-3xl font-semibold uppercase tracking-tight text-parchment sm:text-4xl">
+          <h1 className="mt-3 font-display text-3xl font-semibold uppercase tracking-tight text-stone-900 sm:text-4xl">
             {title}
           </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600">
             Debate questions banked for this race. Open a question to answer it.
           </p>
           <Link
             href={`/elections/district/${election.slug}/profile`}
-            className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-widest text-gold hover:text-parchment"
+            className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-widest text-amber-800 hover:text-stone-900"
           >
             Race profile
           </Link>
         </header>
 
         {error ? (
-          <p className="mt-10 text-sm leading-6 text-zinc-400">
+          <p className="mt-10 text-sm leading-6 text-stone-600">
             Could not load debate questions. {error}
           </p>
         ) : questions.length === 0 ? (
-          <p className="mt-10 text-sm leading-6 text-zinc-400">
+          <p className="mt-10 text-sm leading-6 text-stone-600">
             No debate questions are banked for this election yet.
           </p>
         ) : (
@@ -165,15 +165,15 @@ export default async function ElectionHubPage({ params }: ElectionHubPageProps) 
                 >
                   <Card className="h-full transition-colors hover:border-gold">
                     <CardHeader>
-                      <CardDescription className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
+                      <CardDescription className="text-[10px] font-medium uppercase tracking-widest text-stone-600">
                         {question.jurisdictional_level} · {axisLabel(question.primary_axis)}
                       </CardDescription>
-                      <CardTitle className="text-base leading-snug text-parchment">
+                      <CardTitle className="text-base leading-snug text-stone-900">
                         {question.prompt}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+                      <p className="font-mono text-[10px] uppercase tracking-widest text-stone-600">
                         Information gain {gainLabel(question.information_gain_score)}
                       </p>
                     </CardContent>

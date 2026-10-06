@@ -30,18 +30,18 @@ export function ArenaPublicProfileView({
   return (
     <>
       <header>
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">Public profile</p>
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">Public profile</p>
         <div className="mt-3 flex items-center gap-4">
           <CandidateAvatar name={profile.name} avatarUrl={profile.avatarUrl} size="lg" />
-          <h1 className="font-display text-3xl font-semibold tracking-tight text-parchment">
+          <h1 className="font-display text-3xl font-semibold tracking-tight text-stone-900">
             {profile.name}
           </h1>
         </div>
-        <p className="mt-3 flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-widest text-zinc-400">
-          <span className="rounded-full border border-gold px-2 py-0.5 text-gold">{profile.tierLabel}</span>
+        <p className="mt-3 flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-widest text-stone-600">
+          <span className="rounded-full border border-gold px-2 py-0.5 text-amber-800">{profile.tierLabel}</span>
           {profile.showVerified ? <span>Verified</span> : null}
         </p>
-        {profile.bio ? <p className="mt-4 max-w-xl text-sm leading-6 text-zinc-300">{profile.bio}</p> : null}
+        {profile.bio ? <p className="mt-4 max-w-xl text-sm leading-6 text-stone-600">{profile.bio}</p> : null}
       </header>
 
       <PledgeFundsCard
@@ -53,17 +53,17 @@ export function ArenaPublicProfileView({
         <MatchConfidence percent={null} stale={stanceIsStale(profile.lastStanceAt)} />
       ) : null}
       {viewerId === profile.id && profile.civicCredit > 0 ? (
-        <p className="mt-4 text-sm text-zinc-300">Civic Credit {formatUsd(profile.civicCredit)}</p>
+        <p className="mt-4 text-sm text-stone-600">Civic Credit {formatUsd(profile.civicCredit)}</p>
       ) : null}
       {viewerId === profile.id ? <PledgeDecisions pledges={profile.pendingPledges} /> : null}
       {profile.unbought.length > 0 ? (
         <section className="mt-8">
-          <h2 className="font-display text-xl text-parchment">Unbought</h2>
+          <h2 className="font-display text-xl text-stone-900">Unbought</h2>
           <ul className="mt-3 grid gap-2">
             {profile.unbought.map((pledge) => (
-              <li key={pledge.id} className="text-sm text-zinc-300">
+              <li key={pledge.id} className="text-sm text-stone-600">
                 Rejected {formatUsd(pledge.amount)} from{" "}
-                <Link href={`/entities/${pledge.entitySlug}`} className="text-gold">
+                <Link href={`/entities/${pledge.entitySlug}`} className="text-amber-800">
                   {pledge.entityName}
                 </Link>
               </li>
@@ -73,12 +73,12 @@ export function ArenaPublicProfileView({
       ) : null}
 
       <section className="mt-10">
-        <h2 className="inline-flex items-center gap-2 font-display text-xl text-parchment">
+        <h2 className="inline-flex items-center gap-2 font-display text-xl text-stone-900">
           Ideology Compass
           <InfoTooltip label="Ideology Compass" text={IDEOLOGY_COMPASS_TIP} />
         </h2>
         {profile.ideologyX == null || profile.ideologyY == null ? (
-          <p className="mt-3 text-sm text-zinc-400">No coordinate filed yet.</p>
+          <p className="mt-3 text-sm text-stone-600">No coordinate filed yet.</p>
         ) : (
           <div className="mt-4">
             <IdeologyCompass
@@ -90,7 +90,7 @@ export function ArenaPublicProfileView({
                 },
               ]}
             />
-            <p className="mt-3 text-sm text-zinc-400">
+            <p className="mt-3 text-sm text-stone-600">
               Economic {profile.ideologyX.toFixed(2)} · Social {profile.ideologyY.toFixed(2)}
             </p>
           </div>
@@ -98,27 +98,27 @@ export function ArenaPublicProfileView({
       </section>
 
       <section className="mt-10">
-        <h2 className="inline-flex items-center gap-2 font-display text-xl text-parchment">
+        <h2 className="inline-flex items-center gap-2 font-display text-xl text-stone-900">
           Primaries
           <InfoTooltip label="Civic Standing" text={CIVIC_STANDING_TIP} />
         </h2>
         {profile.standings.length === 0 ? (
-          <p className="mt-3 text-sm text-zinc-400">No finished debates in a primary yet.</p>
+          <p className="mt-3 text-sm text-stone-600">No finished debates in a primary yet.</p>
         ) : (
           <ul className="mt-4 grid gap-3">
             {profile.standings.map((row) => (
-              <li key={row.primaryId} className="rounded-xl border border-zinc-800 px-4 py-3">
+              <li key={row.primaryId} className="rounded-xl border border-amber-500/30 px-4 py-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   {row.slug ? (
-                    <Link href={`/elections/${row.slug}`} className="text-sm font-medium text-parchment hover:text-gold">
+                    <Link href={`/elections/${row.slug}`} className="text-sm font-medium text-stone-900 hover:text-amber-800">
                       {row.label}
                     </Link>
                   ) : (
-                    <p className="text-sm font-medium text-parchment">{row.label}</p>
+                    <p className="text-sm font-medium text-stone-900">{row.label}</p>
                   )}
-                  <p className="text-sm text-zinc-300">{row.civicStanding} Civic Standing</p>
+                  <p className="text-sm text-stone-600">{row.civicStanding} Civic Standing</p>
                 </div>
-                <p className="mt-1 text-[11px] uppercase tracking-widest text-zinc-500">
+                <p className="mt-1 text-[11px] uppercase tracking-widest text-stone-600">
                   {tierLabel(row.tier)} · Rank {row.rank} of {row.fieldSize} · {row.debatesLogged} Debates Logged · {row.policyConsistency}% Policy Consistency
                 </p>
               </li>
@@ -139,15 +139,15 @@ export function ArenaPublicProfileView({
         />
       ) : (
         <section className="mt-10">
-          <h2 className="font-display text-xl text-parchment">Debate history</h2>
+          <h2 className="font-display text-xl text-stone-900">Debate history</h2>
           {profile.history.length === 0 ? (
-            <p className="mt-3 text-sm text-zinc-400">No concluded debates yet.</p>
+            <p className="mt-3 text-sm text-stone-600">No concluded debates yet.</p>
           ) : (
             <ul className="mt-4 grid gap-4">
               {profile.history.map((debate) => (
-                <li key={debate.id} className="rounded-xl border border-zinc-800 px-4 py-4">
+                <li key={debate.id} className="rounded-xl border border-amber-500/30 px-4 py-4">
                   <div className="flex items-start justify-between gap-3">
-                    <p className="text-[11px] uppercase tracking-widest text-zinc-500">
+                    <p className="text-[11px] uppercase tracking-widest text-stone-600">
                       {debate.office} · {debate.result} · vs {debate.opponentName}
                     </p>
                     <ReportDebateButton
@@ -156,9 +156,9 @@ export function ArenaPublicProfileView({
                       participants={[{ id: profile.id, name: profile.name }]}
                     />
                   </div>
-                  <h3 className="mt-2 text-sm font-medium text-parchment">{debate.prompt}</h3>
+                  <h3 className="mt-2 text-sm font-medium text-stone-900">{debate.prompt}</h3>
                   {debate.ownStance ? (
-                    <p className="mt-2 text-sm leading-6 text-zinc-300">{debate.ownStance}</p>
+                    <p className="mt-2 text-sm leading-6 text-stone-600">{debate.ownStance}</p>
                   ) : null}
                   <TownHall
                     debateId={debate.id}

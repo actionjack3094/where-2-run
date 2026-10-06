@@ -48,7 +48,7 @@ export function PledgeHost({ children }: { children: React.ReactNode }) {
           role="status"
           className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-6"
         >
-          <p className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm shadow-lg dark:border-zinc-800 dark:bg-zinc-950">
+          <p className="rounded-full border border-stone-200 bg-white px-4 py-2 text-sm shadow-lg  ">
             {toast}
           </p>
         </div>

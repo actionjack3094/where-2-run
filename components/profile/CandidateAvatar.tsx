@@ -37,7 +37,7 @@ export function CandidateAvatar({
   className?: string;
 }) {
   const frame = cn(
-    "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-gold/60 bg-zinc-800 font-display font-semibold text-gold shadow-[inset_0_0_0_1px_rgba(212,175,55,0.15)]",
+    "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-gold/60 bg-stone-100 font-display font-semibold text-amber-800 shadow-[inset_0_0_0_1px_rgba(212,175,55,0.15)]",
     SIZE_CLASS[size],
     className,
   );
@@ -74,13 +74,13 @@ export function CandidateIdentity({
   return (
     <Link
       href={`/profile/${id}`}
-      className="flex min-w-0 items-center gap-3 rounded-md outline-none transition-colors hover:text-gold focus-visible:ring-2 focus-visible:ring-gold/70"
+      className="flex min-w-0 items-center gap-3 rounded-md outline-none transition-colors hover:text-amber-800 focus-visible:ring-2 focus-visible:ring-gold/70"
     >
       <CandidateAvatar name={username} avatarUrl={avatarUrl} size={size} />
       <span className="flex min-w-0 items-center gap-1.5">
         <span
           className={cn(
-            "min-w-0 truncate font-display font-semibold tracking-tight text-parchment hover:text-gold",
+            "min-w-0 truncate font-display font-semibold tracking-tight text-stone-900 hover:text-amber-800",
             nameClassName,
           )}
         >

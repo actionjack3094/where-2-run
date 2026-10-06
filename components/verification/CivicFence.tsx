@@ -22,7 +22,7 @@ export function CivicFence({
       {children}
       <span
         role="tooltip"
-        className="pointer-events-none absolute bottom-[calc(100%+0.4rem)] left-1/2 z-20 hidden w-56 -translate-x-1/2 rounded-md border border-gold/50 bg-zinc-950 px-3 py-2 text-center text-[11px] leading-4 text-parchment shadow-[0_8px_24px_rgba(0,0,0,0.45)] group-hover:block group-focus-within:block"
+        className="pointer-events-none absolute bottom-[calc(100%+0.4rem)] left-1/2 z-20 hidden w-56 -translate-x-1/2 rounded-md border border-gold/50 bg-white px-3 py-2 text-center text-[11px] leading-4 text-stone-900 shadow-[0_8px_24px_rgba(0,0,0,0.45)] group-hover:block group-focus-within:block"
       >
         {CIVIC_FENCE_HINT}
       </span>
@@ -32,11 +32,11 @@ export function CivicFence({
 
 export function CivicFenceNote({ href = "/my-campaign/verify" }: { href?: string }) {
   return (
-    <p className="text-[11px] leading-5 text-gold">
+    <p className="text-[11px] leading-5 text-amber-800">
       {CIVIC_FENCE_HINT}{" "}
       <Link
         href={href}
-        className="ml-1 font-medium uppercase tracking-widest underline decoration-gold/50 underline-offset-4 hover:text-parchment"
+        className="ml-1 font-medium uppercase tracking-widest underline decoration-gold/50 underline-offset-4 hover:text-stone-900"
       >
         Open verification hub
       </Link>

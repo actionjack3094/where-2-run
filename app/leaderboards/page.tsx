@@ -42,16 +42,16 @@ export default async function LeaderboardsIndexPage() {
     user && resolved != null ? Math.max(0, RANK_MATCHES - resolved) : 0;
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10 pb-16">
         <header>
-          <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+          <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800">
             Leaderboards
           </p>
-          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment">
+          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-stone-900">
             The floor
           </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600">
             Your matched rank, the backyard floor, the tightest arenas, and every race with a
             declared candidate.
           </p>
@@ -77,9 +77,9 @@ export default async function LeaderboardsIndexPage() {
             }
           >
             {dashboard.matched.rank != null ? (
-              <p className="font-display text-3xl font-semibold tabular-nums text-gold">
+              <p className="font-display text-3xl font-semibold tabular-nums text-amber-800">
                 #{dashboard.matched.rank}
-                <span className="ml-2 text-base font-medium text-zinc-400">
+                <span className="ml-2 text-base font-medium text-stone-600">
                   of {dashboard.matched.fieldSize} · {dashboard.matched.elo} Civic Standing
                 </span>
               </p>
@@ -89,13 +89,13 @@ export default async function LeaderboardsIndexPage() {
                 <li key={person.id}>
                   <Link
                     href={`/candidate/${person.id}`}
-                    className="flex items-baseline justify-between gap-3 text-sm text-parchment hover:text-gold"
+                    className="flex items-baseline justify-between gap-3 text-sm text-stone-900 hover:text-amber-800"
                   >
                     <span>
                       #{person.rank} {person.name}
                       {person.isViewer ? " · you" : ""}
                     </span>
-                    <span className="tabular-nums text-zinc-400">{person.elo}</span>
+                    <span className="tabular-nums text-stone-600">{person.elo}</span>
                   </Link>
                 </li>
               ))}
@@ -117,9 +117,9 @@ export default async function LeaderboardsIndexPage() {
             <ul className="flex flex-col gap-3">
               {dashboard.grassroots.policies.slice(0, 5).map((policy) => (
                 <li key={policy.id}>
-                  <Link href={`/debates/${policy.id}`} className="block hover:text-gold">
-                    <p className="text-sm leading-6 text-parchment">{policy.title}</p>
-                    <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                  <Link href={`/debates/${policy.id}`} className="block hover:text-amber-800">
+                    <p className="text-sm leading-6 text-stone-900">{policy.title}</p>
+                    <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-stone-600">
                       {policy.votes} votes · {policy.comments} comments
                     </p>
                   </Link>
@@ -141,9 +141,9 @@ export default async function LeaderboardsIndexPage() {
             <ul className="flex flex-col gap-3">
               {dashboard.arenas.races.slice(0, 4).map((race) => (
                 <li key={race.id}>
-                  <Link href={`/leaderboards/${race.id}`} className="block hover:text-gold">
-                    <p className="text-sm font-medium text-parchment">{race.name}</p>
-                    <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                  <Link href={`/leaderboards/${race.id}`} className="block hover:text-amber-800">
+                    <p className="text-sm font-medium text-stone-900">{race.name}</p>
+                    <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-stone-600">
                       {race.spread} Civic Standing between the top three
                     </p>
                   </Link>
@@ -160,9 +160,9 @@ export default async function LeaderboardsIndexPage() {
             <ul className="flex flex-col gap-3">
               {races.slice(0, 6).map((race) => (
                 <li key={race.id}>
-                  <Link href={`/leaderboards/${race.id}`} className="block hover:text-gold">
-                    <p className="text-sm font-medium text-parchment">{race.label}</p>
-                    <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                  <Link href={`/leaderboards/${race.id}`} className="block hover:text-amber-800">
+                    <p className="text-sm font-medium text-stone-900">{race.label}</p>
+                    <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-stone-600">
                       {race.candidateCount}{" "}
                       {race.candidateCount === 1 ? "candidate" : "candidates"}
                     </p>
@@ -191,9 +191,9 @@ function Panel({
   children?: ReactNode;
 }) {
   return (
-    <section className="flex min-h-64 flex-col rounded-xl border border-gold/40 bg-zinc-900 px-5 py-5">
-      <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">{kicker}</p>
-      <h2 className="mt-2 font-display text-xl font-semibold tracking-tight text-parchment">
+    <section className="flex min-h-64 flex-col rounded-xl border border-gold/40 bg-white px-5 py-5">
+      <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800">{kicker}</p>
+      <h2 className="mt-2 font-display text-xl font-semibold tracking-tight text-stone-900">
         {title}
       </h2>
       {error ? (
@@ -201,7 +201,7 @@ function Panel({
           {error}
         </p>
       ) : empty ? (
-        <p className="mt-4 text-sm leading-6 text-zinc-400">{empty}</p>
+        <p className="mt-4 text-sm leading-6 text-stone-600">{empty}</p>
       ) : (
         <div className="mt-4">{children}</div>
       )}

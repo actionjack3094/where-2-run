@@ -102,15 +102,15 @@ function ProgressRing({
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={complete ? 0 : circumference}
-          className="text-gold-strong transition-[stroke-dashoffset] duration-500 ease-out"
+          className="text-amber-800-strong transition-[stroke-dashoffset] duration-500 ease-out"
         />
       </svg>
       <span
         className={cn(
           "absolute inset-0 m-auto flex h-6 w-6 items-center justify-center rounded-full border text-[10px] font-semibold",
           complete
-            ? "border-gold-strong bg-gold-strong text-zinc-950"
-            : "border-gold/40 bg-zinc-950 text-gold",
+            ? "border-gold-strong bg-gold-strong text-stone-900"
+            : "border-gold/40 bg-white text-amber-800",
         )}
       >
         {complete ? (
@@ -178,22 +178,22 @@ export function BallotRoadmap() {
     <section aria-labelledby="ballot-roadmap-heading">
       <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <header>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
             Campaign Tools
           </p>
           <h2
             id="ballot-roadmap-heading"
-            className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment"
+            className="mt-3 font-display text-3xl font-semibold tracking-tight text-stone-900"
           >
             Ballot Access Roadmap
           </h2>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+          <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
             Three filings stand between a declared campaign and a printed ballot.
             Mark each milestone as the clerk records it.
           </p>
         </header>
 
-        <div className="flex items-center gap-3 self-start rounded-xl border border-gold/40 bg-zinc-900 px-4 py-3 sm:self-auto">
+        <div className="flex items-center gap-3 self-start rounded-xl border border-gold/40 bg-white px-4 py-3 sm:self-auto">
           <span className="relative inline-flex h-12 w-12 items-center justify-center">
             <svg viewBox="0 0 44 44" className="h-12 w-12 -rotate-90" aria-hidden>
               <circle
@@ -215,14 +215,14 @@ export function BallotRoadmap() {
                 strokeLinecap="round"
                 strokeDasharray={2 * Math.PI * 18}
                 strokeDashoffset={overallOffset}
-                className="text-gold-strong transition-[stroke-dashoffset] duration-500 ease-out"
+                className="text-amber-800-strong transition-[stroke-dashoffset] duration-500 ease-out"
               />
             </svg>
-            <span className="absolute font-display text-xs font-semibold tabular-nums text-parchment">
+            <span className="absolute font-display text-xs font-semibold tabular-nums text-stone-900">
               {doneCount}/{total}
             </span>
           </span>
-          <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-400">
+          <p className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
             {doneCount === total ? "Ballot ready" : "Milestones filed"}
           </p>
         </div>
@@ -244,23 +244,23 @@ export function BallotRoadmap() {
                 aria-disabled={locked}
                 onClick={() => toggle(milestone.id)}
                 className={cn(
-                  "flex h-full w-full items-start gap-4 rounded-xl border bg-zinc-900 p-5 text-left shadow-[inset_3px_0_0_0_var(--gold)] transition-colors",
+                  "flex h-full w-full items-start gap-4 rounded-xl border bg-white p-5 text-left shadow-[inset_3px_0_0_0_var(--gold)] transition-colors",
                   complete
-                    ? "border-gold bg-zinc-900"
+                    ? "border-gold bg-white"
                     : "border-gold/50 hover:border-gold",
                   locked && "cursor-not-allowed opacity-60 hover:border-gold/50",
                 )}
               >
                 <ProgressRing complete={complete} locked={locked} />
                 <span className="min-w-0">
-                  <span className="text-[11px] font-medium uppercase tracking-widest text-gold">
+                  <span className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
                     Step {milestone.step}
                     {complete ? " · Filed" : locked ? " · Locked" : ""}
                   </span>
-                  <span className="mt-2 block font-display text-lg font-semibold leading-snug tracking-tight text-parchment">
+                  <span className="mt-2 block font-display text-lg font-semibold leading-snug tracking-tight text-stone-900">
                     {milestone.title}
                   </span>
-                  <span className="mt-2 block text-sm leading-6 text-zinc-400">
+                  <span className="mt-2 block text-sm leading-6 text-stone-600">
                     {milestone.detail}
                   </span>
                 </span>

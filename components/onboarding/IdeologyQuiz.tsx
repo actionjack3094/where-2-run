@@ -78,20 +78,20 @@ export function IdeologyQuiz() {
 
   return (
     <section className="mt-10 flex flex-1 flex-col">
-      <div className="h-1 w-full overflow-hidden rounded-full bg-zinc-900">
+      <div className="h-1 w-full overflow-hidden rounded-full bg-white">
         <div
           className="h-full bg-gold transition-all duration-300"
           style={{ width: `${progress}%` }}
         />
       </div>
 
-      <p className="mt-8 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+      <p className="mt-8 text-[11px] font-medium uppercase tracking-widest text-stone-600">
         Question {step + 1} of {BASELINE_QUESTIONS.length}
       </p>
-      <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+      <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800">
         {question.topic}
       </p>
-      <h2 className="mt-3 font-display text-2xl font-semibold leading-snug tracking-tight text-parchment">
+      <h2 className="mt-3 font-display text-2xl font-semibold leading-snug tracking-tight text-stone-900">
         {question.prompt}
       </h2>
 
@@ -159,12 +159,12 @@ function SliderPrompt({
   onChange: (score: number) => void;
 }) {
   return (
-    <div className="mt-8 rounded-xl border border-gold/50 bg-zinc-900 p-6 shadow-[inset_3px_0_0_0_var(--gold-strong)]">
+    <div className="mt-8 rounded-xl border border-gold/50 bg-white p-6 shadow-[inset_3px_0_0_0_var(--gold-strong)]">
       <div className="flex items-baseline justify-between gap-4">
-        <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+        <p className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
           Coordinate
         </p>
-        <p className="font-display text-2xl font-semibold tabular-nums tracking-tight text-parchment">
+        <p className="font-display text-2xl font-semibold tabular-nums tracking-tight text-stone-900">
           {formatStanceAxis(value)}
         </p>
       </div>
@@ -179,17 +179,17 @@ function SliderPrompt({
         aria-valuemax={1}
         aria-valuenow={value}
         onChange={(event) => onChange(Number(event.target.value) / 100)}
-        className="mt-6 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-zinc-800 accent-gold"
+        className="mt-6 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-stone-100 accent-gold"
       />
-      <div className="mt-5 grid gap-4 text-sm leading-6 text-zinc-400 sm:grid-cols-2">
+      <div className="mt-5 grid gap-4 text-sm leading-6 text-stone-600 sm:grid-cols-2">
         <p>
-          <span className="block text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+          <span className="block text-[11px] font-medium uppercase tracking-widest text-stone-600">
             −1.0
           </span>
           {question.leftLabel}
         </p>
         <p className="sm:text-right">
-          <span className="block text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+          <span className="block text-[11px] font-medium uppercase tracking-widest text-stone-600">
             +1.0
           </span>
           {question.rightLabel}
@@ -220,11 +220,11 @@ function ChoicePrompt({
             className={cn(
               "rounded-xl border px-4 py-4 text-left text-sm leading-6 transition-colors",
               selected
-                ? "border-gold bg-gold-strong/15 text-parchment shadow-[inset_3px_0_0_0_var(--gold-strong)]"
-                : "border-gold/40 bg-zinc-900 text-zinc-300 hover:border-gold hover:text-parchment",
+                ? "border-gold bg-gold-strong/15 text-stone-900 shadow-[inset_3px_0_0_0_var(--gold-strong)]"
+                : "border-gold/40 bg-white text-stone-600 hover:border-gold hover:text-stone-900",
             )}
           >
-            <span className="mb-2 block text-[11px] font-medium uppercase tracking-widest text-gold">
+            <span className="mb-2 block text-[11px] font-medium uppercase tracking-widest text-amber-800">
               {formatStanceAxis(option.score)}
             </span>
             {option.label}

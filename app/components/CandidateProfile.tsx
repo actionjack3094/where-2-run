@@ -60,14 +60,14 @@ export function CandidateProfile({
   }
 
   return (
-    <section className="rounded-xl border border-brass/40 bg-zinc-900 px-5 py-5">
+    <section className="rounded-xl border border-brass/40 bg-white px-5 py-5">
       <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-brass">
         Escrow wallet
       </p>
-      <h2 className="mt-2 font-display text-xl font-semibold tracking-tight text-parchment">
+      <h2 className="mt-2 font-display text-xl font-semibold tracking-tight text-stone-900">
         {showDonate ? "Donate" : "Escrow"}
       </h2>
-      <p className="mt-2 text-sm leading-6 text-zinc-400">
+      <p className="mt-2 text-sm leading-6 text-stone-600">
         {candidateName} has locked {selected.label}. Escrow on this race is ${pledged.toFixed(2)}.
       </p>
       {selected.escrowStatus === "verification_pending" ? (
@@ -76,12 +76,12 @@ export function CandidateProfile({
         </p>
       ) : null}
       {lockedTargets.length > 1 ? (
-        <label className="mt-4 block text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+        <label className="mt-4 block text-[11px] font-medium uppercase tracking-widest text-stone-600">
           Race
           <select
             value={selected.id}
             onChange={(event) => setTargetId(event.target.value)}
-            className="mt-2 h-10 w-full rounded-md border border-brass/40 bg-zinc-950 px-3 text-sm normal-case tracking-normal text-parchment"
+            className="mt-2 h-10 w-full rounded-md border border-brass/40 bg-white px-3 text-sm normal-case tracking-normal text-stone-900"
           >
             {lockedTargets.map((target) => (
               <option key={target.id} value={target.id}>
@@ -95,7 +95,7 @@ export function CandidateProfile({
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
           {showPledge ? (
             <>
-              <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+              <label className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
                 Amount
                 <input
                   type="number"
@@ -104,7 +104,7 @@ export function CandidateProfile({
                   inputMode="decimal"
                   value={amount}
                   onChange={(event) => setAmount(event.target.value)}
-                  className="mt-2 h-10 w-full rounded-md border border-brass/40 bg-zinc-950 px-3 text-sm normal-case tracking-normal text-parchment sm:w-36"
+                  className="mt-2 h-10 w-full rounded-md border border-brass/40 bg-white px-3 text-sm normal-case tracking-normal text-stone-900 sm:w-36"
                 />
               </label>
               <button
@@ -130,7 +130,7 @@ export function CandidateProfile({
           {showClaim ? (
             <Link
               href="/claim"
-              className="inline-flex h-10 items-center justify-center rounded-md border border-brass/50 px-4 text-xs font-medium uppercase tracking-widest text-parchment transition-colors hover:border-brass hover:text-brass"
+              className="inline-flex h-10 items-center justify-center rounded-md border border-brass/50 px-4 text-xs font-medium uppercase tracking-widest text-stone-900 transition-colors hover:border-brass hover:text-brass"
             >
               Claim Escrow
             </Link>
@@ -138,7 +138,7 @@ export function CandidateProfile({
         </div>
       ) : null}
       {selected.escrowStatus === "released" && !donationHref ? (
-        <p className="mt-4 text-sm leading-6 text-zinc-400">
+        <p className="mt-4 text-sm leading-6 text-stone-600">
           The official ActBlue or WinRed page is not on file yet.
         </p>
       ) : null}

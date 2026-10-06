@@ -58,7 +58,7 @@ function TrackDebateCard({ item, viewerId }: { item: OcdTrackDebate; viewerId: s
   return (
     <article
       className={cn(
-        "rounded-xl border bg-zinc-900 p-5",
+        "rounded-xl border bg-white p-5",
         backyard
           ? "border-blue-400/25 shadow-[inset_3px_0_0_0_rgba(59,130,246,0.45)]"
           : "border-red-400/25 shadow-[inset_3px_0_0_0_rgba(239,68,68,0.4)]",
@@ -69,20 +69,20 @@ function TrackDebateCard({ item, viewerId }: { item: OcdTrackDebate; viewerId: s
           className={cn(
             "rounded-full border px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest",
             backyard
-              ? "border-blue-400/30 bg-blue-500/10 text-blue-200"
-              : "border-red-400/30 bg-red-500/10 text-red-200",
+              ? "border-blue-400/30 bg-blue-500/10 text-blue-800"
+              : "border-red-400/30 bg-red-500/10 text-red-800",
           )}
         >
           {backyard ? "The Backyard" : "Debates"}
         </span>
-        <span className="rounded-full border border-white/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-zinc-400">
+        <span className="rounded-full border border-white/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-stone-600">
           {statusLabel(item.status)}
         </span>
       </div>
 
       <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <Link href={`/debates/${item.id}`} className="min-w-0">
-          <h2 className="text-lg font-semibold leading-snug tracking-tight text-parchment">
+          <h2 className="text-lg font-semibold leading-snug tracking-tight text-stone-900">
             {item.title}
           </h2>
         </Link>
@@ -91,7 +91,7 @@ function TrackDebateCard({ item, viewerId }: { item: OcdTrackDebate; viewerId: s
             href={`/elections/district/${item.electionSlug}/profile`}
             className={cn(
               "shrink-0 text-[11px] font-medium uppercase tracking-widest",
-              backyard ? "text-blue-200" : "text-red-200",
+              backyard ? "text-blue-800" : "text-red-800",
             )}
           >
             {item.districtName}
@@ -100,7 +100,7 @@ function TrackDebateCard({ item, viewerId }: { item: OcdTrackDebate; viewerId: s
           <p
             className={cn(
               "shrink-0 text-[11px] font-medium uppercase tracking-widest",
-              backyard ? "text-blue-200" : "text-red-200",
+              backyard ? "text-blue-800" : "text-red-800",
             )}
           >
             {item.districtName}
@@ -108,9 +108,9 @@ function TrackDebateCard({ item, viewerId }: { item: OcdTrackDebate; viewerId: s
         )}
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-zinc-300">
+      <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-stone-600">
         <SeatedCandidate candidate={item.candidateA} fallback="Open seat" />
-        <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">vs</span>
+        <span className="text-[11px] font-medium uppercase tracking-widest text-stone-600">vs</span>
         <SeatedCandidate candidate={item.candidateB} fallback="Open seat" />
       </div>
 
@@ -118,7 +118,7 @@ function TrackDebateCard({ item, viewerId }: { item: OcdTrackDebate; viewerId: s
         <div className="mt-5">
           <Link
             href={`/debates/${item.id}`}
-            className="inline-flex h-10 w-fit items-center justify-center rounded bg-red-900 px-4 py-2 text-xs font-medium uppercase tracking-widest text-parchment transition-colors hover:bg-red-800"
+            className="inline-flex h-10 w-fit items-center justify-center rounded bg-red-900 px-4 py-2 text-xs font-medium uppercase tracking-widest text-stone-900 transition-colors hover:bg-red-800"
           >
             ENTER ARENA (YOUR TURN)
           </Link>
@@ -164,12 +164,12 @@ function ExplainPolicy({ policyText }: { policyText: string }) {
       <button
         type="button"
         onClick={() => void explain()}
-        className="inline-flex h-10 w-fit items-center justify-center rounded-md border border-blue-400/40 px-4 text-xs font-medium uppercase tracking-widest text-blue-100 transition-colors hover:border-blue-300 hover:text-white"
+        className="inline-flex h-10 w-fit items-center justify-center rounded-md border border-blue-400/40 px-4 text-xs font-medium uppercase tracking-widest text-blue-800 transition-colors hover:border-blue-300 hover:text-white"
       >
         Explain this Policy
       </button>
       {open ? (
-        <div className="mt-3 whitespace-pre-wrap rounded-lg border border-blue-400/20 bg-blue-950/20 px-4 py-3 text-sm leading-6 text-zinc-200">
+        <div className="mt-3 whitespace-pre-wrap rounded-lg border border-blue-400/20 bg-blue-950/20 px-4 py-3 text-sm leading-6 text-stone-700">
           {pending ? "Reading the policy…" : error ?? breakdown}
         </div>
       ) : null}
@@ -223,20 +223,20 @@ function CandidateQuestionCard({ item }: { item: RedFeedQuestion }) {
 
   return (
     <>
-    <article className="rounded-xl border border-red-500/40 bg-zinc-900 p-5 shadow-[inset_3px_0_0_0_#ef4444]">
+    <article className="rounded-xl border border-red-500/40 bg-white p-5 shadow-[inset_3px_0_0_0_#ef4444]">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-full border border-red-500/40 bg-red-500/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-red-300">
+        <span className="rounded-full border border-red-500/40 bg-red-500/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-red-700">
           {challenge ? "Opponent waiting" : "Open floor"}
         </span>
-        <span className="rounded-full border border-red-500/30 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-zinc-400">
+        <span className="rounded-full border border-red-500/30 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-stone-600">
           {item.jurisdictionalLevel}
         </span>
-        <span className="rounded-full border border-red-500/30 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-zinc-400">
+        <span className="rounded-full border border-red-500/30 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-stone-600">
           {SIX_AXIS_LABELS[item.primaryAxis]}
         </span>
       </div>
 
-      <p className="mt-3 text-sm leading-6 text-zinc-300">
+      <p className="mt-3 text-sm leading-6 text-stone-600">
         {challenge
           ? `${opponent} is waiting on this question. Challenge them instead of starting a new thread.`
           : mode === "holding"
@@ -247,30 +247,30 @@ function CandidateQuestionCard({ item }: { item: RedFeedQuestion }) {
       <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         {item.waitingDebateId ? (
           <Link href={`/debates/${item.waitingDebateId}`} className="min-w-0">
-            <h2 className="text-lg font-semibold leading-snug tracking-tight text-parchment hover:text-red-300">
+            <h2 className="text-lg font-semibold leading-snug tracking-tight text-stone-900 hover:text-red-700">
               {item.prompt}
             </h2>
           </Link>
         ) : (
-          <h2 className="text-lg font-semibold leading-snug tracking-tight text-parchment">
+          <h2 className="text-lg font-semibold leading-snug tracking-tight text-stone-900">
             {item.prompt}
           </h2>
         )}
         {item.electionSlug ? (
           <Link
             href={`/elections/district/${item.electionSlug}/profile`}
-            className="shrink-0 text-[11px] font-medium uppercase tracking-widest text-red-300 hover:text-red-200"
+            className="shrink-0 text-[11px] font-medium uppercase tracking-widest text-red-700 hover:text-red-800"
           >
             {item.districtName}
           </Link>
         ) : (
-          <p className="shrink-0 text-[11px] font-medium uppercase tracking-widest text-red-300">
+          <p className="shrink-0 text-[11px] font-medium uppercase tracking-widest text-red-700">
             {item.districtName}
           </p>
         )}
       </div>
 
-      <p className="mt-3 font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+      <p className="mt-3 font-mono text-[10px] uppercase tracking-widest text-stone-600">
         Information gain {item.informationGainScore.toFixed(2)}
       </p>
 
@@ -292,7 +292,7 @@ function CandidateQuestionCard({ item }: { item: RedFeedQuestion }) {
                 : "TAKE THE FLOOR"}
         </button>
         {error ? (
-          <p className="text-sm leading-6 text-red-300" role="alert">
+          <p className="text-sm leading-6 text-red-700" role="alert">
             {error}
           </p>
         ) : null}
@@ -303,7 +303,7 @@ function CandidateQuestionCard({ item }: { item: RedFeedQuestion }) {
         role="alert"
         className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-6"
       >
-        <p className="rounded-full border border-red-500/50 bg-zinc-950 px-4 py-2 text-sm text-red-200 shadow-lg">
+        <p className="rounded-full border border-red-500/50 bg-white px-4 py-2 text-sm text-red-800 shadow-lg">
           {toast}
         </p>
       </div>
@@ -314,39 +314,39 @@ function CandidateQuestionCard({ item }: { item: RedFeedQuestion }) {
 
 function JuryDebateCard({ item }: { item: BlueFeedDebate }) {
   return (
-    <article className="rounded-xl border border-blue-500/40 bg-zinc-900 p-5 shadow-[inset_3px_0_0_0_#3b82f6]">
+    <article className="rounded-xl border border-blue-500/40 bg-white p-5 shadow-[inset_3px_0_0_0_#3b82f6]">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-full border border-blue-500/40 bg-blue-500/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-blue-300">
+        <span className="rounded-full border border-blue-500/40 bg-blue-500/10 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-blue-800">
           Jury
         </span>
-        <span className="rounded-full border border-blue-500/30 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-zinc-400">
+        <span className="rounded-full border border-blue-500/30 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-stone-600">
           {statusLabel(item.status)}
         </span>
       </div>
 
       <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <Link href={`/debates/${item.id}`} className="min-w-0">
-          <h2 className="text-lg font-semibold leading-snug tracking-tight text-parchment hover:text-blue-300">
+          <h2 className="text-lg font-semibold leading-snug tracking-tight text-stone-900 hover:text-blue-800">
             {item.title}
           </h2>
         </Link>
         {item.electionSlug ? (
           <Link
             href={`/elections/district/${item.electionSlug}/profile`}
-            className="shrink-0 text-[11px] font-medium uppercase tracking-widest text-blue-300 hover:text-blue-200"
+            className="shrink-0 text-[11px] font-medium uppercase tracking-widest text-blue-800 hover:text-blue-800"
           >
             {item.districtName}
           </Link>
         ) : (
-          <p className="shrink-0 text-[11px] font-medium uppercase tracking-widest text-blue-300">
+          <p className="shrink-0 text-[11px] font-medium uppercase tracking-widest text-blue-800">
             {item.districtName}
           </p>
         )}
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-zinc-300">
+      <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-stone-600">
         <SeatedCandidate candidate={item.candidateA} fallback="Open seat" />
-        <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">vs</span>
+        <span className="text-[11px] font-medium uppercase tracking-widest text-stone-600">vs</span>
         <SeatedCandidate candidate={item.candidateB} fallback="Open seat" />
       </div>
 
@@ -354,7 +354,7 @@ function JuryDebateCard({ item }: { item: BlueFeedDebate }) {
         <button
           type="button"
           disabled
-          className="inline-flex h-10 w-fit cursor-not-allowed items-center justify-center rounded-md border border-blue-500/30 px-4 text-xs font-medium uppercase tracking-widest text-zinc-500 opacity-50"
+          className="inline-flex h-10 w-fit cursor-not-allowed items-center justify-center rounded-md border border-blue-500/30 px-4 text-xs font-medium uppercase tracking-widest text-stone-600 opacity-50"
         >
           Take a Stance
         </button>
@@ -397,8 +397,8 @@ function VoteForWinner({ item }: { item: BlueFeedDebate }) {
   }
 
   return (
-    <section className="rounded-lg border border-blue-500/30 bg-zinc-950/70 px-4 py-3">
-      <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-blue-300">
+    <section className="rounded-lg border border-blue-500/30 bg-stone-100 px-4 py-3">
+      <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-blue-800">
         Vote for Winner
       </p>
       {seated ? (
@@ -419,12 +419,12 @@ function VoteForWinner({ item }: { item: BlueFeedDebate }) {
           />
         </div>
       ) : (
-        <p className="mt-2 text-sm leading-6 text-zinc-400">
+        <p className="mt-2 text-sm leading-6 text-stone-600">
           Waiting for both candidates before the jury can vote.
         </p>
       )}
       {error ? (
-        <p className="mt-2 text-sm leading-6 text-blue-200" role="alert">
+        <p className="mt-2 text-sm leading-6 text-blue-800" role="alert">
           {error}
         </p>
       ) : null}
@@ -455,7 +455,7 @@ function WinnerButton({
         "inline-flex h-10 items-center justify-center rounded-md border px-3 text-xs font-medium uppercase tracking-widest transition-colors disabled:cursor-not-allowed disabled:opacity-50",
         pressed
           ? "border-blue-400 bg-blue-600 text-white"
-          : "border-blue-500/40 bg-zinc-900 text-blue-100 hover:border-blue-400",
+          : "border-blue-500/40 bg-white text-blue-800 hover:border-blue-400",
       )}
     >
       {pending ? "Voting…" : label}

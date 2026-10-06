@@ -115,35 +115,35 @@ export default async function SpectatorPage() {
   const { candidates, error } = await loadDonorFeed();
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
               Donor Feed
             </p>
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-100">
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-stone-900">
               Escrow Pledges
             </h1>
-            <p className="mt-2 text-sm leading-6 text-zinc-400">
+            <p className="mt-2 text-sm leading-6 text-stone-600">
               Back a candidate with a $50 escrow pledge. Campaigns clear the board at{" "}
               {formatUsd(GRASSROOTS_THRESHOLD)}.
             </p>
           </div>
           <Link
             href="/leaderboards"
-            className="inline-flex h-9 w-fit items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 px-3 text-xs font-medium uppercase tracking-widest text-zinc-100 transition-colors hover:bg-zinc-700"
+            className="inline-flex h-9 w-fit items-center justify-center rounded-md border border-amber-500/30 bg-stone-100 px-3 text-xs font-medium uppercase tracking-widest text-stone-900 transition-colors hover:bg-stone-200"
           >
             Leaderboards
           </Link>
         </header>
 
         {error ? (
-          <p className="mt-16 text-sm leading-6 text-zinc-400">
+          <p className="mt-16 text-sm leading-6 text-stone-600">
             Could not load the donor feed. {error}
           </p>
         ) : candidates.length === 0 ? (
-          <p className="mt-16 text-sm leading-6 text-zinc-400">
+          <p className="mt-16 text-sm leading-6 text-stone-600">
             No candidates on the ticket yet. Take a stance or win a debate to appear
             here.
           </p>
@@ -161,13 +161,13 @@ export default async function SpectatorPage() {
 
 function CandidateCard({ candidate }: { candidate: DonorCandidate }) {
   return (
-    <article className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
+    <article className="rounded-xl border border-amber-500/30 bg-white p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <Link
               href={`/candidate/${candidate.id}`}
-              className="text-lg font-semibold leading-snug tracking-tight text-zinc-100 transition-colors hover:text-zinc-300"
+              className="text-lg font-semibold leading-snug tracking-tight text-stone-900 transition-colors hover:text-stone-900"
             >
               {candidate.username}
             </Link>
@@ -197,17 +197,17 @@ function FundingProgress({ pledged }: { pledged: number }) {
   return (
     <div className="mt-4">
       <div className="flex items-baseline justify-between gap-3">
-        <p className="text-sm font-medium tabular-nums text-zinc-100">
+        <p className="text-sm font-medium tabular-nums text-stone-900">
           {formatUsd(pledged)} pledged
         </p>
-        <p className="text-xs tabular-nums text-zinc-500">
+        <p className="text-xs tabular-nums text-stone-600">
           {cleared
             ? "Goal cleared"
             : `${formatUsd(remaining)} to go toward ${formatUsd(GRASSROOTS_THRESHOLD)}`}
         </p>
       </div>
       <div
-        className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-800"
+        className="mt-2 h-2 overflow-hidden rounded-full bg-stone-100"
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={GRASSROOTS_THRESHOLD}
@@ -215,11 +215,11 @@ function FundingProgress({ pledged }: { pledged: number }) {
         aria-label="Campaign funding progress"
       >
         <div
-          className="h-full bg-zinc-100 transition-all duration-500"
+          className="h-full bg-stone-100 transition-all duration-500"
           style={{ width: `${barWidth}%` }}
         />
       </div>
-      <p className="mt-2 text-xs tabular-nums text-zinc-500">{percentLabel}%</p>
+      <p className="mt-2 text-xs tabular-nums text-stone-600">{percentLabel}%</p>
     </div>
   );
 }

@@ -29,16 +29,16 @@ export function DebateQueue({
     <section aria-labelledby="debate-queue-heading">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <header>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-gold">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-amber-800">
             Policy prompts
           </p>
           <h2
             id="debate-queue-heading"
-            className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment"
+            className="mt-3 font-display text-2xl font-semibold tracking-tight text-stone-900"
           >
             Debate queue
           </h2>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+          <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
             Floor prompts assigned to {officeName}. Escrow a bounty on a winner,
             or post the next question this district should answer.
           </p>
@@ -50,7 +50,7 @@ export function DebateQueue({
       </div>
 
       {pledges.length > 0 ? (
-        <p className="mt-4 text-sm text-zinc-400">
+        <p className="mt-4 text-sm text-stone-600">
           {formatUsd(escrowTotal)} vaulted across {pledges.length}{" "}
           {pledges.length === 1 ? "pledge" : "pledges"} on this race.
         </p>

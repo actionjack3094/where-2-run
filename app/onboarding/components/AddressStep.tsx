@@ -38,16 +38,16 @@ export function AddressStep({
   return (
     <section className="mt-10" aria-labelledby="address-heading">
       <header>
-        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800">
           Step 01 · Tier 1
         </p>
         <h2
           id="address-heading"
-          className="mt-2 font-display text-2xl font-semibold tracking-tight text-parchment"
+          className="mt-2 font-display text-2xl font-semibold tracking-tight text-stone-900"
         >
           Map your district
         </h2>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+        <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
           A residential ZIP is enough for a congressional match. 78704, for example,
           lands in Texas&apos;s 37th.
         </p>
@@ -55,7 +55,7 @@ export function AddressStep({
 
       <form className="mt-8 flex flex-col gap-4" onSubmit={(event) => void submit(event)}>
         <label className="flex flex-col gap-2">
-          <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+          <span className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
             ZIP code
           </span>
           <input
@@ -70,7 +70,7 @@ export function AddressStep({
               setZip(event.target.value);
               setError(null);
             }}
-            className="h-12 w-full rounded-md border border-gold/40 bg-zinc-950 px-4 text-sm text-parchment outline-none placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-gold/60"
+            className="h-12 w-full rounded-md border border-gold/40 bg-white px-4 text-sm text-stone-900 outline-none placeholder:text-stone-400 focus-visible:ring-2 focus-visible:ring-gold/60"
           />
         </label>
         {error ? (

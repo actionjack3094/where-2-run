@@ -253,13 +253,13 @@ export function BallotFeed() {
   }, [loadFeed]);
 
   if (stage === "loading") {
-    return <p className="mt-16 text-sm leading-6 text-zinc-400">Loading the ballot…</p>;
+    return <p className="mt-16 text-sm leading-6 text-stone-600">Loading the ballot…</p>;
   }
 
   if (stage === "error") {
     return (
       <div className="mt-16 space-y-4">
-        <p className="text-sm leading-6 text-zinc-400">{error ?? "Could not load the feed."}</p>
+        <p className="text-sm leading-6 text-stone-600">{error ?? "Could not load the feed."}</p>
         <button
           type="button"
           onClick={() => {
@@ -267,7 +267,7 @@ export function BallotFeed() {
             setStage("loading");
             void loadFeed();
           }}
-          className="inline-flex h-9 items-center justify-center rounded-md border border-gold/50 bg-zinc-800 px-3 text-xs font-medium uppercase tracking-widest text-parchment"
+          className="inline-flex h-9 items-center justify-center rounded-md border border-gold/50 bg-stone-100 px-3 text-xs font-medium uppercase tracking-widest text-stone-900"
         >
           Try again
         </button>
@@ -277,7 +277,7 @@ export function BallotFeed() {
 
   if (feed.length === 0) {
     return (
-      <p className="mt-16 text-sm leading-6 text-zinc-400">
+      <p className="mt-16 text-sm leading-6 text-stone-600">
         No active debates or open challenges in your races yet.
       </p>
     );
@@ -289,14 +289,14 @@ export function BallotFeed() {
         <article
           key={`${item.role}-${item.id}`}
           data-feed-role={item.role}
-          className="rounded-xl border border-accent/60 bg-zinc-900 p-5 shadow-[inset_3px_0_0_0_var(--accent)]"
+          className="rounded-xl border border-accent/60 bg-white p-5 shadow-[inset_3px_0_0_0_var(--accent)]"
         >
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full border border-accent/40 bg-accent-muted px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-accent-ring">
               {item.role === "voter" ? "Voter: District Watch" : "Candidate: Open Challenge"}
             </span>
             {item.role === "voter" ? (
-              <span className="rounded-full border border-accent/30 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-zinc-400">
+              <span className="rounded-full border border-accent/30 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-widest text-stone-600">
                 {statusLabel(item.status)}
               </span>
             ) : null}
@@ -305,12 +305,12 @@ export function BallotFeed() {
           <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             {item.role === "voter" ? (
               <Link href={`/debates/${item.id}`} className="min-w-0">
-                <h2 className="text-lg font-semibold leading-snug tracking-tight text-parchment hover:text-accent-ring">
+                <h2 className="text-lg font-semibold leading-snug tracking-tight text-stone-900 hover:text-accent-ring">
                   {item.title}
                 </h2>
               </Link>
             ) : (
-              <h2 className="text-lg font-semibold leading-snug tracking-tight text-parchment">
+              <h2 className="text-lg font-semibold leading-snug tracking-tight text-stone-900">
                 {item.title}
               </h2>
             )}
@@ -321,7 +321,7 @@ export function BallotFeed() {
             ) : item.electionSlug ? (
               <Link
                 href={`/elections/district/${item.electionSlug}/profile`}
-                className="shrink-0 text-[11px] font-medium uppercase tracking-widest text-accent-ring hover:text-gold"
+                className="shrink-0 text-[11px] font-medium uppercase tracking-widest text-accent-ring hover:text-amber-800"
               >
                 {item.districtName}
               </Link>
@@ -342,9 +342,9 @@ export function BallotFeed() {
                   nameClassName="text-sm"
                 />
               ) : (
-                <span className="text-sm text-zinc-500">Open seat</span>
+                <span className="text-sm text-stone-600">Open seat</span>
               )}
-              <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+              <span className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
                 vs
               </span>
               {item.candidateB ? (
@@ -355,7 +355,7 @@ export function BallotFeed() {
                   nameClassName="text-sm"
                 />
               ) : (
-                <span className="text-sm text-zinc-500">Awaiting challenger</span>
+                <span className="text-sm text-stone-600">Awaiting challenger</span>
               )}
             </div>
           ) : (
@@ -370,7 +370,7 @@ export function BallotFeed() {
                   />
                 </div>
               ) : null}
-              <p className="mt-3 line-clamp-3 text-sm leading-6 text-zinc-400">{item.body}</p>
+              <p className="mt-3 line-clamp-3 text-sm leading-6 text-stone-600">{item.body}</p>
             </>
           )}
 

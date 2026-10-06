@@ -57,7 +57,7 @@ export function DistrictForm({ districts }: { districts: DistrictOption[] }) {
             <label
               key={district.id}
               className={cn(
-                "flex cursor-pointer items-start gap-4 rounded-xl border bg-zinc-900 px-5 py-4 transition-colors",
+                "flex cursor-pointer items-start gap-4 rounded-xl border bg-white px-5 py-4 transition-colors",
                 selected
                   ? "border-gold shadow-[inset_3px_0_0_0_var(--gold-strong)]"
                   : "border-gold/40 hover:border-gold",
@@ -75,9 +75,9 @@ export function DistrictForm({ districts }: { districts: DistrictOption[] }) {
                 className="mt-1 accent-gold"
               />
               <span className="min-w-0">
-                <span className="block font-medium text-parchment">{district.name}</span>
+                <span className="block font-medium text-stone-900">{district.name}</span>
                 {detail ? (
-                  <span className="mt-1 block text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                  <span className="mt-1 block text-[11px] font-medium uppercase tracking-widest text-stone-600">
                     {detail}
                   </span>
                 ) : null}

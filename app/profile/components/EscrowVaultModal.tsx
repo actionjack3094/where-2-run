@@ -172,7 +172,7 @@ export function EscrowVaultModal({
         onClick={(event) => event.stopPropagation()}
       >
         <CardHeader>
-          <p className="text-xs font-medium uppercase tracking-widest text-gold">
+          <p className="text-xs font-medium uppercase tracking-widest text-amber-800">
             Off-session escrow
           </p>
           <CardTitle id={titleId}>
@@ -260,7 +260,7 @@ function AmountForm({
 }) {
   return (
     <form className="flex flex-col gap-4" onSubmit={onSubmit}>
-      <p className="text-sm leading-6 text-zinc-400">
+      <p className="text-sm leading-6 text-stone-600">
         Choose the amount to charge for {officeName} when a candidate files. That
         figure is locked in before the card is saved.
       </p>
@@ -290,7 +290,7 @@ function AmountForm({
 
       {preset === "custom" ? (
         <label className="flex flex-col gap-1.5 text-sm">
-          <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">
+          <span className="text-xs font-medium uppercase tracking-widest text-stone-600">
             Dollar amount
           </span>
           <input
@@ -302,13 +302,13 @@ function AmountForm({
             autoFocus
             value={customAmount}
             onChange={(event) => onCustomAmount(event.target.value)}
-            className="h-10 rounded-lg border border-gold/40 bg-zinc-950 px-3 text-sm text-parchment outline-none focus:border-gold"
+            className="h-10 rounded-lg border border-gold/40 bg-white px-3 text-sm text-stone-900 outline-none focus:border-gold"
           />
         </label>
       ) : null}
 
       {formError ? (
-        <p className="text-sm text-red-300" role="alert">
+        <p className="text-sm text-red-700" role="alert">
           {formError}
         </p>
       ) : null}
@@ -402,8 +402,8 @@ function VaultCardForm({
 
   return (
     <form className="flex flex-col gap-4" onSubmit={(event) => void confirmVault(event)}>
-      <div className="rounded-xl border border-gold/50 bg-zinc-950 px-4 py-4 text-sm leading-6 text-zinc-300">
-        <p className="font-display text-base font-semibold text-parchment">
+      <div className="rounded-xl border border-gold/50 bg-white px-4 py-4 text-sm leading-6 text-stone-600">
+        <p className="font-display text-base font-semibold text-stone-900">
           Off-session charge agreement
         </p>
         <p className="mt-3">
@@ -424,7 +424,7 @@ function VaultCardForm({
 
       <label
         htmlFor={consentId}
-        className="flex cursor-pointer items-start gap-3 rounded-xl border border-gold/40 bg-zinc-950 px-4 py-4"
+        className="flex cursor-pointer items-start gap-3 rounded-xl border border-gold/40 bg-white px-4 py-4"
       >
         <input
           id={consentId}
@@ -437,7 +437,7 @@ function VaultCardForm({
           }}
           className="mt-1 h-4 w-4 accent-gold"
         />
-        <span className="text-sm leading-6 text-parchment">
+        <span className="text-sm leading-6 text-stone-900">
           I agree. WHERE 2 RUN may charge {formattedAmount} on my behalf when a
           candidate files for {officeName}.
         </span>
@@ -446,7 +446,7 @@ function VaultCardForm({
       <PaymentElement options={{ layout: "tabs" }} />
 
       {formError ? (
-        <p className="text-sm text-red-300" role="alert">
+        <p className="text-sm text-red-700" role="alert">
           {formError}
         </p>
       ) : null}

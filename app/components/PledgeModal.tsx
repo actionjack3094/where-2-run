@@ -67,7 +67,7 @@ export function PledgeSupportButton({
       ) : null}
       {toast ? (
         <div role="status" className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-6">
-          <p className="rounded-full border border-gold bg-zinc-950 px-4 py-2 text-sm text-gold shadow-lg">
+          <p className="rounded-full border border-gold bg-white px-4 py-2 text-sm text-amber-800 shadow-lg">
             {toast}
           </p>
         </div>
@@ -160,33 +160,33 @@ export function PledgeModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="w-full max-w-md rounded-xl border border-gold/50 bg-zinc-900 px-6 py-6"
+        className="w-full max-w-md rounded-xl border border-gold/50 bg-white px-6 py-6"
         onClick={(event) => event.stopPropagation()}
       >
-        <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+        <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
           Escrow pledge
         </p>
         <h2
           id={titleId}
-          className="mt-2 font-display text-2xl font-semibold tracking-tight text-parchment"
+          className="mt-2 font-display text-2xl font-semibold tracking-tight text-stone-900"
         >
           Pledge Support
         </h2>
-        <p className="mt-2 text-sm leading-6 text-zinc-400">
+        <p className="mt-2 text-sm leading-6 text-stone-600">
           Back {candidateName} in escrow. Nothing moves until the alignment streak clears.
         </p>
 
         <form className="mt-6 flex flex-col gap-4" onSubmit={(event) => void confirm(event)}>
           {races.length > 1 ? (
             <label className="flex flex-col gap-2" htmlFor={selectId}>
-              <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+              <span className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
                 Race
               </span>
               <select
                 id={selectId}
                 value={electionId}
                 onChange={(event) => setElectionId(event.target.value)}
-                className="h-12 w-full rounded-md border border-gold/40 bg-zinc-950 px-3 text-sm text-parchment outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
+                className="h-12 w-full rounded-md border border-gold/40 bg-white px-3 text-sm text-stone-900 outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
               >
                 {races.map((race) => (
                   <option key={race.electionId} value={race.electionId}>
@@ -223,7 +223,7 @@ export function PledgeModal({
 
           {preset === "custom" ? (
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+              <span className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
                 Custom amount
               </span>
               <input
@@ -235,12 +235,12 @@ export function PledgeModal({
                 autoFocus
                 value={customAmount}
                 onChange={(event) => setCustomAmount(event.target.value)}
-                className="h-12 rounded-md border border-gold/40 bg-zinc-950 px-3 text-sm text-parchment outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
+                className="h-12 rounded-md border border-gold/40 bg-white px-3 text-sm text-stone-900 outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
               />
             </label>
           ) : null}
 
-          <p className="text-sm leading-6 text-zinc-400">{DISCLAIMER}</p>
+          <p className="text-sm leading-6 text-stone-600">{DISCLAIMER}</p>
 
           {error ? (
             <p className="text-sm leading-6 text-rose-300" role="alert">

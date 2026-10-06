@@ -74,16 +74,16 @@ export function MatchmakerFeed() {
     <section aria-labelledby="matchmaker-feed-heading" className="mt-12">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <header>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
             Geographic matchmaker
           </p>
           <h2
             id="matchmaker-feed-heading"
-            className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment"
+            className="mt-3 font-display text-2xl font-semibold tracking-tight text-stone-900"
           >
             Closest median voters
           </h2>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+          <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
             Top three districts whose median ideology vector sits nearest this
             campaign&apos;s coordinate.
           </p>
@@ -92,25 +92,25 @@ export function MatchmakerFeed() {
           type="button"
           onClick={rerun}
           disabled={stage === "loading"}
-          className="inline-flex h-11 shrink-0 items-center justify-center rounded-md border border-gold/60 bg-zinc-950 px-4 font-display text-xs font-semibold uppercase tracking-[0.18em] text-parchment transition-colors hover:border-gold hover:bg-zinc-900 disabled:pointer-events-none disabled:opacity-50"
+          className="inline-flex h-11 shrink-0 items-center justify-center rounded-md border border-gold/60 bg-white px-4 font-display text-xs font-semibold uppercase tracking-[0.18em] text-stone-900 transition-colors hover:border-gold hover:bg-stone-100 disabled:pointer-events-none disabled:opacity-50"
         >
           {stage === "loading" ? "Matching…" : "Run matchmaker"}
         </button>
       </div>
 
       {stage === "loading" ? (
-        <p className="mt-8 text-sm text-zinc-500">
+        <p className="mt-8 text-sm text-stone-600">
           Scoring seats against your ideology vector…
         </p>
       ) : null}
 
       {stage === "error" ? (
         <div className="mt-8 space-y-3">
-          <p className="text-sm text-zinc-400">{error}</p>
+          <p className="text-sm text-stone-600">{error}</p>
           <button
             type="button"
             onClick={rerun}
-            className="text-[11px] font-medium uppercase tracking-widest text-gold underline-offset-4 hover:underline"
+            className="text-[11px] font-medium uppercase tracking-widest text-amber-800 underline-offset-4 hover:underline"
           >
             Try again
           </button>
@@ -118,7 +118,7 @@ export function MatchmakerFeed() {
       ) : null}
 
       {stage === "ready" && !hasVector ? (
-        <Card className="mt-8 bg-zinc-900">
+        <Card className="mt-8 bg-white">
           <CardHeader>
             <CardTitle>No ideology vector on file</CardTitle>
             <CardDescription>
@@ -129,7 +129,7 @@ export function MatchmakerFeed() {
           <CardContent>
             <Link
               href="/onboarding"
-              className="inline-flex h-11 items-center justify-center rounded-md bg-gold-strong px-4 font-display text-xs font-semibold uppercase tracking-[0.18em] text-zinc-950 transition-colors hover:bg-gold"
+              className="inline-flex h-11 items-center justify-center rounded-md bg-gold-strong px-4 font-display text-xs font-semibold uppercase tracking-[0.18em] text-stone-900 transition-colors hover:bg-gold"
             >
               Open onboarding
             </Link>
@@ -138,7 +138,7 @@ export function MatchmakerFeed() {
       ) : null}
 
       {stage === "ready" && hasVector && matches.length === 0 ? (
-        <p className="mt-8 text-sm leading-6 text-zinc-400">
+        <p className="mt-8 text-sm leading-6 text-stone-600">
           No geographic districts are close enough to this vector yet.
         </p>
       ) : null}
@@ -152,32 +152,32 @@ export function MatchmakerFeed() {
                 <Link href={`/district/${row.id}`} className="block h-full">
                   <article
                     className={cn(
-                      "flex h-full flex-col rounded-xl border bg-zinc-900 p-5 transition-colors hover:border-gold",
+                      "flex h-full flex-col rounded-xl border bg-white p-5 transition-colors hover:border-gold",
                       index === 0 ? "border-gold/70" : "border-gold/40",
                     )}
                   >
-                    <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+                    <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
                       {LANE_LABELS[index] ?? `Seat ${index + 1}`}
                     </p>
-                    <h3 className="mt-3 font-display text-lg font-semibold leading-snug tracking-tight text-parchment">
+                    <h3 className="mt-3 font-display text-lg font-semibold leading-snug tracking-tight text-stone-900">
                       {row.name}
                     </h3>
-                    <p className="mt-1 text-sm text-zinc-400">
+                    <p className="mt-1 text-sm text-stone-600">
                       {[row.level, row.state, row.historical_lean]
                         .filter(Boolean)
                         .join(" · ")}
                     </p>
                     <div className="mt-6 flex items-end justify-between gap-3">
                       <div>
-                        <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                        <p className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
                           Median alignment
                         </p>
-                        <p className="mt-1 font-display text-3xl font-semibold tabular-nums tracking-tight text-gold">
+                        <p className="mt-1 font-display text-3xl font-semibold tabular-nums tracking-tight text-amber-800">
                           {percent}%
                         </p>
                       </div>
                       {row.pvi_score != null ? (
-                        <p className="text-xs tabular-nums text-zinc-500">
+                        <p className="text-xs tabular-nums text-stone-600">
                           PVI {toNumber(row.pvi_score) > 0 ? "+" : ""}
                           {toNumber(row.pvi_score)}
                         </p>

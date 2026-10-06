@@ -49,12 +49,12 @@ export function TakeStanceButton({ questionId }: { questionId: string }) {
         type="button"
         disabled={pending}
         onClick={() => void takeStance()}
-        className="inline-flex h-10 w-fit items-center justify-center rounded-md bg-gold-strong px-4 text-xs font-medium uppercase tracking-widest text-zinc-950 transition-colors hover:bg-gold disabled:cursor-not-allowed disabled:opacity-50"
+        className="inline-flex h-10 w-fit items-center justify-center rounded-md bg-gold-strong px-4 text-xs font-medium uppercase tracking-widest text-stone-900 transition-colors hover:bg-gold disabled:cursor-not-allowed disabled:opacity-50"
       >
         {pending ? "Recording stance…" : "Take the floor"}
       </button>
       {error ? (
-        <p className="text-sm leading-6 text-red-300" role="alert">
+        <p className="text-sm leading-6 text-red-700" role="alert">
           {error}
         </p>
       ) : null}
@@ -112,7 +112,7 @@ export function ChallengeOpponentButton({
         {pending ? "Challenging…" : "CHALLENGE OPPONENT"}
       </button>
       {error ? (
-        <p className="text-sm leading-6 text-red-300" role="alert">
+        <p className="text-sm leading-6 text-red-700" role="alert">
           {error}
         </p>
       ) : null}

@@ -19,14 +19,14 @@ export function CampaignRoadmap({ milestones }: { milestones: CampaignMilestone[
         const width =
           item.goal > 0 ? Math.min(100, Math.round((Math.min(item.current, item.goal) / item.goal) * 100)) : 0;
         return (
-          <li key={item.id} className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-5">
+          <li key={item.id} className="rounded-xl border border-amber-500/30 bg-white px-5 py-5">
             <div className="flex items-start gap-4">
               <span
                 className={cn(
                   "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border font-display text-sm",
                   item.complete
-                    ? "border-gold bg-gold-strong text-zinc-950"
-                    : "border-gold/40 text-gold",
+                    ? "border-gold bg-gold-strong text-stone-900"
+                    : "border-gold/40 text-amber-800",
                 )}
                 aria-hidden
               >
@@ -34,12 +34,12 @@ export function CampaignRoadmap({ milestones }: { milestones: CampaignMilestone[
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <h2 className="font-display text-lg text-parchment">{item.title}</h2>
-                  <p className="text-sm tabular-nums text-zinc-300">{metric(item)}</p>
+                  <h2 className="font-display text-lg text-stone-900">{item.title}</h2>
+                  <p className="text-sm tabular-nums text-stone-600">{metric(item)}</p>
                 </div>
-                <p className="mt-1 text-sm leading-6 text-zinc-400">{item.detail}</p>
+                <p className="mt-1 text-sm leading-6 text-stone-600">{item.detail}</p>
                 <div
-                  className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-800"
+                  className="mt-3 h-2 overflow-hidden rounded-full bg-stone-100"
                   role="progressbar"
                   aria-valuemin={0}
                   aria-valuemax={item.goal}
@@ -53,9 +53,9 @@ export function CampaignRoadmap({ milestones }: { milestones: CampaignMilestone[
           </li>
         );
       })}
-      <li className="text-sm text-zinc-400">
+      <li className="text-sm text-stone-600">
         {done} of {milestones.length} milestones cleared.{" "}
-        <Link href="/claim" className="text-gold">
+        <Link href="/claim" className="text-amber-800">
           File official candidacy
         </Link>
       </li>

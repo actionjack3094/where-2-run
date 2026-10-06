@@ -34,7 +34,7 @@ export function ReportDebateButton({
   }, [open]);
 
   if (!viewerId || targets.length === 0 || filed) {
-    if (filed) return <p className="text-[11px] uppercase tracking-widest text-zinc-500">Reported</p>;
+    if (filed) return <p className="text-[11px] uppercase tracking-widest text-stone-600">Reported</p>;
     return null;
   }
 
@@ -47,14 +47,14 @@ export function ReportDebateButton({
           setError(null);
           setOpen(true);
         }}
-        className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-zinc-500 hover:text-parchment"
+        className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-stone-600 hover:text-stone-900"
       >
         <Flag className="h-3.5 w-3.5" aria-hidden />
         Report
       </button>
       {open && selected ? (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-zinc-950/70 px-4 py-8 sm:items-center"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-stone-100 px-4 py-8 sm:items-center"
           onClick={() => {
             if (!pending) setOpen(false);
           }}
@@ -63,7 +63,7 @@ export function ReportDebateButton({
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className="w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-5 shadow-xl"
+            className="w-full max-w-md rounded-xl border border-amber-500/30 bg-white px-5 py-5 shadow-xl"
             onClick={(event) => event.stopPropagation()}
             onSubmit={(event) => {
               event.preventDefault();
@@ -82,17 +82,17 @@ export function ReportDebateButton({
               });
             }}
           >
-            <h2 id={titleId} className="font-display text-xl text-parchment">
+            <h2 id={titleId} className="font-display text-xl text-stone-900">
               Report {selected.name}
             </h2>
-            <p className="mt-2 text-sm leading-6 text-zinc-400">
+            <p className="mt-2 text-sm leading-6 text-stone-600">
               Tell a moderator what should come off the arena.
             </p>
             {targets.length > 1 ? (
               <fieldset className="mt-4 grid gap-2">
-                <legend className="text-[11px] uppercase tracking-widest text-zinc-500">Who</legend>
+                <legend className="text-[11px] uppercase tracking-widest text-stone-600">Who</legend>
                 {targets.map((person) => (
-                  <label key={person.id} className="flex items-center gap-2 text-sm text-zinc-200">
+                  <label key={person.id} className="flex items-center gap-2 text-sm text-stone-700">
                     <input
                       type="radio"
                       name="offender"
@@ -104,7 +104,7 @@ export function ReportDebateButton({
                 ))}
               </fieldset>
             ) : null}
-            <label className="mt-4 grid gap-2 text-sm text-zinc-300">
+            <label className="mt-4 grid gap-2 text-sm text-stone-600">
               Reason
               <textarea
                 required
@@ -113,23 +113,23 @@ export function ReportDebateButton({
                 rows={4}
                 value={reason}
                 onChange={(event) => setReason(event.target.value)}
-                className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-parchment"
+                className="rounded-lg border border-amber-500/30 bg-white px-3 py-2 text-stone-900"
               />
             </label>
-            {error ? <p className="mt-3 text-sm text-zinc-300">{error}</p> : null}
+            {error ? <p className="mt-3 text-sm text-stone-600">{error}</p> : null}
             <div className="mt-5 flex justify-end gap-3">
               <button
                 type="button"
                 disabled={pending}
                 onClick={() => setOpen(false)}
-                className="text-sm text-zinc-400 hover:text-parchment"
+                className="text-sm text-stone-600 hover:text-stone-900"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={pending}
-                className="rounded-md bg-gold-strong px-4 py-2 text-xs font-semibold uppercase tracking-widest text-zinc-950 disabled:opacity-50"
+                className="rounded-md bg-gold-strong px-4 py-2 text-xs font-semibold uppercase tracking-widest text-stone-900 disabled:opacity-50"
               >
                 {pending ? "Sending…" : "Submit report"}
               </button>

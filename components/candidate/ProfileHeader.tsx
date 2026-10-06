@@ -39,21 +39,21 @@ export function ProfileHeader({
       <div className="flex min-w-0 items-start gap-5">
         <CandidateAvatar name={name} size="lg" />
         <div className="min-w-0">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
             Public candidate
           </p>
-          <h1 className="mt-2 flex items-center gap-2 font-display text-3xl font-semibold tracking-tight text-parchment sm:text-4xl">
+          <h1 className="mt-2 flex items-center gap-2 font-display text-3xl font-semibold tracking-tight text-stone-900 sm:text-4xl">
             <span className="min-w-0 break-words">{name}</span>
             <VerificationBadge tier={verificationTier} size="lg" />
           </h1>
-          <p className="mt-3 flex items-start gap-2 text-sm leading-6 text-zinc-400">
-            <MapPin aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
+          <p className="mt-3 flex items-start gap-2 text-sm leading-6 text-stone-600">
+            <MapPin aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-amber-800" />
             <span>
               {districtLabel ? (
                 <>
-                  <span className="font-medium text-parchment">{districtLabel}</span>
+                  <span className="font-medium text-stone-900">{districtLabel}</span>
                   {districtVerified ? (
-                    <span className="mt-1 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-widest text-gold">
+                    <span className="mt-1 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-widest text-amber-800">
                       <ShieldCheck
                         aria-hidden
                         className="h-3.5 w-3.5 fill-gold/15 stroke-[2.25]"
@@ -61,7 +61,7 @@ export function ProfileHeader({
                       Verified OCD district
                     </span>
                   ) : (
-                    <span className="mt-1 block text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                    <span className="mt-1 block text-[11px] font-medium uppercase tracking-widest text-stone-600">
                       Geographic district on file
                     </span>
                   )}
@@ -72,7 +72,7 @@ export function ProfileHeader({
             </span>
           </p>
           {demographics ? (
-            <p className="mt-2 text-sm leading-6 text-zinc-400">{demographics}</p>
+            <p className="mt-2 text-sm leading-6 text-stone-600">{demographics}</p>
           ) : null}
         </div>
       </div>
@@ -83,30 +83,30 @@ export function ProfileHeader({
             className="flex h-32 min-w-32 shrink-0 flex-col items-center justify-center rounded-full border-2 border-gold bg-gold/15 px-5 text-center shadow-[0_0_32px_rgba(212,175,55,0.18)]"
             aria-label={`${eloLocked ? "Locked Civic Standing" : "Civic Standing"} ${eloRating}`}
           >
-            <p className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-[0.22em] text-gold">
+            <p className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-[0.22em] text-amber-800">
               {eloLocked ? "Locked Civic Standing" : "Civic Standing"}
               <InfoTooltip label="Civic Standing" text={CIVIC_STANDING_TIP} />
             </p>
-            <p className="mt-1 font-display text-4xl font-semibold tabular-nums leading-none tracking-tight text-gold">
+            <p className="mt-1 font-display text-4xl font-semibold tabular-nums leading-none tracking-tight text-amber-800">
               {eloRating}
             </p>
             {eloLocked ? (
-              <p className="mt-1.5 text-[10px] font-medium uppercase tracking-widest text-gold/80">
+              <p className="mt-1.5 text-[10px] font-medium uppercase tracking-widest text-amber-800/80">
                 {lockedMatchCount} sealed
               </p>
             ) : null}
           </div>
           <div
-            className="flex h-32 min-w-32 shrink-0 flex-col items-center justify-center rounded-2xl border-2 border-gold/70 bg-zinc-900 px-5 text-center"
+            className="flex h-32 min-w-32 shrink-0 flex-col items-center justify-center rounded-2xl border-2 border-gold/70 bg-white px-5 text-center"
             aria-label={`${record} Debates Logged, 100% Policy Consistency`}
           >
-            <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-gold">
+            <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-amber-800">
               Debates Logged
             </p>
-            <p className="mt-1 font-display text-4xl font-semibold tabular-nums leading-none tracking-tight text-parchment">
+            <p className="mt-1 font-display text-4xl font-semibold tabular-nums leading-none tracking-tight text-stone-900">
               {record}
             </p>
-            <p className="mt-1.5 text-[10px] font-medium uppercase tracking-widest text-zinc-400">
+            <p className="mt-1.5 text-[10px] font-medium uppercase tracking-widest text-stone-600">
               100% Policy Consistency
             </p>
           </div>

@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 type Mode = "sign-in" | "create-account";
 
 const INPUT_CLASS =
-  "h-12 w-full rounded-md border border-gold/40 bg-zinc-950 px-4 text-sm text-parchment outline-none placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-gold/60";
+  "h-12 w-full rounded-md border border-gold/40 bg-white px-4 text-sm text-stone-900 outline-none placeholder:text-stone-400 focus-visible:ring-2 focus-visible:ring-gold/60";
 
 function safeNextPath(value: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) {
@@ -117,15 +117,15 @@ export function LoginForm() {
   }
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col items-center justify-center bg-zinc-950 px-6 py-16 text-zinc-100">
-      <section className="w-full max-w-md rounded-xl border border-gold/40 bg-zinc-900 p-6 shadow-[inset_3px_0_0_0_var(--gold-strong)] sm:p-8">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-gold">
+    <main className="flex min-h-full w-full flex-1 flex-col items-center justify-center bg-stone-50 px-6 py-16 text-stone-900">
+      <section className="w-full max-w-md rounded-xl border border-gold/40 bg-white p-6 shadow-[inset_3px_0_0_0_var(--gold-strong)] sm:p-8">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-amber-800">
           Debates access
         </p>
-        <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment">
+        <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-stone-900">
           {signingIn ? "Sign in" : "Create account"}
         </h1>
-        <p className="mt-2 text-sm leading-6 text-zinc-400">
+        <p className="mt-2 text-sm leading-6 text-stone-600">
           {signingIn
             ? "Return to the floor with the email on your candidate ticket."
             : "Map your ZIP, file a baseline stance, then see who you match."}
@@ -134,7 +134,7 @@ export function LoginForm() {
         <div
           role="tablist"
           aria-label="Authentication mode"
-          className="mt-8 grid grid-cols-2 gap-2 rounded-lg border border-zinc-800 bg-zinc-950 p-1"
+          className="mt-8 grid grid-cols-2 gap-2 rounded-lg border border-amber-500/30 bg-white p-1"
         >
           <button
             type="button"
@@ -143,7 +143,7 @@ export function LoginForm() {
             onClick={() => switchMode("sign-in")}
             className={cn(
               "h-10 rounded-md text-[11px] font-medium uppercase tracking-widest transition-colors",
-              signingIn ? "bg-gold/15 text-gold" : "text-zinc-500 hover:text-zinc-200",
+              signingIn ? "bg-gold/15 text-amber-800" : "text-stone-600 hover:text-stone-700",
             )}
           >
             Sign In
@@ -155,7 +155,7 @@ export function LoginForm() {
             onClick={() => switchMode("create-account")}
             className={cn(
               "h-10 rounded-md text-[11px] font-medium uppercase tracking-widest transition-colors",
-              !signingIn ? "bg-gold/15 text-gold" : "text-zinc-500 hover:text-zinc-200",
+              !signingIn ? "bg-gold/15 text-amber-800" : "text-stone-600 hover:text-stone-700",
             )}
           >
             Create Account
@@ -164,7 +164,7 @@ export function LoginForm() {
 
         <form method="post" onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
           <label className="flex flex-col gap-2">
-            <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-400">
+            <span className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
               Email
             </span>
             <input
@@ -179,7 +179,7 @@ export function LoginForm() {
             />
           </label>
           <label className="flex flex-col gap-2">
-            <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-400">
+            <span className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
               Password
             </span>
             <input
@@ -202,7 +202,7 @@ export function LoginForm() {
               {error}
             </p>
           ) : null}
-          {notice ? <p className="text-sm leading-6 text-zinc-300">{notice}</p> : null}
+          {notice ? <p className="text-sm leading-6 text-stone-600">{notice}</p> : null}
         </form>
       </section>
     </main>

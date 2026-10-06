@@ -22,7 +22,7 @@ export function CreateChallengeForm({
   const [message, setMessage] = useState<string | null>(null);
 
   if (prompts.length === 0) {
-    return <p className="mt-6 text-sm text-zinc-400">No district issues are ready to debate yet.</p>;
+    return <p className="mt-6 text-sm text-stone-600">No district issues are ready to debate yet.</p>;
   }
 
   return (
@@ -52,11 +52,11 @@ export function CreateChallengeForm({
       }}
     >
       <fieldset className="grid gap-3">
-        <legend className="text-[11px] uppercase tracking-widest text-zinc-500">District issue</legend>
+        <legend className="text-[11px] uppercase tracking-widest text-stone-600">District issue</legend>
         {prompts.map((prompt) => (
           <label
             key={prompt.id}
-            className="grid grid-cols-[auto_1fr] gap-3 rounded-xl border border-zinc-800 px-4 py-3 text-sm"
+            className="grid grid-cols-[auto_1fr] gap-3 rounded-xl border border-amber-500/30 px-4 py-3 text-sm"
           >
             <input
               type="radio"
@@ -67,14 +67,14 @@ export function CreateChallengeForm({
               className="mt-1"
             />
             <span>
-              <span className="font-medium text-parchment">{prompt.title}</span>
-              <span className="mt-1 block text-zinc-500">{prompt.upvoteCount} upvotes</span>
-              <span className="mt-2 block leading-6 text-zinc-300">{prompt.content}</span>
+              <span className="font-medium text-stone-900">{prompt.title}</span>
+              <span className="mt-1 block text-stone-600">{prompt.upvoteCount} upvotes</span>
+              <span className="mt-2 block leading-6 text-stone-600">{prompt.content}</span>
             </span>
           </label>
         ))}
       </fieldset>
-      <label className="grid gap-2 text-sm text-zinc-300">
+      <label className="grid gap-2 text-sm text-stone-600">
         Opening Statement
         <textarea
           name="stance"
@@ -82,15 +82,15 @@ export function CreateChallengeForm({
           minLength={20}
           maxLength={ROUND_CHAR_LIMIT}
           rows={5}
-          className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-parchment"
+          className="rounded-lg border border-amber-500/30 bg-white px-3 py-2 text-stone-900"
         />
       </label>
       {allowSpar && sparMinutes != null ? (
-        <label className="flex items-start gap-2 text-sm text-zinc-300">
+        <label className="flex items-start gap-2 text-sm text-stone-600">
           <input type="checkbox" name="sparWithAi" className="mt-1" />
           <span>
             Spar with AI
-            <span className="mt-1 block text-zinc-500">
+            <span className="mt-1 block text-stone-600">
               A same-party partner answers immediately. Leave this off and a partner engages after {sparMinutes}{" "}
               minutes if nobody accepts.
             </span>
@@ -100,12 +100,12 @@ export function CreateChallengeForm({
       <button
         type="submit"
         disabled={pending || !sourceId}
-        className="justify-self-start rounded-md bg-gold-strong px-4 py-2 text-xs font-semibold uppercase tracking-widest text-zinc-950 disabled:opacity-50"
+        className="justify-self-start rounded-md bg-gold-strong px-4 py-2 text-xs font-semibold uppercase tracking-widest text-stone-900 disabled:opacity-50"
       >
         {pending ? "Posting…" : "Post question"}
       </button>
-      {error ? <p className="text-sm text-zinc-300">{error}</p> : null}
-      {message ? <p className="text-sm text-parchment">{message}</p> : null}
+      {error ? <p className="text-sm text-stone-600">{error}</p> : null}
+      {message ? <p className="text-sm text-stone-900">{message}</p> : null}
     </form>
   );
 }

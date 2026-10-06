@@ -55,13 +55,13 @@ export default async function PledgeCompletePage({
 
   return (
     <main className="mx-auto flex min-h-full w-full max-w-lg flex-1 flex-col px-6 py-16">
-      <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
+      <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
         Conditional escrow
       </p>
       <h1 className="mt-3 text-4xl font-semibold tracking-tight">
         {vaulted ? "Card vaulted." : "Escrow incomplete."}
       </h1>
-      <p className="mt-4 text-base leading-7 text-zinc-500 dark:text-zinc-400">
+      <p className="mt-4 text-base leading-7 text-stone-600 ">
         {vaulted
           ? "Stripe stored the payment method. Funds stay uncharged until this candidate files."
           : (error ?? "Return from Stripe SetupIntent checkout to finish vaulting.")}

@@ -9,29 +9,29 @@ export const metadata: Metadata = {
 
 export default function IdeologyOnboardingPage() {
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-xl flex-1 flex-col px-6 py-10 pb-16">
         <header>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
             Onboarding
           </p>
-          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment">
+          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-stone-900">
             Ideology diagnostic
           </h1>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+          <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
             Six economic questions and six social questions. Your answers set the
             coordinate Debates uses to match primaries.
           </p>
           <div className="mt-4 flex flex-wrap gap-4">
             <Link
               href="/onboarding/address"
-              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800 hover:text-stone-900"
             >
               Confirm your address
             </Link>
             <Link
               href="/debates"
-              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800 hover:text-stone-900"
             >
               Back to Debates
             </Link>

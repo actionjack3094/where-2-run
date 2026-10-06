@@ -60,53 +60,53 @@ export default async function DebatesPage(props: { searchParams: Promise<{ filed
   }
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
         <header>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
             Nationwide primaries
           </p>
-          <h1 className="mt-3 inline-flex items-center gap-2 font-display text-3xl font-semibold tracking-tight text-parchment">
+          <h1 className="mt-3 inline-flex items-center gap-2 font-display text-3xl font-semibold tracking-tight text-stone-900">
             Debates
             <InfoTooltip label="Ideology Compass" text={IDEOLOGY_COMPASS_TIP} />
           </h1>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+          <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
             Open seats from primaries closest to you, inside your party. Each debate is four
             rounds — Opening Statement, Rebuttal 1, Rebuttal 2, Closing Statement — at 500
             characters each. A challenge locks the seat for 24 hours.
           </p>
           {feed?.coordinate ? (
-            <p className="mt-3 text-sm text-parchment">
+            <p className="mt-3 text-sm text-stone-900">
               {formatCoordinate(feed.coordinate.x, feed.coordinate.y)}
               {feed.party ? ` · ${partyLabel(feed.party)} primary` : ""}
             </p>
           ) : null}
           {searchParams.filed ? (
-            <p className="mt-3 text-sm text-parchment">Filed. {searchParams.filed}</p>
+            <p className="mt-3 text-sm text-stone-900">Filed. {searchParams.filed}</p>
           ) : null}
         </header>
 
-        {setup ? <p className="mt-8 text-sm leading-6 text-zinc-300">{setup}</p> : null}
+        {setup ? <p className="mt-8 text-sm leading-6 text-stone-600">{setup}</p> : null}
         {feed?.signedOut ? (
-          <p className="mt-8 text-sm text-zinc-300">
-            <Link href="/auth/login" className="text-gold">
+          <p className="mt-8 text-sm text-stone-600">
+            <Link href="/auth/login" className="text-amber-800">
               Sign in
             </Link>{" "}
             to enter a primary.
           </p>
         ) : null}
         {feed?.needsDiagnostic ? (
-          <Link href="/onboarding/ideology" className="mt-8 block rounded-xl border border-gold bg-zinc-900 px-6 py-8">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-gold">Diagnostic</p>
-            <p className="mt-3 font-display text-2xl text-parchment">
+          <Link href="/onboarding/ideology" className="mt-8 block rounded-xl border border-gold bg-white px-6 py-8">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-amber-800">Diagnostic</p>
+            <p className="mt-3 font-display text-2xl text-stone-900">
               File your economic and social coordinate to unlock matchmaking.
             </p>
           </Link>
         ) : null}
         {feed && !feed.needsDiagnostic && !feed.signedOut && feed.cards.length === 0 ? (
-          <p className="mt-8 text-sm text-zinc-400">
+          <p className="mt-8 text-sm text-stone-600">
             No open seats in range.{" "}
-            <Link href="/elections" className="text-gold">
+            <Link href="/elections" className="text-amber-800">
               Browse elections
             </Link>
             .
@@ -115,9 +115,9 @@ export default async function DebatesPage(props: { searchParams: Promise<{ filed
 
         <div className="mt-8 grid gap-6">
           {stanceStale && user ? (
-            <p className="mt-8 rounded-xl border border-amber-500/30 bg-zinc-900 px-5 py-4 text-sm leading-6 text-zinc-300">
+            <p className="mt-8 rounded-xl border border-amber-500/30 bg-white px-5 py-4 text-sm leading-6 text-stone-600">
               Your stance is stale. File an update on the{" "}
-              <Link href="/elections" className="text-gold">
+              <Link href="/elections" className="text-amber-800">
                 Agenda Queue
               </Link>{" "}
               so the match confidence can recover.
@@ -140,10 +140,10 @@ export default async function DebatesPage(props: { searchParams: Promise<{ filed
                 (next.speaker === "b" && user.id === card.sideB?.id));
             const locked = card.status === "active";
             return (
-              <article key={card.id} className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-5">
+              <article key={card.id} className="rounded-xl border border-amber-500/30 bg-white px-5 py-5">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-zinc-500">
-                    <Link href={`/elections/${card.primarySlug}`} className="hover:text-gold">
+                  <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-stone-600">
+                    <Link href={`/elections/${card.primarySlug}`} className="hover:text-amber-800">
                       {partyLabel(card.party)} · {card.officeName}
                     </Link>
                     <InfoTooltip label="Civic Standing" text={CIVIC_STANDING_TIP} />
@@ -157,22 +157,22 @@ export default async function DebatesPage(props: { searchParams: Promise<{ filed
                     ]}
                   />
                 </div>
-                <h2 className="mt-3 font-display text-xl text-parchment">{card.prompt}</h2>
-                <p className="mt-4 flex items-center gap-2 text-sm font-medium text-parchment">
+                <h2 className="mt-3 font-display text-xl text-stone-900">{card.prompt}</h2>
+                <p className="mt-4 flex items-center gap-2 text-sm font-medium text-stone-900">
                   <CandidateAvatar name={card.sideA.name} avatarUrl={card.sideA.avatarUrl} size="sm" />
-                  <Link href={`/profile/${card.sideA.id}`} className="hover:text-gold">
+                  <Link href={`/profile/${card.sideA.id}`} className="hover:text-amber-800">
                     {card.sideA.name}
                   </Link>{" "}
-                  <span className="text-[11px] uppercase tracking-widest text-zinc-500">
+                  <span className="text-[11px] uppercase tracking-widest text-stone-600">
                     {tierLabel(card.sideA.tier)}
                   </span>
                 </p>
-                <p className="mt-2 text-sm leading-6 text-zinc-300">{card.stanceA}</p>
+                <p className="mt-2 text-sm leading-6 text-stone-600">{card.stanceA}</p>
                 {card.sideB ? (
-                  <p className="mt-4 flex items-center gap-2 text-sm text-zinc-400">
+                  <p className="mt-4 flex items-center gap-2 text-sm text-stone-600">
                     <CandidateAvatar name={card.sideB.name} avatarUrl={card.sideB.avatarUrl} size="sm" />
                     Challenged by{" "}
-                    <Link href={`/profile/${card.sideB.id}`} className="hover:text-gold">
+                    <Link href={`/profile/${card.sideB.id}`} className="hover:text-amber-800">
                       {card.sideB.name}
                     </Link>
                   </p>
@@ -188,7 +188,7 @@ export default async function DebatesPage(props: { searchParams: Promise<{ filed
                     />
                   ) : null}
                   {mine && !locked ? (
-                    <p className="text-sm text-zinc-400">Waiting on an intra-party challenge.</p>
+                    <p className="text-sm text-stone-600">Waiting on an intra-party challenge.</p>
                   ) : null}
                 </div>
               </article>

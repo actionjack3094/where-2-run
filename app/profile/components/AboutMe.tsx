@@ -51,16 +51,16 @@ export function AboutMe({
       <CalibrationDeck onVectorUpdated={onVectorUpdated} />
 
       <section aria-labelledby="about-bio-heading">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
           Biography
         </p>
         <h2
           id="about-bio-heading"
-          className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment"
+          className="mt-3 font-display text-2xl font-semibold tracking-tight text-stone-900"
         >
           {profile.username}
         </h2>
-        <p className="mt-4 max-w-xl text-sm leading-7 text-zinc-300">
+        <p className="mt-4 max-w-xl text-sm leading-7 text-stone-600">
           {bio || "No campaign biography on file yet."}
         </p>
       </section>
@@ -86,12 +86,12 @@ export function AboutMe({
 
 function Stat({ label, value, tip }: { label: string; value: string; tip?: string }) {
   return (
-    <article className="rounded-xl border border-amber-500/30 bg-zinc-900 px-5 py-4">
-      <p className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest text-gold">
+    <article className="rounded-xl border border-amber-500/30 bg-white px-5 py-4">
+      <p className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest text-amber-800">
         {label}
         {tip ? <InfoTooltip label={label} text={tip} /> : null}
       </p>
-      <p className="mt-2 font-display text-3xl font-semibold tabular-nums tracking-tight text-parchment">
+      <p className="mt-2 font-display text-3xl font-semibold tabular-nums tracking-tight text-stone-900">
         {value}
       </p>
     </article>
@@ -181,32 +181,32 @@ function CalibrationDeck({
   return (
     <section aria-labelledby="calibration-deck-heading">
       <header>
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
           Continuous calibration
         </p>
         <h2
           id="calibration-deck-heading"
-          className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment"
+          className="mt-3 font-display text-2xl font-semibold tracking-tight text-stone-900"
         >
           Policy deck
         </h2>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+        <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
           Answer a plank to move this campaign&apos;s ideological coordinates.
           Swipe a card aside to leave it unmarked.
         </p>
       </header>
 
-      <p className="mt-8 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+      <p className="mt-8 text-[11px] font-medium uppercase tracking-widest text-stone-600">
         Question {(index % QUIZ_QUESTIONS.length) + 1} of {QUIZ_QUESTIONS.length}
       </p>
 
       <div className="relative mt-4 min-h-[22rem]">
         <article
           aria-hidden
-          className="absolute inset-x-0 top-2 rounded-xl border border-gold/30 bg-zinc-900 p-6 opacity-80"
+          className="absolute inset-x-0 top-2 rounded-xl border border-gold/30 bg-white p-6 opacity-80"
           style={{ transform: "scale(0.96)" }}
         >
-          <p className="font-display text-xl font-semibold leading-snug tracking-tight text-zinc-500">
+          <p className="font-display text-xl font-semibold leading-snug tracking-tight text-stone-600">
             {upcoming.prompt}
           </p>
         </article>
@@ -219,7 +219,7 @@ function CalibrationDeck({
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
           className={cn(
-            "relative cursor-grab touch-pan-y rounded-xl border border-gold/50 bg-zinc-900 p-6 shadow-[inset_3px_0_0_0_var(--gold-strong)] active:cursor-grabbing",
+            "relative cursor-grab touch-pan-y rounded-xl border border-gold/50 bg-white p-6 shadow-[inset_3px_0_0_0_var(--gold-strong)] active:cursor-grabbing",
             leaving || dragging ? "transition-none" : "transition-transform duration-200",
             leaving && "transition-transform duration-300",
           )}
@@ -227,10 +227,10 @@ function CalibrationDeck({
             transform: `translateX(${dragX}px) rotate(${dragX / 28}deg)`,
           }}
         >
-          <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+          <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
             {SIX_AXIS_LABELS[axisId]}
           </p>
-          <h3 className="mt-4 font-display text-2xl font-semibold leading-snug tracking-tight text-parchment">
+          <h3 className="mt-4 font-display text-2xl font-semibold leading-snug tracking-tight text-stone-900">
             {question.prompt}
           </h3>
           <ul className="mt-6 flex flex-col gap-2">
@@ -240,7 +240,7 @@ function CalibrationDeck({
                   type="button"
                   disabled={pending || leaving}
                   onClick={() => void answer(option)}
-                  className="w-full rounded-lg border border-gold/30 bg-zinc-950 px-4 py-3 text-left text-sm leading-6 text-zinc-200 transition-colors hover:border-gold hover:text-parchment disabled:pointer-events-none disabled:opacity-50"
+                  className="w-full rounded-lg border border-gold/30 bg-white px-4 py-3 text-left text-sm leading-6 text-stone-700 transition-colors hover:border-gold hover:text-stone-900 disabled:pointer-events-none disabled:opacity-50"
                 >
                   {option.label}
                 </button>
@@ -254,7 +254,7 @@ function CalibrationDeck({
               setStanceTopic(question.prompt);
               setStanceOpen(true);
             }}
-            className="mt-4 w-full rounded-lg border border-gold bg-gold px-4 py-3 text-center font-display text-xs font-semibold uppercase tracking-[0.18em] text-zinc-950 transition-colors hover:bg-gold-strong disabled:pointer-events-none disabled:opacity-50"
+            className="mt-4 w-full rounded-lg border border-gold bg-gold px-4 py-3 text-center font-display text-xs font-semibold uppercase tracking-[0.18em] text-stone-900 transition-colors hover:bg-gold-strong disabled:pointer-events-none disabled:opacity-50"
           >
             Write Custom Stance
           </button>
@@ -262,7 +262,7 @@ function CalibrationDeck({
       </div>
 
       {error ? (
-        <p className="mt-4 text-sm leading-6 text-zinc-400" role="alert">
+        <p className="mt-4 text-sm leading-6 text-stone-600" role="alert">
           {error}
         </p>
       ) : null}

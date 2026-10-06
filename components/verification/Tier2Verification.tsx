@@ -83,26 +83,26 @@ export function Tier2Verification() {
   return (
     <section
       aria-labelledby="tier-2-heading"
-      className="mb-8 rounded-xl border border-gold/40 bg-zinc-900 p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)]"
+      className="mb-8 rounded-xl border border-gold/40 bg-white p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)]"
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+          <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
             Civic fencing
           </p>
           <h3
             id="tier-2-heading"
-            className="mt-2 font-display text-lg font-semibold tracking-tight text-parchment"
+            className="mt-2 font-display text-lg font-semibold tracking-tight text-stone-900"
           >
             Local constituent map
           </h3>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+          <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
             Confirm a street address against the Civic Information API. Matching OCD
             division IDs unlock local-only debates for this campaign.
           </p>
         </div>
         {verified ? (
-          <span className="inline-flex w-fit shrink-0 items-center gap-2 rounded-full border border-gold bg-gold/15 px-3 py-1.5 text-[11px] font-medium uppercase tracking-widest text-gold">
+          <span className="inline-flex w-fit shrink-0 items-center gap-2 rounded-full border border-gold bg-gold/15 px-3 py-1.5 text-[11px] font-medium uppercase tracking-widest text-amber-800">
             <ShieldCheck aria-hidden className="h-3.5 w-3.5 fill-gold/15 stroke-[2.25]" />
             Tier 2 Local Constituent Active
           </span>
@@ -110,12 +110,12 @@ export function Tier2Verification() {
       </div>
 
       {stage === "booting" ? (
-        <p className="mt-5 text-sm text-zinc-400">Checking civic standing…</p>
+        <p className="mt-5 text-sm text-stone-600">Checking civic standing…</p>
       ) : null}
 
       {stage === "error" && !verified ? (
         <div className="mt-5 space-y-3">
-          <p className="text-sm leading-6 text-red-300">{error}</p>
+          <p className="text-sm leading-6 text-red-700">{error}</p>
           <Button
             type="button"
             variant="outline"
@@ -145,7 +145,7 @@ export function Tier2Verification() {
         <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-3">
           <label
             htmlFor="tier-2-address"
-            className="text-[11px] font-medium uppercase tracking-widest text-zinc-400"
+            className="text-[11px] font-medium uppercase tracking-widest text-stone-600"
           >
             Street address
           </label>
@@ -159,7 +159,7 @@ export function Tier2Verification() {
               value={address}
               onChange={(event) => setAddress(event.target.value)}
               maxLength={200}
-              className="h-12 w-full rounded-md border border-gold/40 bg-zinc-950 px-4 text-sm text-parchment outline-none placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-gold/60"
+              className="h-12 w-full rounded-md border border-gold/40 bg-white px-4 text-sm text-stone-900 outline-none placeholder:text-stone-400 focus-visible:ring-2 focus-visible:ring-gold/60"
             />
             <Button
               type="submit"
@@ -171,12 +171,12 @@ export function Tier2Verification() {
             </Button>
           </div>
           {verified && divisionCount > 0 ? (
-            <p className="text-xs leading-5 text-zinc-500">
+            <p className="text-xs leading-5 text-stone-600">
               {divisionCount} civic {divisionCount === 1 ? "division" : "divisions"} on file.
             </p>
           ) : null}
           {error && stage === "ready" ? (
-            <p className="text-sm leading-6 text-red-300">{error}</p>
+            <p className="text-sm leading-6 text-red-700">{error}</p>
           ) : null}
         </form>
       ) : null}

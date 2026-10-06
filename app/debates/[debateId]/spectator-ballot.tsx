@@ -28,20 +28,20 @@ function BallotChoice({
   onVote: (candidateId: string) => void;
 }) {
   const buttonClass =
-    "w-full rounded-md border border-gold/50 px-4 py-2 text-[11px] font-medium uppercase tracking-widest text-gold transition-colors duration-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60";
+    "w-full rounded-md border border-gold/50 px-4 py-2 text-[11px] font-medium uppercase tracking-widest text-amber-800 transition-colors duration-200 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60";
 
   return (
-    <article className="flex-1 rounded-xl border border-gold/40 bg-zinc-900 px-5 py-5">
-      <p className="text-[11px] font-medium uppercase tracking-widest text-gold">{label}</p>
+    <article className="flex-1 rounded-xl border border-gold/40 bg-white px-5 py-5">
+      <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">{label}</p>
       {hasVoted ? (
         <>
           <button type="button" disabled className={`mt-4 ${buttonClass}`}>
             {selected ? "Vote Cast" : `Vote ${label}`}
           </button>
-          <p className="mt-3 text-2xl font-semibold tabular-nums tracking-tight text-parchment">
+          <p className="mt-3 text-2xl font-semibold tabular-nums tracking-tight text-stone-900">
             {share}%
           </p>
-          <p className="mt-1 text-xs text-zinc-400">
+          <p className="mt-1 text-xs text-stone-600">
             {votes} {votes === 1 ? "vote" : "votes"}
           </p>
         </>
@@ -103,7 +103,7 @@ export function SpectatorBallot({
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="flex items-start gap-2 rounded-xl border border-gold/50 bg-gold/10 px-4 py-3 text-sm leading-6 text-gold">
+      <p className="flex items-start gap-2 rounded-xl border border-gold/50 bg-gold/10 px-4 py-3 text-sm leading-6 text-amber-800">
         <ShieldCheck aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
         <span>{CIVIC_FENCE_BALLOT_NOTICE}</span>
       </p>
@@ -132,7 +132,7 @@ export function SpectatorBallot({
         />
       </div>
       {error ? (
-        <p role="alert" className="text-sm leading-6 text-red-300">
+        <p role="alert" className="text-sm leading-6 text-red-700">
           {error}
         </p>
       ) : null}

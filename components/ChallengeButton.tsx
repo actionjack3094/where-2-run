@@ -56,7 +56,7 @@ export function ChallengeButton({ postId }: { postId: string }) {
       >
         {busy ? "Challenging..." : "Challenge"}
       </button>
-      {error ? <p className="max-w-[16rem] text-xs text-red-300">{error}</p> : null}
+      {error ? <p className="max-w-[16rem] text-xs text-red-700">{error}</p> : null}
     </div>
   );
 }

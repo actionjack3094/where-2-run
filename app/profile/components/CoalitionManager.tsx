@@ -131,28 +131,28 @@ export function CoalitionManager({ onChanged }: { onChanged?: () => void }) {
         </p>
       ) : null}
       {notice ? (
-        <p className="text-sm leading-6 text-gold" role="status">
+        <p className="text-sm leading-6 text-amber-800" role="status">
           {notice}
         </p>
       ) : null}
 
       <section aria-labelledby="coalition-affiliation-heading">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
           Active affiliation
         </p>
         <h3
           id="coalition-affiliation-heading"
-          className="mt-3 font-display text-xl font-semibold tracking-tight text-parchment"
+          className="mt-3 font-display text-xl font-semibold tracking-tight text-stone-900"
         >
           Your coalition
         </h3>
 
         {!desk && !loadError ? (
-          <p className="mt-4 text-sm leading-6 text-zinc-400">Loading your coalition…</p>
+          <p className="mt-4 text-sm leading-6 text-stone-600">Loading your coalition…</p>
         ) : null}
 
         {desk && desk.affiliations.length === 0 ? (
-          <p className="mt-4 text-sm leading-6 text-zinc-400">
+          <p className="mt-4 text-sm leading-6 text-stone-600">
             You aren&apos;t seated in a coalition yet. Form one below, or accept an invite.
           </p>
         ) : null}
@@ -162,16 +162,16 @@ export function CoalitionManager({ onChanged }: { onChanged?: () => void }) {
             {desk.affiliations.map((coalition) => (
               <li
                 key={coalition.coalitionId}
-                className="rounded-xl border border-gold/50 bg-zinc-900 p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)]"
+                className="rounded-xl border border-gold/50 bg-white p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)]"
               >
                 <div className="flex flex-wrap items-center gap-3">
                   <CoalitionBadge name={coalition.name} />
-                  <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
+                  <span className="text-[10px] font-medium uppercase tracking-widest text-stone-600">
                     {coalition.role === "founder" ? "Founder" : "Member"} ·{" "}
                     {plural(coalition.memberCount, "member", "members")}
                   </span>
                 </div>
-                <p className="mt-3 text-sm leading-6 text-zinc-400">{coalition.charter}</p>
+                <p className="mt-3 text-sm leading-6 text-stone-600">{coalition.charter}</p>
               </li>
             ))}
           </ul>
@@ -179,18 +179,18 @@ export function CoalitionManager({ onChanged }: { onChanged?: () => void }) {
 
         {desk && desk.invites.length > 0 ? (
           <div className="mt-6">
-            <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
               Invitations
             </p>
             <ul className="mt-3 flex flex-col gap-3">
               {desk.invites.map((invite) => (
                 <li
                   key={invite.coalitionId}
-                  className="flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-5 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 rounded-xl border border-amber-500/30 bg-white p-5 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div>
                     <CoalitionBadge name={invite.name} size="sm" />
-                    <p className="mt-2 text-xs text-zinc-500">
+                    <p className="mt-2 text-xs text-stone-600">
                       {plural(invite.memberCount, "member", "members")} · invited you
                     </p>
                   </div>
@@ -219,10 +219,10 @@ export function CoalitionManager({ onChanged }: { onChanged?: () => void }) {
           {formOpen ? (
             <form
               onSubmit={(event) => void onCreate(event)}
-              className="flex max-w-xl flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-5"
+              className="flex max-w-xl flex-col gap-3 rounded-xl border border-amber-500/30 bg-white p-5"
             >
               <label className="flex flex-col gap-2">
-                <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-400">
+                <span className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
                   Coalition name
                 </span>
                 <input
@@ -231,11 +231,11 @@ export function CoalitionManager({ onChanged }: { onChanged?: () => void }) {
                   onChange={(event) => setName(event.target.value)}
                   maxLength={COALITION_NAME_MAX}
                   required
-                  className="h-11 rounded-md border border-zinc-700 bg-zinc-950 px-3 text-sm text-parchment outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
+                  className="h-11 rounded-md border border-amber-500/30 bg-white px-3 text-sm text-stone-900 outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
                 />
               </label>
               <label className="flex flex-col gap-2">
-                <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-400">
+                <span className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
                   Description
                 </span>
                 <textarea
@@ -244,9 +244,9 @@ export function CoalitionManager({ onChanged }: { onChanged?: () => void }) {
                   maxLength={COALITION_CHARTER_MAX}
                   rows={4}
                   required
-                  className="rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm leading-6 text-parchment outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
+                  className="rounded-md border border-amber-500/30 bg-white px-3 py-2 text-sm leading-6 text-stone-900 outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
                 />
-                <span className="text-xs text-zinc-500">
+                <span className="text-xs text-stone-600">
                   {descriptionLength < COALITION_CHARTER_MIN
                     ? `At least ${COALITION_CHARTER_MIN} characters (${descriptionLength} so far). This becomes the public charter.`
                     : `${descriptionLength} / ${COALITION_CHARTER_MAX}. This becomes the public charter.`}
@@ -276,29 +276,29 @@ export function CoalitionManager({ onChanged }: { onChanged?: () => void }) {
       </section>
 
       <section aria-labelledby="endorsement-desk-heading">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
           Endorsement desk
         </p>
         <h3
           id="endorsement-desk-heading"
-          className="mt-3 font-display text-xl font-semibold tracking-tight text-parchment"
+          className="mt-3 font-display text-xl font-semibold tracking-tight text-stone-900"
         >
           Candidates in your races
         </h3>
 
         {desk && desk.races.length === 0 ? (
-          <p className="mt-4 text-sm leading-6 text-zinc-400">
+          <p className="mt-4 text-sm leading-6 text-stone-600">
             Target a race to see the other candidates running in it.
           </p>
         ) : null}
 
         {desk?.races.map((race) => (
           <div key={race.electionId} className="mt-6">
-            <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
               {race.officeName}
             </p>
             {race.rivals.length === 0 ? (
-              <p className="mt-3 text-sm leading-6 text-zinc-400">
+              <p className="mt-3 text-sm leading-6 text-stone-600">
                 No other candidates are running in this race yet.
               </p>
             ) : (
@@ -308,19 +308,19 @@ export function CoalitionManager({ onChanged }: { onChanged?: () => void }) {
                   return (
                     <li
                       key={rival.id}
-                      className="flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-4"
+                      className="flex flex-col gap-3 rounded-xl border border-amber-500/30 bg-white p-4"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <CandidateIdentity id={rival.id} username={rival.username} />
-                        <span className="shrink-0 text-right font-display text-2xl font-semibold tabular-nums text-gold">
+                        <span className="shrink-0 text-right font-display text-2xl font-semibold tabular-nums text-amber-800">
                           {rival.eloRating}
-                          <span className="block text-[10px] font-medium uppercase tracking-widest text-zinc-500">
+                          <span className="block text-[10px] font-medium uppercase tracking-widest text-stone-600">
                             Civic Standing
                           </span>
                         </span>
                       </div>
                       {rival.endorsesMe ? (
-                        <p className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
+                        <p className="text-[10px] font-medium uppercase tracking-widest text-stone-600">
                           Endorses you
                         </p>
                       ) : null}

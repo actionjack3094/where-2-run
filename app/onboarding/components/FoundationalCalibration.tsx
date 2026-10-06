@@ -65,36 +65,36 @@ export function FoundationalCalibration({
   return (
     <section className="mt-10" aria-labelledby="calibration-heading">
       <header>
-        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800">
           Step 02
         </p>
         <h2
           id="calibration-heading"
-          className="mt-2 font-display text-2xl font-semibold tracking-tight text-parchment"
+          className="mt-2 font-display text-2xl font-semibold tracking-tight text-stone-900"
         >
           Foundational calibration
         </h2>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+        <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
           Six axes, one plank at a time. The last answer files your baseline ideology
           vector.
         </p>
       </header>
 
-      <div className="mt-8 h-1 w-full overflow-hidden rounded-full bg-zinc-900">
+      <div className="mt-8 h-1 w-full overflow-hidden rounded-full bg-white">
         <div
           className="h-full bg-gold transition-all duration-300"
           style={{ width: `${((index + 1) / QUIZ_QUESTIONS.length) * 100}%` }}
         />
       </div>
-      <p className="mt-4 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+      <p className="mt-4 text-[11px] font-medium uppercase tracking-widest text-stone-600">
         Question {index + 1} of {QUIZ_QUESTIONS.length}
       </p>
 
-      <article className="mt-4 rounded-xl border border-gold/50 bg-zinc-900 p-6 shadow-[inset_3px_0_0_0_var(--gold-strong)]">
-        <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+      <article className="mt-4 rounded-xl border border-gold/50 bg-white p-6 shadow-[inset_3px_0_0_0_var(--gold-strong)]">
+        <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
           {SIX_AXIS_LABELS[axisId]}
         </p>
-        <h3 className="mt-4 font-display text-2xl font-semibold leading-snug tracking-tight text-parchment">
+        <h3 className="mt-4 font-display text-2xl font-semibold leading-snug tracking-tight text-stone-900">
           {question.prompt}
         </h3>
         <ul className="mt-6 flex flex-col gap-2">
@@ -109,8 +109,8 @@ export function FoundationalCalibration({
                   className={cn(
                     "w-full rounded-lg border px-4 py-3 text-left text-sm leading-6 transition-colors disabled:pointer-events-none disabled:opacity-50",
                     active
-                      ? "border-gold bg-gold/10 text-parchment"
-                      : "border-gold/30 bg-zinc-950 text-zinc-200 hover:border-gold hover:text-parchment",
+                      ? "border-gold bg-gold/10 text-stone-900"
+                      : "border-gold/30 bg-white text-stone-700 hover:border-gold hover:text-stone-900",
                   )}
                 >
                   {option.label}
@@ -141,7 +141,7 @@ export function FoundationalCalibration({
         >
           Back
         </Button>
-        <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+        <p className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
           {busy ? "Calibrating vector…" : isLast ? "Last axis files the vector" : "Pick a plank"}
         </p>
       </div>

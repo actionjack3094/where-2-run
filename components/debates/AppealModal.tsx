@@ -90,14 +90,14 @@ export function AppealModal({
         onClick={(event) => event.stopPropagation()}
       >
         <CardHeader>
-          <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+          <p className="text-xs font-medium uppercase tracking-widest text-stone-600">
             Ensemble Court
           </p>
           <CardTitle id={titleId}>Clarify the rubric flag</CardTitle>
           <CardDescription>
             Marginal confidence ({Number(evaluation.confidence_score).toFixed(2)}) unlocked a
             strict {ADDENDUM_WORD_LIMIT}-word addendum on{" "}
-            <span className="font-medium text-zinc-200">
+            <span className="font-medium text-stone-700">
               {evaluation.rubric_flag?.replace(/_/g, " ") ?? "the flagged item"}
             </span>
             . Answer the Clarification Addendum with district-specific policy. Three models
@@ -107,7 +107,7 @@ export function AppealModal({
         <CardContent>
           <form className="flex flex-col gap-4" onSubmit={(event) => void handleSubmit(event)}>
             {courtPrompt ? (
-              <blockquote className="rounded-lg border border-primary/25 bg-zinc-950/60 px-3 py-2 text-sm leading-6 text-parchment">
+              <blockquote className="rounded-lg border border-primary/25 bg-white/60 px-3 py-2 text-sm leading-6 text-stone-900">
                 <p className="text-[10px] font-medium uppercase tracking-widest text-primary">
                   Clarification Addendum
                 </p>
@@ -115,7 +115,7 @@ export function AppealModal({
               </blockquote>
             ) : null}
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+              <span className="text-xs font-medium uppercase tracking-widest text-stone-600">
                 Addendum
               </span>
               <textarea
@@ -124,20 +124,20 @@ export function AppealModal({
                 rows={7}
                 disabled={busy || !unlocked}
                 placeholder="Address only the flagged criterion. No new topics."
-                className="min-h-36 w-full resize-none rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm leading-6 outline-none focus:border-zinc-950 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-50"
+                className="min-h-36 w-full resize-none rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm leading-6 outline-none focus:border-amber-700 disabled:opacity-60   "
               />
               <span
                 className={
                   overLimit
-                    ? "text-xs text-amber-600 dark:text-amber-400"
-                    : "text-xs text-zinc-500"
+                    ? "text-xs text-amber-600 "
+                    : "text-xs text-stone-600"
                 }
               >
                 {wordCount} / {ADDENDUM_WORD_LIMIT} words
               </span>
             </label>
 
-            {formError && <p className="text-sm text-zinc-600 dark:text-zinc-300">{formError}</p>}
+            {formError && <p className="text-sm text-stone-600 ">{formError}</p>}
 
             <div className="flex gap-2">
               <Button

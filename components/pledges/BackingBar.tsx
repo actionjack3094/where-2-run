@@ -11,7 +11,7 @@ export function BackingBar({
   const split = splitBacking(grassroots, institutional);
   return (
     <div className="mt-4">
-      <div className="flex h-3 overflow-hidden rounded-full bg-zinc-800">
+      <div className="flex h-3 overflow-hidden rounded-full bg-stone-100">
         <div
           className="h-full bg-amber-400"
           style={{ width: `${split.grassrootsShare * 100}%` }}
@@ -21,7 +21,7 @@ export function BackingBar({
           style={{ width: `${split.institutionalShare * 100}%` }}
         />
       </div>
-      <p className="mt-2 flex flex-wrap gap-4 text-[11px] uppercase tracking-widest text-zinc-400">
+      <p className="mt-2 flex flex-wrap gap-4 text-[11px] uppercase tracking-widest text-stone-600">
         <span className="inline-flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-amber-400" />
           Grassroots {formatUsd(split.grassroots)}

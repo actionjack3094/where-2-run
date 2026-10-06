@@ -471,10 +471,10 @@ export default async function CandidatePage({ params }: CandidatePageProps) {
   const visible = candidate.found || Boolean(profile);
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
         {error ? (
-          <p className="mt-8 text-sm leading-6 text-zinc-400">
+          <p className="mt-8 text-sm leading-6 text-stone-600">
             Could not load this candidate. {error}
           </p>
         ) : !visible ? (
@@ -484,28 +484,28 @@ export default async function CandidatePage({ params }: CandidatePageProps) {
             {showStanceCta ? (
               <Link
                 href="/onboarding/stance"
-                className="block rounded-xl border border-gold bg-zinc-900 px-5 py-5 shadow-[inset_3px_0_0_0_var(--gold-strong)] transition-colors hover:bg-zinc-900/80"
+                className="block rounded-xl border border-gold bg-white px-5 py-5 shadow-[inset_3px_0_0_0_var(--gold-strong)] transition-colors hover:bg-stone-50"
               >
-                <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+                <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800">
                   Stance vector
                 </p>
-                <p className="mt-2 text-sm leading-6 text-parchment">
+                <p className="mt-2 text-sm leading-6 text-stone-900">
                   Your ideological profile is empty. Complete the Stance Questionnaire to appear in Voter Matchmaking.
                 </p>
               </Link>
             ) : null}
             {viewingOwnProfile && targetRaces.length > 0 ? (
-              <section className="rounded-xl border border-gold/40 bg-zinc-900 px-5 py-5">
-                <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+              <section className="rounded-xl border border-gold/40 bg-white px-5 py-5">
+                <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800">
                   Targeting
                 </p>
-                <h2 className="mt-2 font-display text-xl font-semibold tracking-tight text-parchment">
+                <h2 className="mt-2 font-display text-xl font-semibold tracking-tight text-stone-900">
                   Lock a race
                 </h2>
                 <ul className="mt-4 flex flex-col gap-4">
                   {targetRaces.map((race) => (
                     <li key={race.id}>
-                      <p className="text-sm text-zinc-400">{race.label}</p>
+                      <p className="text-sm text-stone-600">{race.label}</p>
                       <TargetRaceButton className="mt-2" election_id={race.id} />
                     </li>
                   ))}
@@ -572,7 +572,7 @@ function MissingCandidate() {
       <CardContent>
         <Link
           href="/leaderboards"
-          className="inline-flex h-10 items-center justify-center rounded-md border border-gold/60 bg-zinc-950 px-4 text-xs font-medium uppercase tracking-widest text-parchment transition-colors hover:border-gold hover:bg-zinc-900"
+          className="inline-flex h-10 items-center justify-center rounded-md border border-gold/60 bg-white px-4 text-xs font-medium uppercase tracking-widest text-stone-900 transition-colors hover:border-gold hover:bg-stone-100"
         >
           View leaderboards
         </Link>

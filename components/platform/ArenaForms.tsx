@@ -19,9 +19,9 @@ function outcomeLine(judgment: PublicJudgment) {
 
 function Status({ state }: { state: PlatformFormState }) {
   if (!state) return null;
-  if (state.error) return <p className="mt-3 text-sm text-zinc-300">{state.error}</p>;
+  if (state.error) return <p className="mt-3 text-sm text-stone-600">{state.error}</p>;
   return (
-    <div className="mt-3 text-sm leading-6 text-parchment">
+    <div className="mt-3 text-sm leading-6 text-stone-900">
       {state.judgment ? <p>{outcomeLine(state.judgment)}</p> : null}
       {state.message && !state.judgment ? <p>{state.message}</p> : null}
     </div>
@@ -47,17 +47,17 @@ export function OpeningForm({
   );
   return (
     <form action={action} className="mt-6 grid gap-3">
-      <label className="grid gap-2 text-sm text-zinc-300">
+      <label className="grid gap-2 text-sm text-stone-600">
         Question
         <textarea
           name="prompt"
           required
           minLength={12}
           rows={3}
-          className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-parchment"
+          className="rounded-lg border border-amber-500/30 bg-white px-3 py-2 text-stone-900"
         />
       </label>
-      <label className="grid gap-2 text-sm text-zinc-300">
+      <label className="grid gap-2 text-sm text-stone-600">
         Opening Statement
         <textarea
           name="stance"
@@ -65,15 +65,15 @@ export function OpeningForm({
           minLength={20}
           maxLength={ROUND_CHAR_LIMIT}
           rows={5}
-          className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-parchment"
+          className="rounded-lg border border-amber-500/30 bg-white px-3 py-2 text-stone-900"
         />
       </label>
       {botSparGraceMinutes != null ? (
-        <label className="flex items-start gap-2 text-sm text-zinc-300">
+        <label className="flex items-start gap-2 text-sm text-stone-600">
           <input type="checkbox" name="sparWithAi" className="mt-1" />
           <span>
             Spar with AI
-            <span className="mt-1 block text-zinc-500">
+            <span className="mt-1 block text-stone-600">
               A same-party partner answers immediately. Leave this off and a partner engages after{" "}
               {botSparGraceMinutes} minutes if nobody accepts.
             </span>
@@ -121,7 +121,7 @@ export function SeatLockCountdown({ until }: { until: string }) {
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
   }, [until]);
-  return <p className="text-sm text-zinc-400">{label}</p>;
+  return <p className="text-sm text-stone-600">{label}</p>;
 }
 
 export function RebuttalForm({
@@ -138,7 +138,7 @@ export function RebuttalForm({
   );
   return (
     <form action={action} className="mt-4 grid gap-3">
-      <label className="grid gap-2 text-sm text-zinc-300">
+      <label className="grid gap-2 text-sm text-stone-600">
         {label}
         <textarea
           name="stance"
@@ -146,7 +146,7 @@ export function RebuttalForm({
           minLength={20}
           maxLength={ROUND_CHAR_LIMIT}
           rows={5}
-          className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-parchment"
+          className="rounded-lg border border-amber-500/30 bg-white px-3 py-2 text-stone-900"
         />
       </label>
       <Button type="submit" variant="gold" disabled={pending}>
@@ -201,8 +201,8 @@ export function BallotEngage({
   const [commentState, commentAction, commentPending] = useActionState(commentOnMatch, null);
 
   return (
-    <div className="mt-5 border-t border-zinc-800 pt-4">
-      <p className="text-[11px] uppercase tracking-widest text-zinc-500">
+    <div className="mt-5 border-t border-amber-500/30 pt-4">
+      <p className="text-[11px] uppercase tracking-widest text-stone-600">
         Likes widen reach. Civic Standing stays put.
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
@@ -224,8 +224,8 @@ export function BallotEngage({
       <Status state={likeState} />
       <ul className="mt-4 grid gap-3">
         {comments.map((comment) => (
-          <li key={comment.id} className="text-sm leading-6 text-zinc-300">
-            <span className="font-medium text-parchment">{comment.author}. </span>
+          <li key={comment.id} className="text-sm leading-6 text-stone-600">
+            <span className="font-medium text-stone-900">{comment.author}. </span>
             {comment.body}
           </li>
         ))}
@@ -238,7 +238,7 @@ export function BallotEngage({
           maxLength={400}
           rows={3}
           placeholder="Comment as a constituent"
-          className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-parchment"
+          className="rounded-lg border border-amber-500/30 bg-white px-3 py-2 text-sm text-stone-900"
         />
         <Button type="submit" variant="outline" disabled={commentPending}>
           {commentPending ? "Posting…" : "Comment"}

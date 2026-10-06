@@ -16,7 +16,7 @@ export function FeedTimeline({
 }) {
   if (items.length === 0) {
     return (
-      <p className="mt-10 text-sm leading-6 text-zinc-400">
+      <p className="mt-10 text-sm leading-6 text-stone-600">
         {query
           ? `Nothing in the feed matches "${query}".`
           : signedIn

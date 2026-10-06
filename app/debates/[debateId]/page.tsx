@@ -220,33 +220,33 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
   const bShare = totalVotes === 0 ? 0 : 100 - aShare;
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <RealtimeDebateListener debateId={debateId} />
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
         <header>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
             {debate.status === "resolved" ? "Resolved debate" : isCompleted ? "Completed debate" : "Active debate"}
           </p>
-          <h1 className="mt-3 font-display text-3xl font-semibold leading-tight tracking-tight text-parchment">
+          <h1 className="mt-3 font-display text-3xl font-semibold leading-tight tracking-tight text-stone-900">
             {prompt || "Untitled question"}
           </h1>
         </header>
 
         <section
           aria-label="Debate status"
-          className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-gold/50 bg-zinc-900 px-5 py-4"
+          className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-gold/50 bg-white px-5 py-4"
         >
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
               Status
             </p>
-            <p className="mt-1 text-sm font-medium text-gold">{statusLabel(debate.status)}</p>
+            <p className="mt-1 text-sm font-medium text-amber-800">{statusLabel(debate.status)}</p>
           </div>
           <div className="text-right">
-            <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
               24-hour expiration
             </p>
-            <p className="mt-1 font-mono text-sm tabular-nums text-parchment">
+            <p className="mt-1 font-mono text-sm tabular-nums text-stone-900">
               <CountdownTimer expiresAt={debate.expires_at ?? ""} />
             </p>
           </div>
@@ -259,14 +259,14 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
                 role="status"
                 className="rounded-xl border-2 border-gold bg-gold/10 px-6 py-6 text-center"
               >
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-gold">
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-amber-800">
                   Debate Concluded
                 </p>
-                <p className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment">
+                <p className="mt-3 font-display text-2xl font-semibold tracking-tight text-stone-900">
                   {concludedOutcome(debate)}
                 </p>
                 {debate.judge_reasoning?.trim() ? (
-                  <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-parchment/80">
+                  <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-stone-900/80">
                     {debate.judge_reasoning.trim()}
                   </p>
                 ) : null}
@@ -282,7 +282,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
             <div className="flex flex-col gap-4">
               <p
                 role="status"
-                className="rounded-xl border border-gold/40 bg-zinc-900 px-5 py-4 text-sm font-medium text-gold"
+                className="rounded-xl border border-gold/40 bg-white px-5 py-4 text-sm font-medium text-amber-800"
               >
                 Voting is now open
               </p>
@@ -303,7 +303,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
             </div>
           ) : (
             <>
-              <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+              <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
                 Argument stage
               </h2>
               <div className="mt-4">
@@ -316,9 +316,9 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
               {isMyTurn ? (
                 <form
                   action={submitArgument.bind(null, debateId)}
-                  className="mt-4 rounded-xl border border-dashed border-gold/40 bg-zinc-950 px-5 py-5"
+                  className="mt-4 rounded-xl border border-dashed border-gold/40 bg-white px-5 py-5"
                 >
-                  <label htmlFor="argument-draft" className="text-sm font-medium text-parchment">
+                  <label htmlFor="argument-draft" className="text-sm font-medium text-stone-900">
                     Submit an argument
                   </label>
                   <textarea
@@ -326,11 +326,11 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
                     name="argument"
                     rows={4}
                     placeholder="Write your argument…"
-                    className="mt-3 w-full resize-y rounded-md border border-gold/40 bg-zinc-950 px-4 py-3 text-sm text-parchment outline-none placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-gold/60"
+                    className="mt-3 w-full resize-y rounded-md border border-gold/40 bg-white px-4 py-3 text-sm text-stone-900 outline-none placeholder:text-stone-400 focus-visible:ring-2 focus-visible:ring-gold/60"
                   />
                   <button
                     type="submit"
-                    className="mt-3 rounded-md border border-gold/50 px-4 py-2 text-[11px] font-medium uppercase tracking-widest text-gold transition-colors duration-200 hover:bg-zinc-800"
+                    className="mt-3 rounded-md border border-gold/50 px-4 py-2 text-[11px] font-medium uppercase tracking-widest text-amber-800 transition-colors duration-200 hover:bg-stone-100"
                   >
                     Submit argument
                   </button>
@@ -338,7 +338,7 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
               ) : isSeatedCandidate ? (
                 <p
                   role="status"
-                  className="mt-4 rounded-xl border border-gold/40 bg-zinc-900 px-5 py-4 text-sm font-medium text-gold"
+                  className="mt-4 rounded-xl border border-gold/40 bg-white px-5 py-4 text-sm font-medium text-amber-800"
                 >
                   {turn === "complete"
                     ? "Both arguments are in. Advancing the debate..."

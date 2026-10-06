@@ -51,14 +51,14 @@ export default function MyProfilePage() {
   }, []);
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
         <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
               My Profile
             </p>
-            <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment">
+            <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-stone-900">
               {hub?.username ?? "Profile"}
             </h1>
           </div>
@@ -66,13 +66,13 @@ export default function MyProfilePage() {
             <div className="flex flex-wrap gap-4">
               <Link
                 href="/dashboard"
-                className="text-[11px] font-medium uppercase tracking-widest text-gold hover:text-parchment"
+                className="text-[11px] font-medium uppercase tracking-widest text-amber-800 hover:text-stone-900"
               >
                 Candidate HQ
               </Link>
               <Link
                 href={`/profile/${hub.userId}`}
-                className="text-[11px] font-medium uppercase tracking-widest text-gold hover:text-parchment"
+                className="text-[11px] font-medium uppercase tracking-widest text-amber-800 hover:text-stone-900"
               >
                 Public profile
               </Link>
@@ -101,8 +101,8 @@ export default function MyProfilePage() {
                 className={cn(
                   "inline-flex h-10 items-center justify-center rounded-full px-4 text-[11px] font-medium uppercase tracking-widest transition-colors",
                   selected
-                    ? "bg-gold-strong text-zinc-950"
-                    : "border border-gold/40 text-zinc-400 hover:border-gold hover:text-parchment",
+                    ? "bg-gold-strong text-stone-900"
+                    : "border border-gold/40 text-stone-600 hover:border-gold hover:text-stone-900",
                 )}
               >
                 {tab}
@@ -112,15 +112,15 @@ export default function MyProfilePage() {
         </div>
 
         {loadError ? (
-          <p className="mt-8 text-sm leading-6 text-zinc-400" role="alert">
+          <p className="mt-8 text-sm leading-6 text-stone-600" role="alert">
             Could not load this profile. {loadError}
           </p>
         ) : !hub ? (
-          <p className="mt-8 text-sm leading-6 text-zinc-400">Opening your profile…</p>
+          <p className="mt-8 text-sm leading-6 text-stone-600">Opening your profile…</p>
         ) : (
           <>
             {hub.error ? (
-              <p className="mt-8 text-sm leading-6 text-zinc-400">{hub.error}</p>
+              <p className="mt-8 text-sm leading-6 text-stone-600">{hub.error}</p>
             ) : null}
             {activeTab === "About Me" ? (
               <div id="panel-about-me" role="tabpanel" aria-labelledby="tab-about-me">

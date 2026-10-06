@@ -38,22 +38,22 @@ export default async function DistrictLeaderboardPage({ params }: PageProps) {
   if (!board.election) notFound();
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
         <header>
-          <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+          <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800">
             District leaderboard
           </p>
-          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment">
+          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-stone-900">
             {board.election.label}
           </h1>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-400">
+          <p className="mt-3 max-w-xl text-sm leading-6 text-stone-600">
             Declared candidates in {board.election.officeName}, ranked by Civic Standing. Escrow and
             alignment streak show current campaign momentum.
           </p>
           <Link
             href="/leaderboards?all=1"
-            className="mt-4 inline-block text-[11px] font-medium uppercase tracking-widest text-gold hover:text-parchment"
+            className="mt-4 inline-block text-[11px] font-medium uppercase tracking-widest text-amber-800 hover:text-stone-900"
           >
             All races
           </Link>
@@ -64,7 +64,7 @@ export default async function DistrictLeaderboardPage({ params }: PageProps) {
             Could not load this board. {board.error}
           </p>
         ) : board.rankings.length === 0 ? (
-          <p className="mt-10 text-sm leading-6 text-zinc-400">
+          <p className="mt-10 text-sm leading-6 text-stone-600">
             No candidates have declared in this race yet.
           </p>
         ) : (
@@ -86,27 +86,27 @@ function CandidateRow({ entry }: { entry: DistrictLeaderboardEntry }) {
   const streakPct = (streak / ALIGNMENT_STREAK_GOAL) * 100;
 
   return (
-    <article className="rounded-xl border border-gold/40 bg-zinc-900 px-5 py-5">
+    <article className="rounded-xl border border-gold/40 bg-white px-5 py-5">
       <div className="flex items-start gap-4">
-        <p className="w-10 shrink-0 font-display text-2xl tabular-nums text-gold">#{entry.rank}</p>
+        <p className="w-10 shrink-0 font-display text-2xl tabular-nums text-amber-800">#{entry.rank}</p>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <Link
                 href={`/candidate/${entry.id}`}
-                className="font-display text-xl font-semibold tracking-tight text-parchment hover:text-gold"
+                className="font-display text-xl font-semibold tracking-tight text-stone-900 hover:text-amber-800"
               >
                 {entry.name}
               </Link>
-              <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+              <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-stone-600">
                 {entry.elo} Civic Standing
               </p>
             </div>
             <div className="text-right">
-              <p className="font-display text-lg font-semibold tabular-nums text-gold">
+              <p className="font-display text-lg font-semibold tabular-nums text-amber-800">
                 {formatUsd(entry.escrowTotal)}
               </p>
-              <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+              <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-stone-600">
                 locked
               </p>
             </div>
@@ -114,10 +114,10 @@ function CandidateRow({ entry }: { entry: DistrictLeaderboardEntry }) {
 
           <div className="mt-4">
             <div className="flex items-baseline justify-between gap-4">
-              <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+              <p className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
                 Alignment streak
               </p>
-              <p className="font-display text-sm font-semibold tabular-nums text-parchment">
+              <p className="font-display text-sm font-semibold tabular-nums text-stone-900">
                 {entry.alignmentStreak}/{ALIGNMENT_STREAK_GOAL}
               </p>
             </div>
@@ -127,7 +127,7 @@ function CandidateRow({ entry }: { entry: DistrictLeaderboardEntry }) {
               aria-valuemin={0}
               aria-valuemax={ALIGNMENT_STREAK_GOAL}
               aria-valuenow={streak}
-              className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-800"
+              className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-stone-100"
             >
               <div
                 className={cn("h-full rounded-full bg-gold-strong")}

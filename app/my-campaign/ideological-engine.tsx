@@ -110,39 +110,39 @@ export function IdeologicalEngine() {
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col px-6 py-10">
       <header>
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
           My Campaign
         </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-parchment">
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-stone-900">
           Ideological Engine
         </h1>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+        <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
           One municipal question at a time. Endorse, oppose, or skip — the deck
           loops without end.
         </p>
         <div className="mt-4 flex flex-wrap gap-4">
           <Link
             href="/onboarding/ideology"
-            className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+            className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800 hover:text-stone-900"
           >
             Baseline Stance Quiz
           </Link>
           <Link
             href="/my-campaign/verify"
-            className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+            className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800 hover:text-stone-900"
           >
             Verification Hub
           </Link>
           <Link
             href="/my-campaign/coalitions"
-            className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+            className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800 hover:text-stone-900"
           >
             Coalition Hub
           </Link>
         </div>
       </header>
 
-      <p className="mt-8 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+      <p className="mt-8 text-[11px] font-medium uppercase tracking-widest text-stone-600">
         Question {index + 1} of {POLICY_QUESTIONS.length}
       </p>
 
@@ -150,15 +150,15 @@ export function IdeologicalEngine() {
         {animating ? (
           <article
             aria-hidden
-            className="absolute inset-x-0 top-0 rounded-xl border border-gold/30 bg-zinc-900 p-6 shadow-[inset_3px_0_0_0_var(--gold)]"
+            className="absolute inset-x-0 top-0 rounded-xl border border-gold/30 bg-white p-6 shadow-[inset_3px_0_0_0_var(--gold)]"
           >
-            <p className="text-[11px] font-medium uppercase tracking-widest text-gold/70">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800/70">
               {upcoming.topic}
             </p>
-            <p className="mt-4 font-display text-2xl font-semibold leading-snug tracking-tight text-parchment">
+            <p className="mt-4 font-display text-2xl font-semibold leading-snug tracking-tight text-stone-900">
               {upcoming.prompt}
             </p>
-            <p className="mt-6 text-sm leading-6 text-zinc-400">
+            <p className="mt-6 text-sm leading-6 text-stone-600">
               Record the stance your campaign will defend. Skipping leaves this
               plank unmarked and draws the next ordinance.
             </p>
@@ -169,18 +169,18 @@ export function IdeologicalEngine() {
           key={current.id}
           aria-live="polite"
           className={cn(
-            "relative rounded-xl border border-gold/50 bg-zinc-900 p-6 shadow-[inset_3px_0_0_0_var(--gold-strong)] transition-[transform,opacity] duration-300 ease-out",
+            "relative rounded-xl border border-gold/50 bg-white p-6 shadow-[inset_3px_0_0_0_var(--gold-strong)] transition-[transform,opacity] duration-300 ease-out",
             "motion-reduce:transition-none",
             exitClass(exit),
           )}
         >
-          <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+          <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
             {current.topic}
           </p>
-          <h2 className="mt-4 font-display text-2xl font-semibold leading-snug tracking-tight text-parchment">
+          <h2 className="mt-4 font-display text-2xl font-semibold leading-snug tracking-tight text-stone-900">
             {current.prompt}
           </h2>
-          <p className="mt-6 text-sm leading-6 text-zinc-400">
+          <p className="mt-6 text-sm leading-6 text-stone-600">
             Record the stance your campaign will defend. Skipping leaves this
             plank unmarked and draws the next ordinance.
           </p>
@@ -192,7 +192,7 @@ export function IdeologicalEngine() {
           type="button"
           disabled={animating}
           onClick={() => advance("oppose")}
-          className="inline-flex h-12 items-center justify-center rounded-md border border-gold/50 bg-zinc-950 font-display text-sm font-semibold uppercase tracking-[0.18em] text-parchment transition-colors hover:border-gold hover:bg-zinc-900 disabled:pointer-events-none disabled:opacity-50"
+          className="inline-flex h-12 items-center justify-center rounded-md border border-gold/50 bg-white font-display text-sm font-semibold uppercase tracking-[0.18em] text-stone-900 transition-colors hover:border-gold hover:bg-stone-100 disabled:pointer-events-none disabled:opacity-50"
         >
           Oppose
         </button>
@@ -200,7 +200,7 @@ export function IdeologicalEngine() {
           type="button"
           disabled={animating}
           onClick={() => advance("endorse")}
-          className="inline-flex h-12 items-center justify-center rounded-md bg-gold-strong font-display text-sm font-semibold uppercase tracking-[0.18em] text-zinc-950 transition-colors hover:bg-gold disabled:pointer-events-none disabled:opacity-50"
+          className="inline-flex h-12 items-center justify-center rounded-md bg-gold-strong font-display text-sm font-semibold uppercase tracking-[0.18em] text-stone-900 transition-colors hover:bg-gold disabled:pointer-events-none disabled:opacity-50"
         >
           Endorse
         </button>
@@ -210,13 +210,13 @@ export function IdeologicalEngine() {
         type="button"
         disabled={animating}
         onClick={() => advance("skip")}
-        className="mt-4 inline-flex h-10 items-center justify-center text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-400 transition-colors hover:text-parchment disabled:pointer-events-none disabled:opacity-50"
+        className="mt-4 inline-flex h-10 items-center justify-center text-[11px] font-medium uppercase tracking-[0.2em] text-stone-600 transition-colors hover:text-stone-900 disabled:pointer-events-none disabled:opacity-50"
       >
         Skip / Next Question
       </button>
 
       {error ? (
-        <p className="mt-4 text-sm leading-6 text-zinc-400" role="alert">
+        <p className="mt-4 text-sm leading-6 text-stone-600" role="alert">
           {error}
         </p>
       ) : null}

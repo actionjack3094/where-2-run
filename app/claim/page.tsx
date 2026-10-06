@@ -100,32 +100,32 @@ export default async function ClaimPage({ searchParams }: ClaimPageProps) {
   const { targets, error } = await loadClaimTargets(user.id);
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
         <header>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
             Tier 3
           </p>
-          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment">
+          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-stone-900">
             Claim escrow
           </h1>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+          <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
             File your FEC candidate ID or the state registration link for a locked
             campaign. Escrow stays in review until a platform admin confirms the
             filing and captures the held pledges.
           </p>
         </header>
 
-        {error ? <p className="mt-8 text-sm leading-6 text-zinc-400">{error}</p> : null}
+        {error ? <p className="mt-8 text-sm leading-6 text-stone-600">{error}</p> : null}
 
         {!error && targets.length === 0 ? (
           <div className="mt-8">
-            <p className="text-sm leading-6 text-zinc-400">
+            <p className="text-sm leading-6 text-stone-600">
               Claim escrow after you lock a campaign target.
             </p>
             <Link
               href="/my-campaign"
-              className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+              className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800 hover:text-stone-900"
             >
               Back to the war room
             </Link>

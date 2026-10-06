@@ -188,16 +188,16 @@ export function MatchedElections() {
     <section aria-labelledby="matched-elections-heading" className="mt-16">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <header>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
             Filing Board
           </p>
           <h2
             id="matched-elections-heading"
-            className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment"
+            className="mt-3 font-display text-3xl font-semibold tracking-tight text-stone-900"
           >
             Matched Elections
           </h2>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+          <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
             Seats you rank high in, with legal qualification marked on every
             filing.
           </p>
@@ -206,7 +206,7 @@ export function MatchedElections() {
         <button
           type="button"
           onClick={() => setMapNotice(true)}
-          className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-md bg-gold-strong px-5 font-display text-sm font-semibold uppercase tracking-[0.18em] text-zinc-950 transition-colors hover:bg-gold"
+          className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-md bg-gold-strong px-5 font-display text-sm font-semibold uppercase tracking-[0.18em] text-stone-900 transition-colors hover:bg-gold"
         >
           <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden>
             <path
@@ -228,26 +228,26 @@ export function MatchedElections() {
       </div>
 
       {mapNotice ? (
-        <p className="mt-3 text-sm text-gold">
+        <p className="mt-3 text-sm text-amber-800">
           Spatial match map forthcoming. District geometry is not wired yet.
         </p>
       ) : null}
 
       {stage === "loading" && (
-        <p className="mt-10 text-sm text-zinc-500">
+        <p className="mt-10 text-sm text-stone-600">
           Scoring seats against your vector…
         </p>
       )}
 
       {stage === "error" && (
         <div className="mt-10 space-y-4">
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-stone-600">
             {error ?? "Could not load electability scores."}
           </p>
           <button
             type="button"
             onClick={retry}
-            className="text-[11px] font-medium uppercase tracking-widest text-gold underline-offset-4 hover:underline"
+            className="text-[11px] font-medium uppercase tracking-widest text-amber-800 underline-offset-4 hover:underline"
           >
             Try again
           </button>
@@ -262,18 +262,18 @@ export function MatchedElections() {
             return (
               <Card
                 key={level.id}
-                className="flex min-h-[22rem] max-h-[70vh] flex-col overflow-hidden bg-zinc-900"
+                className="flex min-h-[22rem] max-h-[70vh] flex-col overflow-hidden bg-white"
               >
                 <CardHeader className="shrink-0 border-b border-gold/30">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs font-medium uppercase tracking-widest text-gold">
+                    <p className="text-xs font-medium uppercase tracking-widest text-amber-800">
                       {level.label}
                     </p>
-                    <span className="rounded-full border border-gold/40 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-widest text-zinc-400">
+                    <span className="rounded-full border border-gold/40 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-widest text-stone-600">
                       Filing
                     </span>
                   </div>
-                  <CardTitle className="font-display text-lg text-parchment">
+                  <CardTitle className="font-display text-lg text-stone-900">
                     Matched elections
                   </CardTitle>
                   <CardDescription>
@@ -284,10 +284,10 @@ export function MatchedElections() {
                 <CardContent className="flex flex-1 flex-col overflow-y-auto pt-4">
                   {rows.length === 0 ? (
                     <div className="flex flex-1 flex-col items-start justify-center py-8">
-                      <p className="font-display text-sm font-semibold tracking-tight text-parchment">
+                      <p className="font-display text-sm font-semibold tracking-tight text-stone-900">
                         {level.empty.title}
                       </p>
-                      <p className="mt-2 max-w-[16rem] text-sm leading-6 text-zinc-400">
+                      <p className="mt-2 max-w-[16rem] text-sm leading-6 text-stone-600">
                         {level.empty.body}
                       </p>
                     </div>
@@ -328,41 +328,41 @@ function MatchCard({
 
   return (
     <Link href={`/district/${match.district.id}`} className="block">
-      <div className="rounded-xl border border-gold/40 bg-zinc-950 p-4 transition-colors hover:border-gold">
-        <p className="text-[11px] font-medium uppercase tracking-widest text-gold/80">
+      <div className="rounded-xl border border-gold/40 bg-white p-4 transition-colors hover:border-gold">
+        <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800/80">
           {match.district.historical_lean ?? "Lean unpublished"}
         </p>
-        <p className="mt-1 font-display text-sm font-semibold leading-snug tracking-tight text-parchment">
+        <p className="mt-1 font-display text-sm font-semibold leading-snug tracking-tight text-stone-900">
           {match.district.name}
         </p>
 
         <div className="mt-4 grid grid-cols-2 gap-3">
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
               Ideology Match
             </p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-parchment">
+            <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-stone-900">
               {formatMatchPct(match.ideological_match_pct)}
             </p>
           </div>
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
               Electability
             </p>
             <p
               className={cn(
-                "mt-1 text-2xl font-semibold tabular-nums tracking-tight text-parchment",
-                !eligible && "text-zinc-500",
+                "mt-1 text-2xl font-semibold tabular-nums tracking-tight text-stone-900",
+                !eligible && "text-stone-600",
               )}
             >
               {formatElectability(match.electability_multiplier)}
             </p>
             {!eligible ? (
-              <p className="mt-1 text-[11px] uppercase tracking-widest text-zinc-500">
+              <p className="mt-1 text-[11px] uppercase tracking-widest text-stone-600">
                 Ineligible
               </p>
             ) : (
-              <p className="mt-1 text-[11px] uppercase tracking-widest text-gold">
+              <p className="mt-1 text-[11px] uppercase tracking-widest text-amber-800">
                 Qualified
               </p>
             )}
@@ -374,8 +374,8 @@ function MatchCard({
             className={cn(
               "rounded-full px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-widest",
               outlook.favored === "Primary"
-                ? "bg-gold-strong text-zinc-950"
-                : "border border-gold/40 text-zinc-400",
+                ? "bg-gold-strong text-stone-900"
+                : "border border-gold/40 text-stone-600",
             )}
           >
             Primary {outlook.primaryPct}%
@@ -384,8 +384,8 @@ function MatchCard({
             className={cn(
               "rounded-full px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-widest",
               outlook.favored === "General"
-                ? "bg-gold-strong text-zinc-950"
-                : "border border-gold/40 text-zinc-400",
+                ? "bg-gold-strong text-stone-900"
+                : "border border-gold/40 text-stone-600",
             )}
           >
             General {outlook.generalPct}%

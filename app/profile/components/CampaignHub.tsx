@@ -138,7 +138,7 @@ export function CampaignHub({
     targets.length > 0 || profile.matchedRaces.some((race) => race.targetId !== null);
 
   if (targetsLoading && !hasActiveCampaign) {
-    return <p className="mt-10 text-sm leading-6 text-zinc-400">Opening your campaign desk…</p>;
+    return <p className="mt-10 text-sm leading-6 text-stone-600">Opening your campaign desk…</p>;
   }
 
   if (!hasActiveCampaign) {
@@ -152,7 +152,7 @@ export function CampaignHub({
   return (
     <div className="mt-10 flex flex-col gap-14">
       {stripeNotice ? (
-        <p className="rounded-lg border border-gold/50 bg-zinc-900 px-4 py-3 text-sm leading-6 text-gold" role="status">
+        <p className="rounded-lg border border-gold/50 bg-white px-4 py-3 text-sm leading-6 text-amber-800" role="status">
           {stripeNotice}
         </p>
       ) : null}
@@ -164,28 +164,28 @@ export function CampaignHub({
       />
 
       <section aria-labelledby="eligibility-roadmap-heading">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
           Targeting
         </p>
         <h2
           id="eligibility-roadmap-heading"
-          className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment"
+          className="mt-3 font-display text-2xl font-semibold tracking-tight text-stone-900"
         >
           Eligibility Roadmap
         </h2>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+        <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
           Races on this campaign, with the date you would need to establish
           residency before election day.
         </p>
 
         {targetsLoading ? (
-          <p className="mt-6 text-sm leading-6 text-zinc-400">Loading targeted races…</p>
+          <p className="mt-6 text-sm leading-6 text-stone-600">Loading targeted races…</p>
         ) : targetsError ? (
           <p className="mt-6 text-sm leading-6 text-rose-300" role="alert">
             Could not load targeted races. {targetsError}
           </p>
         ) : targets.length === 0 ? (
-          <p className="mt-6 text-sm leading-6 text-zinc-400">
+          <p className="mt-6 text-sm leading-6 text-stone-600">
             No targeted races yet. Target a race from your draft card or the contests
             board to open a residency roadmap.
           </p>
@@ -201,28 +201,28 @@ export function CampaignHub({
       </section>
 
       <section aria-labelledby="escrow-unlock-heading">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
           Escrow
         </p>
         <h2
           id="escrow-unlock-heading"
-          className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment"
+          className="mt-3 font-display text-2xl font-semibold tracking-tight text-stone-900"
         >
           Unlock tracker
         </h2>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+        <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
           Uncaptured draft bounties sitting on this campaign. Each card stays
           vaulted until its unlock condition clears.
         </p>
 
-        <div className="mt-6 rounded-xl border border-gold/50 bg-zinc-900 px-5 py-5">
-          <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+        <div className="mt-6 rounded-xl border border-gold/50 bg-white px-5 py-5">
+          <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
             Uncaptured
           </p>
-          <p className="mt-2 font-display text-4xl font-semibold tabular-nums tracking-tight text-gold">
+          <p className="mt-2 font-display text-4xl font-semibold tabular-nums tracking-tight text-amber-800">
             {formatUsd(total)}
           </p>
-          <p className="mt-2 text-sm leading-6 text-zinc-400">
+          <p className="mt-2 text-sm leading-6 text-stone-600">
             {profile.bounties.length === 0
               ? "No uncaptured draft bounties on this campaign yet."
               : `${profile.bounties.length} ${profile.bounties.length === 1 ? "bounty is" : "bounties are"} still locked.`}
@@ -234,22 +234,22 @@ export function CampaignHub({
             {profile.bounties.map((bounty) => (
               <li
                 key={bounty.id}
-                className="rounded-xl border border-gold/40 bg-zinc-900 px-5 py-4"
+                className="rounded-xl border border-gold/40 bg-white px-5 py-4"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+                    <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
                       Locked
                     </p>
-                    <p className="mt-2 font-medium text-parchment">{bounty.donorName}</p>
-                    <p className="mt-1 text-sm leading-6 text-zinc-400">
+                    <p className="mt-2 font-medium text-stone-900">{bounty.donorName}</p>
+                    <p className="mt-1 text-sm leading-6 text-stone-600">
                       Unlocks when: {bounty.unlockLabel}
                     </p>
                     {bounty.officeName ? (
-                      <p className="mt-1 text-sm leading-6 text-zinc-500">{bounty.officeName}</p>
+                      <p className="mt-1 text-sm leading-6 text-stone-600">{bounty.officeName}</p>
                     ) : null}
                   </div>
-                  <p className="shrink-0 font-display text-xl font-semibold tabular-nums text-gold">
+                  <p className="shrink-0 font-display text-xl font-semibold tabular-nums text-amber-800">
                     {formatUsd(bounty.amount)}
                   </p>
                 </div>
@@ -258,11 +258,11 @@ export function CampaignHub({
           </ul>
         ) : null}
 
-        <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-5">
-          <h3 className="font-display text-lg font-semibold tracking-tight text-parchment">
+        <div className="mt-6 rounded-xl border border-amber-500/30 bg-white px-5 py-5">
+          <h3 className="font-display text-lg font-semibold tracking-tight text-stone-900">
             Conditional bounty
           </h3>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+          <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
             {profile.election
               ? `Save a card for ${profile.election.officeName}. The platform charges it off-session when a candidate files for that seat.`
               : "Match a seat before vaulting a card. The charge runs when a candidate files."}
@@ -278,49 +278,49 @@ export function CampaignHub({
       </section>
 
       <section aria-labelledby="compliance-ballot-heading">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
           Treasurer
         </p>
         <h2
           id="compliance-ballot-heading"
-          className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment"
+          className="mt-3 font-display text-2xl font-semibold tracking-tight text-stone-900"
         >
           Compliance & Ballot Access
         </h2>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+        <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
           {profile.election
             ? `File the treasurer appointment for ${profile.election.officeName} before this campaign can route escrowed funds.`
             : "Match an election to see the federal or Texas filing form for this campaign."}
         </p>
 
         {filing ? (
-          <article className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-5">
-            <h3 className="font-display text-lg font-semibold tracking-tight text-parchment">
+          <article className="mt-6 rounded-xl border border-amber-500/30 bg-white px-5 py-5">
+            <h3 className="font-display text-lg font-semibold tracking-tight text-stone-900">
               {filing.cardTitle}
             </h3>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">{filing.detail}</p>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">{filing.detail}</p>
             <a
               href={filing.href}
               target="_blank"
               rel="noreferrer"
-              className="mt-5 inline-flex h-12 items-center justify-center rounded-md bg-gold-strong px-5 font-display text-sm font-semibold uppercase tracking-[0.18em] text-zinc-950 transition-colors hover:bg-gold"
+              className="mt-5 inline-flex h-12 items-center justify-center rounded-md bg-gold-strong px-5 font-display text-sm font-semibold uppercase tracking-[0.18em] text-stone-900 transition-colors hover:bg-gold"
             >
               {filing.label}
             </a>
           </article>
         ) : (
-          <p className="mt-6 max-w-xl text-sm leading-6 text-zinc-400">
+          <p className="mt-6 max-w-xl text-sm leading-6 text-stone-600">
             {profile.election
               ? "This seat does not map to an FEC or Texas Ethics Commission treasurer form."
               : "Once a seat is matched, the federal or Texas filing link appears here."}
           </p>
         )}
 
-        <div className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-5">
+        <div className="mt-4 rounded-xl border border-amber-500/30 bg-white px-5 py-5">
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <p className="font-medium text-parchment">Formally Appointed Treasurer</p>
-              <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+              <p className="font-medium text-stone-900">Formally Appointed Treasurer</p>
+              <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-stone-600">
                 Locked for new candidates
               </p>
             </div>
@@ -333,12 +333,12 @@ export function CampaignHub({
               aria-label="Formally Appointed Treasurer, locked on"
               className="relative inline-flex h-7 w-12 shrink-0 cursor-not-allowed items-center rounded-full bg-gold-strong px-0.5"
             >
-              <span className="inline-flex size-6 translate-x-5 items-center justify-center rounded-full bg-zinc-950 text-gold">
+              <span className="inline-flex size-6 translate-x-5 items-center justify-center rounded-full bg-white text-amber-800">
                 <Lock className="size-3" aria-hidden />
               </span>
             </button>
           </div>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-400">
+          <p className="mt-3 max-w-xl text-sm leading-6 text-stone-600">
             This box must be checked, and verified by the platform, before Stripe escrows can
             route to a campaign bank account.
           </p>
@@ -354,20 +354,20 @@ function EligibilityRoadmapCard({ race }: { race: TargetedRace }) {
   const status = STATUS_LABEL[race.status] ?? race.status;
 
   return (
-    <article className="rounded-xl border border-gold/50 bg-zinc-900 px-5 py-5 shadow-[inset_3px_0_0_0_var(--gold-strong)]">
-      <p className="text-[11px] font-medium uppercase tracking-widest text-gold">{status}</p>
-      <h3 className="mt-2 font-display text-xl font-semibold tracking-tight text-parchment">
+    <article className="rounded-xl border border-gold/50 bg-white px-5 py-5 shadow-[inset_3px_0_0_0_var(--gold-strong)]">
+      <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">{status}</p>
+      <h3 className="mt-2 font-display text-xl font-semibold tracking-tight text-stone-900">
         {race.officeName}
       </h3>
       <dl className="mt-4">
-        <dt className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+        <dt className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
           Relocation Deadline
         </dt>
-        <dd className="mt-1 font-display text-2xl font-semibold tracking-tight text-parchment">
+        <dd className="mt-1 font-display text-2xl font-semibold tracking-tight text-stone-900">
           {race.deadline ? formatStatutoryDate(race.deadline) : "Unpublished"}
         </dd>
       </dl>
-      <p className="mt-4 rounded-lg border border-gold bg-zinc-950 px-4 py-3 text-sm font-medium leading-6 text-gold">
+      <p className="mt-4 rounded-lg border border-gold bg-white px-4 py-3 text-sm font-medium leading-6 text-amber-800">
         {RESIDENCY_DISCLAIMER}
       </p>
     </article>
@@ -387,20 +387,20 @@ function MatchedRaces({
 }) {
   return (
     <section aria-labelledby="matched-races-heading">
-      <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">Ballot</p>
+      <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">Ballot</p>
       <h2
         id="matched-races-heading"
-        className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment"
+        className="mt-3 font-display text-2xl font-semibold tracking-tight text-stone-900"
       >
         Matched Races
       </h2>
-      <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+      <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
         Races that match your ideology. Target one to start building an alignment streak; ten
         unlocks locking the race in.
       </p>
 
       {races.length === 0 ? (
-        <p className="mt-6 text-sm leading-6 text-zinc-400">
+        <p className="mt-6 text-sm leading-6 text-stone-600">
           No matched races yet. Finish calibrating your stance vector and your matched ballot
           will fill in here.
         </p>
@@ -460,10 +460,10 @@ function MatchedRaceCard({
   return (
     <article
       className={cn(
-        "rounded-xl border bg-zinc-900 px-5 py-5",
+        "rounded-xl border bg-white px-5 py-5",
         targeting
           ? "border-gold/50 shadow-[inset_3px_0_0_0_var(--gold-strong)]"
-          : "border-zinc-800",
+          : "border-amber-500/30",
       )}
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -471,7 +471,7 @@ function MatchedRaceCard({
           <p
             className={cn(
               "text-[11px] font-medium uppercase tracking-widest",
-              targeting ? "text-gold" : "text-zinc-500",
+              targeting ? "text-amber-800" : "text-stone-600",
             )}
           >
             {targeting
@@ -480,7 +480,7 @@ function MatchedRaceCard({
                 : (STATUS_LABEL[race.status ?? ""] ?? race.status)
               : (race.level ?? "Race")}
           </p>
-          <h3 className="mt-2 font-display text-xl font-semibold tracking-tight text-parchment">
+          <h3 className="mt-2 font-display text-xl font-semibold tracking-tight text-stone-900">
             {race.officeName}
           </h3>
         </div>
@@ -490,7 +490,7 @@ function MatchedRaceCard({
             type="button"
             disabled={busy}
             onClick={() => void target()}
-            className="inline-flex h-10 items-center justify-center rounded-md bg-gold-strong px-4 text-[11px] font-semibold uppercase tracking-widest text-zinc-950 transition-colors hover:bg-gold disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-10 items-center justify-center rounded-md bg-gold-strong px-4 text-[11px] font-semibold uppercase tracking-widest text-stone-900 transition-colors hover:bg-gold disabled:cursor-not-allowed disabled:opacity-50"
           >
             {busy ? "Targeting…" : "Target This Race"}
           </button>
@@ -500,20 +500,20 @@ function MatchedRaceCard({
       {lockedIn ? (
         <div
           role="status"
-          className="mt-4 flex items-start gap-3 rounded-lg border border-gold bg-zinc-950 px-4 py-4"
+          className="mt-4 flex items-start gap-3 rounded-lg border border-gold bg-white px-4 py-4"
         >
-          <LockKeyhole className="mt-0.5 size-5 shrink-0 text-gold" aria-hidden />
+          <LockKeyhole className="mt-0.5 size-5 shrink-0 text-amber-800" aria-hidden />
           <div className="min-w-0">
-            <p className="font-display text-lg font-semibold uppercase tracking-[0.18em] text-gold">
+            <p className="font-display text-lg font-semibold uppercase tracking-[0.18em] text-amber-800">
               Locked In
             </p>
-            <p className="mt-1 text-sm leading-6 text-parchment">
+            <p className="mt-1 text-sm leading-6 text-stone-900">
               Funds Released
               {race.escrow.available + race.escrow.disbursed > 0
                 ? ` · ${usd(race.escrow.available + race.escrow.disbursed)}`
                 : ""}
             </p>
-            <p className="mt-1 text-sm leading-6 text-zinc-400">
+            <p className="mt-1 text-sm leading-6 text-stone-600">
               {race.alignmentStreak} straight aligned debates. Pledges waiting on the{" "}
               {UNLOCK_STREAK}-debate streak have been released.
             </p>
@@ -522,12 +522,12 @@ function MatchedRaceCard({
       ) : targeting ? (
         <div className="mt-4">
           <div className="flex items-baseline justify-between gap-4">
-            <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
               Alignment streak
             </p>
-            <p className="font-display text-2xl font-semibold tabular-nums tracking-tight text-parchment">
+            <p className="font-display text-2xl font-semibold tabular-nums tracking-tight text-stone-900">
               {race.alignmentStreak}
-              <span className="text-sm font-normal text-zinc-500"> / {UNLOCK_STREAK}</span>
+              <span className="text-sm font-normal text-stone-600"> / {UNLOCK_STREAK}</span>
             </p>
           </div>
           <div
@@ -536,7 +536,7 @@ function MatchedRaceCard({
             aria-valuemin={0}
             aria-valuemax={UNLOCK_STREAK}
             aria-valuenow={streak}
-            className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-800"
+            className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-stone-100"
           >
             <div
               className="h-full rounded-full bg-gold-strong"

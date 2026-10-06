@@ -21,12 +21,12 @@ export default async function CreateDebatePage(props: { searchParams: Promise<{ 
   const { primary: slug } = await props.searchParams;
   if (!slug) {
     return (
-      <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+      <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
         <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10">
-          <h1 className="font-display text-3xl text-parchment">Create challenge</h1>
-          <p className="mt-3 text-sm leading-6 text-zinc-400">
+          <h1 className="font-display text-3xl text-stone-900">Create challenge</h1>
+          <p className="mt-3 text-sm leading-6 text-stone-600">
             Open a{" "}
-            <Link href="/elections" className="text-gold">
+            <Link href="/elections" className="text-amber-800">
               primary hub
             </Link>{" "}
             and choose an issue from its district agenda.
@@ -82,35 +82,35 @@ export default async function CreateDebatePage(props: { searchParams: Promise<{ 
   const party = primary?.party === "republican" ? "republican" : "democrat";
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
         {primary ? (
-          <Link href={`/elections/${primary.slug}`} className="text-[11px] uppercase tracking-[0.2em] text-gold">
+          <Link href={`/elections/${primary.slug}`} className="text-[11px] uppercase tracking-[0.2em] text-amber-800">
             {partyLabel(party)} · {primary.office_name}
           </Link>
         ) : null}
-        <h1 className="mt-4 font-display text-3xl font-semibold tracking-tight text-parchment">
+        <h1 className="mt-4 font-display text-3xl font-semibold tracking-tight text-stone-900">
           Create challenge
         </h1>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+        <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
           The topic comes from the top issues filed by verified voters. Write the opening stance.
         </p>
-        {setup ? <p className="mt-8 text-sm leading-6 text-zinc-300">{setup}</p> : null}
+        {setup ? <p className="mt-8 text-sm leading-6 text-stone-600">{setup}</p> : null}
         {!setup && primary && closed ? (
-          <p className="mt-8 text-sm text-zinc-400">This primary has closed. Debates are locked.</p>
+          <p className="mt-8 text-sm text-stone-600">This primary has closed. Debates are locked.</p>
         ) : null}
         {!setup && primary && !closed && !user ? (
-          <p className="mt-8 text-sm text-zinc-400">
-            <Link href={`/auth/login?next=${encodeURIComponent(`/debates/create?primary=${primary.slug}`)}`} className="text-gold">
+          <p className="mt-8 text-sm text-stone-600">
+            <Link href={`/auth/login?next=${encodeURIComponent(`/debates/create?primary=${primary.slug}`)}`} className="text-amber-800">
               Sign in
             </Link>{" "}
             to open a seat.
           </p>
         ) : null}
         {!setup && primary && !closed && user && !canPost ? (
-          <p className="mt-8 text-sm text-zinc-400">
+          <p className="mt-8 text-sm text-stone-600">
             Finish the{" "}
-            <Link href="/onboarding/ideology" className="text-gold">
+            <Link href="/onboarding/ideology" className="text-amber-800">
               diagnostic
             </Link>{" "}
             and stay inside this party to post.

@@ -29,12 +29,12 @@ export function DistrictAgenda({
   return (
     <div className="mt-4 grid gap-4">
       {prompts.length === 0 ? (
-        <p className="text-sm text-zinc-400">No issues filed for this primary yet.</p>
+        <p className="text-sm text-stone-600">No issues filed for this primary yet.</p>
       ) : (
         prompts.map((prompt) => (
-          <article key={prompt.id} className="rounded-xl border border-zinc-800 px-4 py-4">
+          <article key={prompt.id} className="rounded-xl border border-amber-500/30 px-4 py-4">
             <div className="flex items-start justify-between gap-3">
-              <h3 className="text-sm font-medium text-parchment">{prompt.title}</h3>
+              <h3 className="text-sm font-medium text-stone-900">{prompt.title}</h3>
               <button
                 type="button"
                 disabled={closed || pendingId === prompt.id || !verified}
@@ -58,38 +58,38 @@ export function DistrictAgenda({
                     router.refresh();
                   });
                 }}
-                className="shrink-0 rounded-full border border-zinc-600 px-3 py-1 text-[11px] uppercase tracking-widest text-zinc-200 hover:border-gold hover:text-gold disabled:opacity-50"
+                className="shrink-0 rounded-full border border-amber-500/40 px-3 py-1 text-[11px] uppercase tracking-widest text-stone-700 hover:border-gold hover:text-amber-800 disabled:opacity-50"
               >
                 {prompt.viewerUpvoted ? "Upvoted" : "Upvote"} {prompt.upvoteCount}
               </button>
             </div>
-            <p className="mt-2 text-sm leading-6 text-zinc-300">{prompt.content}</p>
+            <p className="mt-2 text-sm leading-6 text-stone-600">{prompt.content}</p>
           </article>
         ))
       )}
 
-      {error ? <p className="text-sm text-zinc-300">{error}</p> : null}
-      {message ? <p className="text-sm text-parchment">{message}</p> : null}
+      {error ? <p className="text-sm text-stone-600">{error}</p> : null}
+      {message ? <p className="text-sm text-stone-900">{message}</p> : null}
 
       {closed ? (
-        <p className="text-sm text-zinc-400">This primary has closed. The agenda is locked.</p>
+        <p className="text-sm text-stone-600">This primary has closed. The agenda is locked.</p>
       ) : !signedIn ? (
-        <p className="text-sm text-zinc-400">
-          <Link href="/auth/login" className="text-gold">
+        <p className="text-sm text-stone-600">
+          <Link href="/auth/login" className="text-amber-800">
             Sign in
           </Link>{" "}
           to file or upvote an issue.
         </p>
       ) : !verified ? (
-        <p className="text-sm text-zinc-400">
-          <Link href="/verify" className="text-gold">
+        <p className="text-sm text-stone-600">
+          <Link href="/verify" className="text-amber-800">
             Verify with Stripe
           </Link>{" "}
           to file or upvote an issue.
         </p>
       ) : (
         <form
-          className="grid gap-3 rounded-xl border border-zinc-800 px-4 py-4"
+          className="grid gap-3 rounded-xl border border-amber-500/30 px-4 py-4"
           onSubmit={(event) => {
             event.preventDefault();
             if (submitting) return;
@@ -114,30 +114,30 @@ export function DistrictAgenda({
             });
           }}
         >
-          <p className="text-[11px] uppercase tracking-widest text-zinc-500">Submit issue</p>
-          <label className="grid gap-2 text-sm text-zinc-300">
+          <p className="text-[11px] uppercase tracking-widest text-stone-600">Submit issue</p>
+          <label className="grid gap-2 text-sm text-stone-600">
             Title
             <input
               name="title"
               required
               maxLength={AGENDA_TITLE_MAX}
-              className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-parchment"
+              className="rounded-lg border border-amber-500/30 bg-white px-3 py-2 text-stone-900"
             />
           </label>
-          <label className="grid gap-2 text-sm text-zinc-300">
+          <label className="grid gap-2 text-sm text-stone-600">
             Description
             <textarea
               name="content"
               required
               maxLength={AGENDA_CONTENT_MAX}
               rows={4}
-              className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-parchment"
+              className="rounded-lg border border-amber-500/30 bg-white px-3 py-2 text-stone-900"
             />
           </label>
           <button
             type="submit"
             disabled={submitting}
-            className="justify-self-start rounded-md bg-gold-strong px-4 py-2 text-xs font-semibold uppercase tracking-widest text-zinc-950 disabled:opacity-50"
+            className="justify-self-start rounded-md bg-gold-strong px-4 py-2 text-xs font-semibold uppercase tracking-widest text-stone-900 disabled:opacity-50"
           >
             {submitting ? "Filing…" : "Submit issue"}
           </button>

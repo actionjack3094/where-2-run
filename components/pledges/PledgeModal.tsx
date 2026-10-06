@@ -111,7 +111,7 @@ export function PledgeModal({
         onClick={(event) => event.stopPropagation()}
       >
         <CardHeader>
-          <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+          <p className="text-xs font-medium uppercase tracking-widest text-stone-600">
             Stripe escrow
           </p>
           <CardTitle id={titleId}>
@@ -152,7 +152,7 @@ export function PledgeModal({
 
             {preset === "custom" && (
               <label className="flex flex-col gap-1.5 text-sm">
-                <span className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+                <span className="text-xs font-medium uppercase tracking-widest text-stone-600">
                   Custom amount
                 </span>
                 <input
@@ -164,13 +164,13 @@ export function PledgeModal({
                   autoFocus
                   value={customAmount}
                   onChange={(event) => setCustomAmount(event.target.value)}
-                  className="h-10 rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none focus:border-zinc-950 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-50"
+                  className="h-10 rounded-lg border border-stone-200 bg-white px-3 text-sm outline-none focus:border-amber-700   "
                 />
               </label>
             )}
 
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+              <span className="text-xs font-medium uppercase tracking-widest text-stone-600">
                 Endorsement note
               </span>
               <textarea
@@ -179,11 +179,11 @@ export function PledgeModal({
                 rows={3}
                 maxLength={280}
                 placeholder="Optional note the campaign can show on the floor…"
-                className="resize-none rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm leading-6 outline-none focus:border-zinc-950 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-50"
+                className="resize-none rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm leading-6 outline-none focus:border-amber-700   "
               />
             </label>
 
-            {formError && <p className="text-sm text-zinc-600 dark:text-zinc-300">{formError}</p>}
+            {formError && <p className="text-sm text-stone-600 ">{formError}</p>}
 
             <div className="flex gap-2">
               <Button type="submit" className="flex-1" disabled={busy}>
@@ -197,7 +197,7 @@ export function PledgeModal({
             </div>
             <p
               className={cn(
-                "text-center text-[11px] uppercase tracking-widest text-zinc-400",
+                "text-center text-[11px] uppercase tracking-widest text-stone-600",
               )}
             >
               Stripe Auth & Capture

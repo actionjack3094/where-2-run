@@ -28,20 +28,20 @@ export function PledgeFundsCard({
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <section className="mt-8 rounded-2xl border border-amber-500/30 bg-zinc-900 px-6 py-6">
-      <p className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+    <section className="mt-8 rounded-2xl border border-amber-500/30 bg-white px-6 py-6">
+      <p className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800">
         Pledged Escrow
         <InfoTooltip label="Pledged Escrow" text={PLEDGED_ESCROW_TIP} />
       </p>
-      <p className="mt-3 font-display text-4xl font-semibold tracking-tight text-parchment">
+      <p className="mt-3 font-display text-4xl font-semibold tracking-tight text-stone-900">
         {formatUsd(total)}
       </p>
-      <p className="mt-2 text-sm leading-6 text-zinc-400">
+      <p className="mt-2 text-sm leading-6 text-stone-600">
         Grassroots dollars and institutional backing stay on separate segments of the war chest.
       </p>
       <BackingBar grassroots={grassroots} institutional={institutional} />
       {chests.length > 1 ? (
-        <ul className="mt-4 grid gap-1 text-sm text-zinc-300">
+        <ul className="mt-4 grid gap-1 text-sm text-stone-600">
           {chests.map((chest) => (
             <li key={chest.primaryId}>
               {chest.label} · {formatUsd(chest.amount)}
@@ -50,11 +50,11 @@ export function PledgeFundsCard({
         </ul>
       ) : null}
       {chests.length === 0 ? (
-        <p className="mt-4 text-sm text-zinc-400">This campaign has not opened a war chest yet.</p>
+        <p className="mt-4 text-sm text-stone-600">This campaign has not opened a war chest yet.</p>
       ) : !signedIn ? (
         <Link
           href={`/auth/login?next=${encodeURIComponent(`/profile/${candidateId}`)}`}
-          className="mt-5 inline-flex h-12 items-center justify-center rounded-md bg-gold-strong px-5 font-display text-sm font-semibold uppercase tracking-[0.18em] text-zinc-950"
+          className="mt-5 inline-flex h-12 items-center justify-center rounded-md bg-gold-strong px-5 font-display text-sm font-semibold uppercase tracking-[0.18em] text-stone-900"
         >
           Pledge Funds
         </Link>
@@ -76,12 +76,12 @@ export function PledgeFundsCard({
           }}
         >
           {chests.length > 1 ? (
-            <label className="grid gap-1 text-[11px] uppercase tracking-widest text-zinc-500">
+            <label className="grid gap-1 text-[11px] uppercase tracking-widest text-stone-600">
               Race
               <select
                 value={primaryId}
                 onChange={(event) => setPrimaryId(event.target.value)}
-                className="h-12 rounded-md border border-zinc-700 bg-zinc-950 px-3 text-sm normal-case tracking-normal text-parchment"
+                className="h-12 rounded-md border border-amber-500/30 bg-white px-3 text-sm normal-case tracking-normal text-stone-900"
               >
                 {chests.map((chest) => (
                   <option key={chest.primaryId} value={chest.primaryId}>
@@ -93,26 +93,26 @@ export function PledgeFundsCard({
           ) : (
             <span className="sr-only">Race {chests[0]?.label}</span>
           )}
-          <label className="grid gap-1 text-[11px] uppercase tracking-widest text-zinc-500">
+          <label className="grid gap-1 text-[11px] uppercase tracking-widest text-stone-600">
             Amount
             <input
               inputMode="decimal"
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
-              className="h-12 rounded-md border border-zinc-700 bg-zinc-950 px-3 text-sm text-parchment"
+              className="h-12 rounded-md border border-amber-500/30 bg-white px-3 text-sm text-stone-900"
               aria-label="Pledge amount in dollars"
             />
           </label>
           <button
             type="submit"
             disabled={pending}
-            className="inline-flex h-12 items-center justify-center rounded-md bg-gold-strong px-5 font-display text-sm font-semibold uppercase tracking-[0.18em] text-zinc-950 disabled:opacity-60"
+            className="inline-flex h-12 items-center justify-center rounded-md bg-gold-strong px-5 font-display text-sm font-semibold uppercase tracking-[0.18em] text-stone-900 disabled:opacity-60"
           >
             {pending ? "Pledging…" : "Pledge Funds"}
           </button>
-          <p className="text-xs text-zinc-500 sm:col-span-3">Up to {formatUsd(MAX_PLEDGE_AMOUNT)} per pledge.</p>
-          {message ? <p className="text-sm text-parchment sm:col-span-3">{message}</p> : null}
-          {error ? <p className="text-sm text-zinc-300 sm:col-span-3">{error}</p> : null}
+          <p className="text-xs text-stone-600 sm:col-span-3">Up to {formatUsd(MAX_PLEDGE_AMOUNT)} per pledge.</p>
+          {message ? <p className="text-sm text-stone-900 sm:col-span-3">{message}</p> : null}
+          {error ? <p className="text-sm text-stone-600 sm:col-span-3">{error}</p> : null}
         </form>
       )}
     </section>

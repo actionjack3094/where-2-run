@@ -216,7 +216,7 @@ export default async function PublicProfilePage({
         ? await loadVolunteerPrimaryIds(viewer.id, id).catch(() => [])
         : [];
     return (
-      <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+      <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
         <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
           <ArenaPublicProfileView
             profile={arena}
@@ -232,10 +232,10 @@ export default async function PublicProfilePage({
   const { profile, error } = await loadPublicProfile(id);
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
         {error ? (
-          <p className="mt-8 text-sm leading-6 text-zinc-400">
+          <p className="mt-8 text-sm leading-6 text-stone-600">
             Could not load this profile. {error}
           </p>
         ) : !profile ? (
@@ -258,21 +258,21 @@ function ReadyProfile({ profile }: { profile: PublicProfile }) {
         <div className="flex min-w-0 items-center gap-5">
           <CandidateAvatar name={stats.username} size="lg" />
           <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
               Public Profile
             </p>
-            <h1 className="mt-2 flex items-center gap-2 font-display text-3xl font-semibold tracking-tight text-parchment">
+            <h1 className="mt-2 flex items-center gap-2 font-display text-3xl font-semibold tracking-tight text-stone-900">
               <span className="min-w-0 truncate">{stats.username}</span>
               <VerificationBadge tier={stats.verification_tier} size="lg" />
             </h1>
-            <p className="mt-2 text-sm leading-6 text-zinc-400">
-              <span className="font-medium tabular-nums text-parchment">
+            <p className="mt-2 text-sm leading-6 text-stone-600">
+              <span className="font-medium tabular-nums text-stone-900">
                 {record.wins + record.losses} Debates Logged
               </span>
               {" · "}
-              <span className="font-medium tabular-nums text-parchment">100% Policy Consistency</span>
+              <span className="font-medium tabular-nums text-stone-900">100% Policy Consistency</span>
               {" · "}
-              <span className="font-medium tabular-nums text-parchment">
+              <span className="font-medium tabular-nums text-stone-900">
                 {stats.elo_rating} Civic Standing
               </span>
               {hasTrustBadge(stats.verification_tier)
@@ -308,34 +308,34 @@ function ReadyProfile({ profile }: { profile: PublicProfile }) {
       </section>
 
       <section className="mt-14">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
           Filing Board
         </p>
-        <h2 className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment">
+        <h2 className="mt-3 font-display text-2xl font-semibold tracking-tight text-stone-900">
           Top Matched Elections
         </h2>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+        <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
           Seats ranked by electability for this campaign.
         </p>
 
         {matches.length === 0 ? (
           filedDistrict ? (
             <Link href={`/district/${filedDistrict.id}`} className="mt-6 block">
-              <article className="rounded-xl border border-gold/50 bg-zinc-900 p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)] transition-colors hover:border-gold">
-                <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+              <article className="rounded-xl border border-gold/50 bg-white p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)] transition-colors hover:border-gold">
+                <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
                   Filed seat
                 </p>
-                <h3 className="mt-2 font-display text-lg font-semibold leading-snug tracking-tight text-parchment">
+                <h3 className="mt-2 font-display text-lg font-semibold leading-snug tracking-tight text-stone-900">
                   {filedDistrict.name}
                 </h3>
-                <p className="mt-2 text-sm leading-6 text-zinc-400">
+                <p className="mt-2 text-sm leading-6 text-stone-600">
                   {filedDistrict.historical_lean ?? "Lean unpublished"} ·{" "}
                   {filedDistrict.level}
                 </p>
               </article>
             </Link>
           ) : (
-            <p className="mt-8 text-sm leading-6 text-zinc-400">
+            <p className="mt-8 text-sm leading-6 text-stone-600">
               No matched elections on file yet. Scores appear after this candidate files a
               district.
             </p>
@@ -352,17 +352,17 @@ function ReadyProfile({ profile }: { profile: PublicProfile }) {
       <CoalitionNetwork candidateId={stats.id} className="mt-14" />
 
       <section className="mt-14">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
           Alliances
         </p>
-        <h2 className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment">
+        <h2 className="mt-3 font-display text-2xl font-semibold tracking-tight text-stone-900">
           Coalitions & Endorsements
         </h2>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+        <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
           Electoral caucuses this campaign has seated, shown as gold endorsements.
         </p>
         {coalitions.length === 0 ? (
-          <p className="mt-8 text-sm leading-6 text-zinc-400">
+          <p className="mt-8 text-sm leading-6 text-stone-600">
             This campaign has not seated in a coalition yet.
           </p>
         ) : (
@@ -370,10 +370,10 @@ function ReadyProfile({ profile }: { profile: PublicProfile }) {
             {coalitions.map((coalition) => (
               <li
                 key={coalition.id}
-                className="rounded-xl border border-gold/50 bg-zinc-900 p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)]"
+                className="rounded-xl border border-gold/50 bg-white p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)]"
               >
                 <CoalitionBadge name={coalition.name} />
-                <p className="mt-3 text-sm leading-6 text-zinc-400">
+                <p className="mt-3 text-sm leading-6 text-stone-600">
                   {coalition.charter_statement}
                 </p>
               </li>
@@ -389,8 +389,8 @@ function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
     <Card>
       <CardHeader className="gap-3">
-        <p className="text-xs font-medium uppercase tracking-widest text-gold">{label}</p>
-        <p className="font-display text-3xl font-semibold tabular-nums tracking-tight text-parchment">
+        <p className="text-xs font-medium uppercase tracking-widest text-amber-800">{label}</p>
+        <p className="font-display text-3xl font-semibold tabular-nums tracking-tight text-stone-900">
           {value}
         </p>
       </CardHeader>
@@ -403,34 +403,34 @@ function MatchRow({ match, rank }: { match: ElectabilityMatch; rank: number }) {
 
   return (
     <Link href={`/district/${match.district.id}`} className="block">
-      <article className="rounded-xl border border-gold/50 bg-zinc-900 p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)] transition-colors hover:border-gold">
+      <article className="rounded-xl border border-gold/50 bg-white p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)] transition-colors hover:border-gold">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
               #{rank} · {match.district.historical_lean ?? "Lean unpublished"}
             </p>
-            <h3 className="mt-2 font-display text-lg font-semibold leading-snug tracking-tight text-parchment">
+            <h3 className="mt-2 font-display text-lg font-semibold leading-snug tracking-tight text-stone-900">
               {match.district.name}
             </h3>
           </div>
-          <p className="shrink-0 font-mono text-xs font-medium uppercase text-gold">
+          <p className="shrink-0 font-mono text-xs font-medium uppercase text-amber-800">
             {formatElectability(match.electability_multiplier)} electability
           </p>
         </div>
-        <dl className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-zinc-400">
+        <dl className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-stone-600">
           <div>
-            <dt className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+            <dt className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
               Ideology match
             </dt>
-            <dd className="mt-1 font-medium tabular-nums text-zinc-100">
+            <dd className="mt-1 font-medium tabular-nums text-stone-900">
               {formatMatchPct(match.ideological_match_pct)}
             </dd>
           </div>
           <div>
-            <dt className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+            <dt className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
               Qualification
             </dt>
-            <dd className="mt-1 font-medium uppercase tracking-widest text-gold">
+            <dd className="mt-1 font-medium uppercase tracking-widest text-amber-800">
               {eligible ? "Qualified" : "Ineligible"}
             </dd>
           </div>
@@ -453,7 +453,7 @@ function MissingProfile() {
       <CardContent>
         <Link
           href="/leaderboards"
-          className="inline-flex h-10 items-center justify-center rounded-md border border-gold/60 bg-zinc-950 px-4 text-xs font-medium uppercase tracking-widest text-parchment transition-colors hover:border-gold hover:bg-zinc-900"
+          className="inline-flex h-10 items-center justify-center rounded-md border border-gold/60 bg-white px-4 text-xs font-medium uppercase tracking-widest text-stone-900 transition-colors hover:border-gold hover:bg-stone-100"
         >
           View leaderboards
         </Link>

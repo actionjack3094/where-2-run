@@ -36,17 +36,17 @@ export function IdeologicalBenchmark({
   return (
     <section aria-labelledby="ideological-benchmark-heading">
       <header>
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-gold">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-amber-800">
           Median voter
         </p>
         <h2
           id="ideological-benchmark-heading"
-          className="mt-3 inline-flex items-center gap-2 font-display text-2xl font-semibold tracking-tight text-parchment"
+          className="mt-3 inline-flex items-center gap-2 font-display text-2xl font-semibold tracking-tight text-stone-900"
         >
           Ideology Compass
           <InfoTooltip label="Ideology Compass" text={IDEOLOGY_COMPASS_TIP} />
         </h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
           The {officeName} median voter and the top of the draft field, plotted on fiscal and social axes.
         </p>
       </header>
@@ -57,7 +57,7 @@ export function IdeologicalBenchmark({
         </div>
 
         <div>
-          <ul className="flex flex-wrap gap-3 text-[11px] font-medium uppercase tracking-widest text-zinc-400">
+          <ul className="flex flex-wrap gap-3 text-[11px] font-medium uppercase tracking-widest text-stone-600">
             <li className="inline-flex items-center gap-2">
               <span className="h-2 w-6 rounded-full bg-gold" />
               District median
@@ -79,14 +79,14 @@ export function IdeologicalBenchmark({
             {axes.map((axis) => (
               <li key={axis.id}>
                 <div className="flex items-baseline justify-between gap-3">
-                  <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+                  <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
                     {axis.label}
                   </p>
-                  <p className="font-mono text-[11px] tabular-nums text-zinc-500">
+                  <p className="font-mono text-[11px] tabular-nums text-stone-600">
                     Median {Math.round(axis.value * 100)}
                   </p>
                 </div>
-                <div className="relative mt-2 h-2 rounded-full bg-zinc-800">
+                <div className="relative mt-2 h-2 rounded-full bg-stone-100">
                   <span
                     className="absolute inset-y-0 left-0 rounded-full bg-gold/80"
                     style={{ width: `${axis.value * 100}%` }}
@@ -94,7 +94,7 @@ export function IdeologicalBenchmark({
                   {field.map((candidate, seriesIndex) => (
                     <span
                       key={candidate.id}
-                      className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-zinc-950"
+                      className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-stone-900"
                       style={{
                         left: `${candidate.vector[axis.index] * 100}%`,
                         background:
@@ -104,7 +104,7 @@ export function IdeologicalBenchmark({
                     />
                   ))}
                 </div>
-                <div className="mt-1 flex justify-between text-[10px] uppercase tracking-widest text-zinc-600">
+                <div className="mt-1 flex justify-between text-[10px] uppercase tracking-widest text-stone-600">
                   <span>{axis.poles.low}</span>
                   <span>{axis.poles.high}</span>
                 </div>
@@ -113,7 +113,7 @@ export function IdeologicalBenchmark({
           </ol>
 
           {field.length === 0 ? (
-            <p className={cn("mt-6 text-sm leading-6 text-zinc-500")}>
+            <p className={cn("mt-6 text-sm leading-6 text-stone-600")}>
               No candidates are on this ticket yet, so only the district median is
               plotted.
             </p>

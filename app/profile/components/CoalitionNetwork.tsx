@@ -227,16 +227,16 @@ export function CoalitionNetwork({
       {manage ? <CoalitionManager onChanged={reload} /> : null}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
             Coalition network
           </p>
           <h2
             id="coalition-network-heading"
-            className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment"
+            className="mt-3 font-display text-2xl font-semibold tracking-tight text-stone-900"
           >
             Endorsements
           </h2>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+          <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
             Campaigns this candidate has endorsed, and campaigns that have endorsed
             them. Match is the cosine similarity of their six-axis ideology vectors.
           </p>
@@ -260,17 +260,17 @@ export function CoalitionNetwork({
       </div>
 
       {error ? (
-        <p className="mt-6 text-sm leading-6 text-zinc-400" role="alert">
+        <p className="mt-6 text-sm leading-6 text-stone-600" role="alert">
           {error}
         </p>
       ) : null}
 
       {loading && cards.length === 0 && !error ? (
-        <p className="mt-8 text-sm leading-6 text-zinc-400">Loading endorsements…</p>
+        <p className="mt-8 text-sm leading-6 text-stone-600">Loading endorsements…</p>
       ) : null}
 
       {!loading && !error && cards.length === 0 ? (
-        <p className="mt-8 text-sm leading-6 text-zinc-400">
+        <p className="mt-8 text-sm leading-6 text-stone-600">
           No endorsements on this campaign yet.
         </p>
       ) : null}
@@ -279,33 +279,33 @@ export function CoalitionNetwork({
         <ul className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {cards.map((card) => (
             <li key={card.id}>
-              <article className="flex h-full flex-col gap-4 rounded-xl border border-gold/50 bg-zinc-900 p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)]">
+              <article className="flex h-full flex-col gap-4 rounded-xl border border-gold/50 bg-white p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)]">
                 <div className="flex items-start justify-between gap-4">
                   <CandidateIdentity id={card.id} username={card.name} />
                   <p
                     className="shrink-0 text-right"
                     aria-label={`Civic Standing ${card.eloRating}`}
                   >
-                    <span className="block font-display text-3xl font-semibold tabular-nums tracking-tight text-gold">
+                    <span className="block font-display text-3xl font-semibold tabular-nums tracking-tight text-amber-800">
                       {card.eloRating}
                     </span>
-                    <span className="mt-1 block text-[10px] font-medium uppercase tracking-widest text-zinc-500">
+                    <span className="mt-1 block text-[10px] font-medium uppercase tracking-widest text-stone-600">
                       Civic Standing
                     </span>
                   </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center rounded-full border border-gold/70 bg-zinc-950 px-2.5 py-1 text-[10px] font-medium uppercase tracking-widest text-gold">
+                  <span className="inline-flex items-center rounded-full border border-gold/70 bg-white px-2.5 py-1 text-[10px] font-medium uppercase tracking-widest text-amber-800">
                     Ideological Match {matchLabel(card.matchPercent)}
                   </span>
                   {card.endorsedByCandidate ? (
-                    <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
+                    <span className="text-[10px] font-medium uppercase tracking-widest text-stone-600">
                       Endorsed
                     </span>
                   ) : null}
                   {card.endorsesCandidate ? (
-                    <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
+                    <span className="text-[10px] font-medium uppercase tracking-widest text-stone-600">
                       Endorses this campaign
                     </span>
                   ) : null}

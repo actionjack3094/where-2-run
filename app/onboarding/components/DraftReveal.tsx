@@ -108,16 +108,16 @@ export function DraftReveal({ onBack }: { onBack: () => void }) {
   return (
     <section className="mt-10" aria-labelledby="draft-reveal-heading">
       <header>
-        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800">
           Step 03
         </p>
         <h2
           id="draft-reveal-heading"
-          className="mt-2 font-display text-3xl font-semibold tracking-tight text-parchment"
+          className="mt-2 font-display text-3xl font-semibold tracking-tight text-stone-900"
         >
           Your draft card
         </h2>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+        <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
           {jurisdictions.length > 0
             ? `Calibrated against ${jurisdictions.join(", ")}.`
             : "The three races where this vector is most viable."}
@@ -125,9 +125,9 @@ export function DraftReveal({ onBack }: { onBack: () => void }) {
       </header>
 
       {loading ? (
-        <p className="mt-8 text-sm text-zinc-400">Reading your draft card…</p>
+        <p className="mt-8 text-sm text-stone-600">Reading your draft card…</p>
       ) : races.length === 0 ? (
-        <p className="mt-8 rounded-xl border border-gold/40 bg-zinc-900 px-5 py-6 text-sm leading-6 text-zinc-300">
+        <p className="mt-8 rounded-xl border border-gold/40 bg-white px-5 py-6 text-sm leading-6 text-stone-600">
           No open races match these divisions yet. You can still enter the arena.
         </p>
       ) : (
@@ -138,7 +138,7 @@ export function DraftReveal({ onBack }: { onBack: () => void }) {
               <li
                 key={race.electionId}
                 className={cn(
-                  "rounded-xl border bg-zinc-900 p-6 shadow-[inset_3px_0_0_0_var(--gold-strong)]",
+                  "rounded-xl border bg-white p-6 shadow-[inset_3px_0_0_0_var(--gold-strong)]",
                   selected ? "border-gold" : "border-gold/50",
                 )}
               >
@@ -150,36 +150,36 @@ export function DraftReveal({ onBack }: { onBack: () => void }) {
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+                      <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
                         {selected ? "Selected" : index === 0 ? "Most viable" : `Rank ${index + 1}`}
                       </p>
-                      <h3 className="mt-2 font-display text-xl font-semibold tracking-tight text-parchment">
+                      <h3 className="mt-2 font-display text-xl font-semibold tracking-tight text-stone-900">
                         {race.officeName}
                       </h3>
                       {race.districtName && race.districtName !== race.officeName ? (
-                        <p className="mt-1 text-sm text-zinc-400">{race.districtName}</p>
+                        <p className="mt-1 text-sm text-stone-600">{race.districtName}</p>
                       ) : null}
                       {race.incumbentName ? (
-                        <p className="mt-2 text-sm text-zinc-400">Incumbent {race.incumbentName}</p>
+                        <p className="mt-2 text-sm text-stone-600">Incumbent {race.incumbentName}</p>
                       ) : null}
                     </div>
                     <div className="text-right">
-                      <p className="font-display text-4xl font-semibold tabular-nums tracking-tight text-gold">
+                      <p className="font-display text-4xl font-semibold tabular-nums tracking-tight text-amber-800">
                         {formatViabilityScore(race.viability)}
                       </p>
-                      <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                      <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-stone-600">
                         Overall Viability Score
                       </p>
                     </div>
                   </div>
-                  <dl className="mt-5 grid gap-2 border-t border-zinc-800 pt-4 text-sm">
+                  <dl className="mt-5 grid gap-2 border-t border-amber-500/30 pt-4 text-sm">
                     <div className="flex items-baseline justify-between gap-4">
-                      <dt className="text-zinc-400">Primary Win Odds</dt>
-                      <dd className="font-medium tabular-nums text-parchment">{race.primaryMatch}%</dd>
+                      <dt className="text-stone-600">Primary Win Odds</dt>
+                      <dd className="font-medium tabular-nums text-stone-900">{race.primaryMatch}%</dd>
                     </div>
                     <div className="flex items-baseline justify-between gap-4">
-                      <dt className="text-zinc-400">General Path</dt>
-                      <dd className="font-medium text-parchment">{race.generalPath}</dd>
+                      <dt className="text-stone-600">General Path</dt>
+                      <dd className="font-medium text-stone-900">{race.generalPath}</dd>
                     </div>
                   </dl>
                 </button>

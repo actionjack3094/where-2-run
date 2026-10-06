@@ -86,27 +86,27 @@ export default async function VerifyPortalPage() {
   }
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
         <header>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
             Tier 2
           </p>
-          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment">
+          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-stone-900">
             Verify your identity
           </h1>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+          <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
             Voters and candidates confirm a government ID through Stripe. A verified
             account is marked on your profile after Stripe finishes the check.
           </p>
         </header>
 
         {user && identityVerified ? (
-          <div className="mt-8 rounded-xl border border-gold/50 bg-zinc-900 px-5 py-5">
-            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+          <div className="mt-8 rounded-xl border border-gold/50 bg-white px-5 py-5">
+            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800">
               Verification Complete
             </p>
-            <p className="mt-2 text-sm leading-6 text-parchment">
+            <p className="mt-2 text-sm leading-6 text-stone-900">
               Stripe confirmed this identity. Current tier: {candidateTier}.
             </p>
           </div>
@@ -117,37 +117,37 @@ export default async function VerifyPortalPage() {
         {!user ? (
           <Link
             href="/auth/login?next=%2Fverify"
-            className="mt-8 inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+            className="mt-8 inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800 hover:text-stone-900"
           >
             Sign in to verify your identity
           </Link>
         ) : null}
 
         {claim ? (
-          <div className="mt-8 rounded-xl border border-gold/50 bg-zinc-900 px-5 py-4">
-            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+          <div className="mt-8 rounded-xl border border-gold/50 bg-white px-5 py-4">
+            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800">
               Claim {claim.status}
             </p>
-            <p className="mt-2 text-sm leading-6 text-zinc-300">
+            <p className="mt-2 text-sm leading-6 text-stone-600">
               Government ID reference is {claim.governmentIdStatus ?? "unsubmitted"}.
               {claim.ballotName ? ` Ballot name: ${claim.ballotName}.` : ""}
             </p>
           </div>
         ) : null}
 
-        <section className="mt-12 border-t border-zinc-800 pt-10">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+        <section className="mt-12 border-t border-amber-500/30 pt-10">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
             Tier 3
           </p>
-          <h2 className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment">
+          <h2 className="mt-3 font-display text-2xl font-semibold tracking-tight text-stone-900">
             Claim a seeded profile
           </h2>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+          <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
             Campaign managers can also file a government ID reference and the name printed
             on the local ballot. That reference stays in review until the ballot cross-check
             is confirmed.
           </p>
-          {loadError ? <p className="mt-8 text-sm leading-6 text-zinc-400">{loadError}</p> : null}
+          {loadError ? <p className="mt-8 text-sm leading-6 text-stone-600">{loadError}</p> : null}
           {user && !loadError && claim?.status !== "matched" ? (
             <ClaimForm profiles={profiles} />
           ) : null}

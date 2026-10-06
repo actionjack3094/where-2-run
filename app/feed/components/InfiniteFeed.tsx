@@ -51,12 +51,12 @@ export function InfiniteFeed({
       <FeedTimeline items={items} signedIn={signedIn} viewerId={viewerId} query={query} />
       <div ref={sentinelRef} aria-hidden className="h-8 w-full" />
       {isPending ? (
-        <p className="mt-2 text-center text-xs uppercase tracking-widest text-zinc-500">
+        <p className="mt-2 text-center text-xs uppercase tracking-widest text-stone-600">
           Loading older posts…
         </p>
       ) : null}
       {!hasMore && items.length > 0 ? (
-        <p className="mt-2 text-center text-xs uppercase tracking-widest text-zinc-500">
+        <p className="mt-2 text-center text-xs uppercase tracking-widest text-stone-600">
           You are caught up.
         </p>
       ) : null}

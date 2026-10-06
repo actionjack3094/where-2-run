@@ -487,7 +487,7 @@ export function DebateView({
   if (stage === "loading") {
     return (
       <div className="mx-auto flex min-h-full w-full max-w-3xl flex-1 flex-col px-6 py-10">
-        <p className="text-sm text-zinc-500">Opening the floor…</p>
+        <p className="text-sm text-stone-600">Opening the floor…</p>
         <CommentSection debateId={debateId} comments={comments} />
       </div>
     );
@@ -496,7 +496,7 @@ export function DebateView({
   if (stage === "error" || !debate) {
     return (
       <div className="mx-auto flex min-h-full w-full max-w-3xl flex-1 flex-col px-6 py-10">
-        <p className="text-sm text-zinc-600 dark:text-zinc-300">{error ?? "Debate not found."}</p>
+        <p className="text-sm text-stone-600 ">{error ?? "Debate not found."}</p>
         <Button asChild variant="ghost" className="mt-4 w-fit">
           <Link href="/feed">Back to Feed</Link>
         </Button>
@@ -510,13 +510,13 @@ export function DebateView({
       <div className="flex flex-wrap items-center gap-4">
         <Link
           href={electionSlug ? `/elections/district/${electionSlug}/profile` : "/feed"}
-          className="text-xs font-medium uppercase tracking-widest text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-50"
+          className="text-xs font-medium uppercase tracking-widest text-stone-600 hover:text-stone-900 "
         >
           {electionSlug ? "← Race profile" : "← Feed"}
         </Link>
         <Link
           href="/spectator"
-          className="text-xs font-medium uppercase tracking-widest text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-50"
+          className="text-xs font-medium uppercase tracking-widest text-stone-600 hover:text-stone-900 "
         >
           Donor Feed
         </Link>
@@ -528,8 +528,8 @@ export function DebateView({
         {expiry && (
           <Badge
             className={cn(
-              expiry.tone === "expired" && "border-zinc-950 text-zinc-950 dark:border-zinc-50 dark:text-zinc-50",
-              expiry.tone === "soon" && "border-amber-500 text-amber-700 dark:text-amber-400",
+              expiry.tone === "expired" && "border-stone-900 text-stone-900  ",
+              expiry.tone === "soon" && "border-amber-500 text-amber-700 ",
             )}
           >
             {expiry.label}
@@ -556,7 +556,7 @@ export function DebateView({
       )}
 
       {actionError && (
-        <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-300">{actionError}</p>
+        <p className="mt-4 text-sm text-stone-600 ">{actionError}</p>
       )}
 
       <section className="mt-10 flex h-[60vh] flex-col gap-8 overflow-y-auto">
@@ -572,7 +572,7 @@ export function DebateView({
 
           return (
             <div key={round} className="flex flex-col gap-3">
-              <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
                 {roundLabel(round)}
               </p>
               <ArgumentSlot
@@ -620,7 +620,7 @@ export function DebateView({
       )}
 
       {isCandidate && bothSeated && !showVoteButtons && (
-        <p className="mt-10 text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="mt-10 text-sm text-stone-600 ">
           You are on the ticket. Spectators cast the votes.
         </p>
       )}
@@ -696,7 +696,7 @@ function ArbitrationPanel({
     <section className="mt-12">
       <Card>
         <CardHeader>
-          <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+          <p className="text-xs font-medium uppercase tracking-widest text-stone-600">
             Primary Judge
           </p>
           <CardTitle>Automated arbitration</CardTitle>
@@ -718,7 +718,7 @@ function ArbitrationPanel({
             />
           </div>
           {judgeError && (
-            <p className="text-sm text-zinc-600 dark:text-zinc-300">{judgeError}</p>
+            <p className="text-sm text-stone-600 ">{judgeError}</p>
           )}
           {appealUnlocked && myEvaluation && (
             <Button type="button" onClick={onOpenAppeal}>
@@ -739,26 +739,26 @@ function JudgeSeat({
   evaluation: DebateEvaluation | null;
 }) {
   return (
-    <div className="rounded-lg border border-zinc-200 px-3 py-3 dark:border-zinc-800">
-      <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">{label}</p>
+    <div className="rounded-lg border border-stone-200 px-3 py-3 ">
+      <p className="text-xs font-medium uppercase tracking-widest text-stone-600">{label}</p>
       {evaluation ? (
         <dl className="mt-2 space-y-1 text-sm">
           <div className="flex justify-between gap-3">
-            <dt className="text-zinc-500">Score</dt>
+            <dt className="text-stone-600">Score</dt>
             <dd className="tabular-nums">{parseScore(evaluation.primary_score).toFixed(1)}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-zinc-500">Confidence</dt>
+            <dt className="text-stone-600">Confidence</dt>
             <dd className="tabular-nums">
               {parseScore(evaluation.confidence_score).toFixed(2)}
             </dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-zinc-500">Flag</dt>
+            <dt className="text-stone-600">Flag</dt>
             <dd>{evaluation.rubric_flag?.replace(/_/g, " ") ?? "—"}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-zinc-500">Court</dt>
+            <dt className="text-stone-600">Court</dt>
             <dd>
               {evaluation.status === "locked"
                 ? evaluation.ensemble_result
@@ -769,7 +769,7 @@ function JudgeSeat({
           </div>
         </dl>
       ) : (
-        <p className="mt-2 text-sm text-zinc-400">Awaiting verdict</p>
+        <p className="mt-2 text-sm text-stone-600">Awaiting verdict</p>
       )}
     </div>
   );
@@ -791,7 +791,7 @@ function GraderToast({ state }: { state: GraderToastState }) {
     >
       <p
         className={cn(
-          "rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm shadow-lg dark:border-zinc-800 dark:bg-zinc-950",
+          "rounded-full border border-stone-200 bg-white px-4 py-2 text-sm shadow-lg  ",
           state === "analyzing" && "animate-pulse",
         )}
       >
@@ -811,7 +811,7 @@ function Badge({
   return (
     <span
       className={cn(
-        "rounded-full border border-zinc-200 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-widest text-zinc-500 dark:border-zinc-800 dark:text-zinc-400",
+        "rounded-full border border-stone-200 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-widest text-stone-600  ",
         className,
       )}
     >
@@ -838,13 +838,13 @@ function CandidateSeatRow({
       <div className="flex items-center gap-2">
         <CandidateSeat
           candidate={candidateA}
-          nameClassName="text-sm font-medium text-zinc-950 dark:text-zinc-50"
+          nameClassName="text-sm font-medium text-stone-900 "
         />
         {simulateSide === "a" && (
           <SimulateOpponentButton busy={simulateBusy} onSimulate={onSimulate} />
         )}
       </div>
-      <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-400">vs</span>
+      <span className="text-[11px] font-medium uppercase tracking-widest text-stone-600">vs</span>
       <div className="flex items-center gap-2">
         {simulateSide === "b" && (
           <SimulateOpponentButton busy={simulateBusy} onSimulate={onSimulate} />
@@ -853,7 +853,7 @@ function CandidateSeatRow({
           candidate={candidateB}
           align="end"
           emptyLabel="Open seat"
-          nameClassName="text-sm font-medium text-zinc-950 dark:text-zinc-50"
+          nameClassName="text-sm font-medium text-stone-900 "
         />
       </div>
     </div>
@@ -887,10 +887,10 @@ function ConsistencyPill({ score }: { score: number }) {
       className={cn(
         "rounded-full px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-widest",
         score >= 80
-          ? "bg-zinc-950 text-zinc-50 dark:bg-zinc-50 dark:text-zinc-950"
+          ? "bg-amber-800 text-stone-50  "
           : score >= 70
-            ? "bg-zinc-200 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
-            : "border border-zinc-300 text-zinc-500 dark:border-zinc-700",
+            ? "bg-stone-200 text-stone-800  "
+            : "border border-stone-300 text-stone-600 ",
       )}
     >
       {score} consistency
@@ -917,7 +917,7 @@ function ArgumentSlot({
   return (
     <Card className={cn(!argument && !composer && "border-dashed")}>
       <CardHeader className="flex flex-row items-start justify-between gap-3">
-        <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">{label}</p>
+        <p className="text-xs font-medium uppercase tracking-widest text-stone-600">{label}</p>
         {argument?.consistency_score != null && (
           <ConsistencyPill score={argument.consistency_score} />
         )}
@@ -927,7 +927,7 @@ function ArgumentSlot({
           <div className="space-y-3">
             <p className="text-sm leading-6">{argument.content}</p>
             {argument.consistency_critique && (
-              <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+              <p className="text-xs leading-5 text-stone-600 ">
                 {argument.consistency_critique}
               </p>
             )}
@@ -947,19 +947,19 @@ function ArgumentSlot({
               rows={5}
               disabled={composer.busy}
               placeholder="Lock in this round’s argument…"
-              className="min-h-32 w-full resize-none rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm leading-6 outline-none focus:border-zinc-950 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-50"
+              className="min-h-32 w-full resize-none rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm leading-6 outline-none focus:border-amber-700 disabled:opacity-60   "
             />
             <Button
               type="submit"
               size="sm"
-              className="w-fit transition-colors duration-200 hover:bg-zinc-800"
+              className="w-fit transition-colors duration-200 hover:bg-stone-100"
               disabled={composer.busy || !composer.draft.trim()}
             >
               {composer.busy ? "Locking in…" : "Lock In Argument"}
             </Button>
           </form>
         ) : (
-          <p className="text-sm text-zinc-400">{emptyHint}</p>
+          <p className="text-sm text-stone-600">{emptyHint}</p>
         )}
       </CardContent>
     </Card>
@@ -989,7 +989,7 @@ function SpectatorVote({
     <section className="mt-12">
       <Card>
         <CardHeader>
-          <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+          <p className="text-xs font-medium uppercase tracking-widest text-stone-600">
             Spectator vote
           </p>
           <CardTitle>Cast your ballot</CardTitle>
@@ -1000,7 +1000,7 @@ function SpectatorVote({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="mb-4 flex items-start gap-2 rounded-lg border border-gold/50 bg-gold/10 px-3 py-2 text-sm leading-6 text-gold">
+          <p className="mb-4 flex items-start gap-2 rounded-lg border border-gold/50 bg-gold/10 px-3 py-2 text-sm leading-6 text-amber-800">
             <ShieldCheck aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{CIVIC_FENCE_BALLOT_NOTICE}</span>
           </p>
@@ -1009,7 +1009,7 @@ function SpectatorVote({
               type="button"
               size="lg"
               variant={votedForA ? "default" : "outline"}
-              className="flex-1 transition-colors duration-200 hover:bg-zinc-800"
+              className="flex-1 transition-colors duration-200 hover:bg-stone-100"
               disabled={submitting || hasVoted}
               aria-pressed={votedForA}
               onClick={() => onVote("a")}
@@ -1024,7 +1024,7 @@ function SpectatorVote({
               type="button"
               size="lg"
               variant={votedForB ? "default" : "outline"}
-              className="flex-1 transition-colors duration-200 hover:bg-zinc-800"
+              className="flex-1 transition-colors duration-200 hover:bg-stone-100"
               disabled={submitting || hasVoted}
               aria-pressed={votedForB}
               onClick={() => onVote("b")}
@@ -1070,10 +1070,10 @@ function TallyBar({
   const bWidth = totalVotes === 0 ? 50 : bShare;
 
   return (
-    <section className="mt-12 border-t border-zinc-200 pt-8 dark:border-zinc-800">
+    <section className="mt-12 border-t border-stone-200 pt-8 ">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+          <p className="text-xs font-medium uppercase tracking-widest text-stone-600">
             Candidate A
           </p>
           <div className="mt-1 flex items-center gap-2">
@@ -1081,13 +1081,13 @@ function TallyBar({
             {candidateA ? <BackCandidateButton candidate={candidateA} /> : null}
           </div>
           <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">{aShare}%</p>
-          <p className="text-xs text-zinc-400">{aVotes} {unit(aVotes)}</p>
+          <p className="text-xs text-stone-600">{aVotes} {unit(aVotes)}</p>
         </div>
-        <p className="pb-6 text-xs font-medium uppercase tracking-widest text-zinc-400">
+        <p className="pb-6 text-xs font-medium uppercase tracking-widest text-stone-600">
           {totalVotes === 0 ? "No votes yet" : `${totalVotes}${weighted ? "w" : ""} total`}
         </p>
         <div className="text-right">
-          <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
+          <p className="text-xs font-medium uppercase tracking-widest text-stone-600">
             Candidate B
           </p>
           <div className="mt-1 flex items-center justify-end gap-2">
@@ -1095,25 +1095,25 @@ function TallyBar({
             <p className="text-sm font-medium">{candidateB?.username ?? "Open seat"}</p>
           </div>
           <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">{bShare}%</p>
-          <p className="text-xs text-zinc-400">{bVotes} {unit(bVotes)}</p>
+          <p className="text-xs text-stone-600">{bVotes} {unit(bVotes)}</p>
         </div>
       </div>
       <div
-        className="mt-4 flex h-3 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-900"
+        className="mt-4 flex h-3 overflow-hidden rounded-full bg-stone-100 "
         role="img"
         aria-label={`${candidateA?.username ?? "Candidate A"} ${aShare} percent, ${candidateB?.username ?? "Candidate B"} ${bShare} percent${weighted ? " of weighted votes" : ""}`}
       >
         <div
-          className="h-full bg-zinc-950 transition-all duration-500 dark:bg-zinc-50"
+          className="h-full bg-white transition-all duration-500 "
           style={{ width: `${aWidth}%` }}
         />
         <div
-          className="h-full bg-zinc-300 transition-all duration-500 dark:bg-zinc-700"
+          className="h-full bg-stone-300 transition-all duration-500 "
           style={{ width: `${bWidth}%` }}
         />
       </div>
       {weighted ? (
-        <p className="mt-3 text-center text-xs tabular-nums text-zinc-400">
+        <p className="mt-3 text-center text-xs tabular-nums text-stone-600">
           {formatWeightedSubtitle(raw, { a: aVotes, b: bVotes })}
           <span className="sr-only">. Verified constituents count 3 votes each.</span>
         </p>

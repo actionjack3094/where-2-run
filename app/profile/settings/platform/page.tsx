@@ -29,53 +29,53 @@ export default async function CampaignPlatformSettingsPage() {
   }
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-xl flex-1 flex-col px-6 py-10 pb-16">
         <header>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">Campaign</p>
-          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">Campaign</p>
+          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-stone-900">
             Campaign platform
           </h1>
-          <p className="mt-2 text-sm leading-6 text-zinc-400">
+          <p className="mt-2 text-sm leading-6 text-stone-600">
             Declared Candidates and Frontrunners publish a manifesto and up to three policy
             pillars for each primary they lead.
           </p>
           <div className="mt-4 flex flex-wrap gap-4">
             <Link
               href="/profile/settings"
-              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800 hover:text-stone-900"
             >
               Photo
             </Link>
             <Link
               href="/profile/settings/volunteers"
-              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800 hover:text-stone-900"
             >
               Volunteers
             </Link>
             <Link
               href={`/profile/${user.id}`}
-              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+              className="inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800 hover:text-stone-900"
             >
               Public profile
             </Link>
           </div>
         </header>
 
-        {setup ? <p className="mt-8 text-sm leading-6 text-zinc-300">{setup}</p> : null}
+        {setup ? <p className="mt-8 text-sm leading-6 text-stone-600">{setup}</p> : null}
 
         {!setup && races.length === 0 ? (
-          <div className="mt-8 rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-6">
-            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500">
+          <div className="mt-8 rounded-xl border border-amber-500/30 bg-white px-5 py-6">
+            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-stone-600">
               Locked
             </p>
-            <p className="mt-3 text-sm leading-6 text-parchment">
+            <p className="mt-3 text-sm leading-6 text-stone-900">
               Campaign publishing opens when you reach the top 50% Civic Standing in a primary, Stripe has
               verified your identity, and a legal name is on the profile.
             </p>
             <Link
               href="/verify"
-              className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-gold hover:text-parchment"
+              className="mt-4 inline-flex text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800 hover:text-stone-900"
             >
               Verify identity
             </Link>

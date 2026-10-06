@@ -230,7 +230,7 @@ function ProgressIndicator({
                 aria-hidden
                 className={cn(
                   "absolute top-4 left-[calc(50%+1.35rem)] hidden h-px w-[calc(100%-1.1rem)] sm:block",
-                  item.id < current ? "bg-gold" : "bg-zinc-800",
+                  item.id < current ? "bg-gold" : "bg-stone-100",
                 )}
               />
             ) : null}
@@ -243,28 +243,28 @@ function ProgressIndicator({
                 active
                   ? "border-gold bg-gold/10 shadow-[inset_3px_0_0_0_var(--gold-strong)]"
                   : complete
-                    ? "border-gold/40 bg-zinc-900 hover:border-gold"
-                    : "border-zinc-800 bg-zinc-950 hover:border-zinc-700",
+                    ? "border-gold/40 bg-white hover:border-gold"
+                    : "border-amber-500/30 bg-white hover:border-amber-500/30",
               )}
             >
               <span
                 className={cn(
                   "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold tabular-nums",
                   active || complete
-                    ? "border-gold bg-gold text-zinc-950"
-                    : "border-zinc-700 text-zinc-500",
+                    ? "border-gold bg-gold text-stone-900"
+                    : "border-amber-500/30 text-stone-600",
                 )}
               >
                 {item.id}
               </span>
               <span>
-                <span className="block text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-500">
+                <span className="block text-[10px] font-medium uppercase tracking-[0.2em] text-stone-600">
                   {item.eyebrow}
                 </span>
                 <span
                   className={cn(
                     "mt-1 block font-display text-sm font-semibold leading-5",
-                    active || complete ? "text-parchment" : "text-zinc-400",
+                    active || complete ? "text-stone-900" : "text-stone-600",
                   )}
                 >
                   {item.title}
@@ -286,22 +286,22 @@ function IdentityStep({
   onChange: (next: IdentityState) => void;
 }) {
   const field =
-    "h-11 w-full rounded-md border border-gold/40 bg-zinc-950 px-3 text-sm text-parchment outline-none transition-colors placeholder:text-zinc-600 focus:border-gold focus:ring-2 focus:ring-gold/30";
+    "h-11 w-full rounded-md border border-gold/40 bg-white px-3 text-sm text-stone-900 outline-none transition-colors placeholder:text-stone-600 focus:border-gold focus:ring-2 focus:ring-gold/30";
 
   return (
     <div className="mt-10 space-y-6">
       <header>
-        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800">
           {STEPS[0].eyebrow}
         </p>
-        <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight text-parchment">
+        <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight text-stone-900">
           {STEPS[0].title}
         </h2>
-        <p className="mt-2 text-sm leading-6 text-zinc-400">{STEPS[0].description}</p>
+        <p className="mt-2 text-sm leading-6 text-stone-600">{STEPS[0].description}</p>
       </header>
 
       <label className="block space-y-2">
-        <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+        <span className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
           Campaign name
         </span>
         <input
@@ -318,7 +318,7 @@ function IdentityStep({
       </label>
 
       <label className="block space-y-2">
-        <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+        <span className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
           Office sought
         </span>
         <select
@@ -341,7 +341,7 @@ function IdentityStep({
       </label>
 
       <label className="block space-y-2">
-        <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+        <span className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
           Home state
         </span>
         <input
@@ -355,9 +355,9 @@ function IdentityStep({
       </label>
 
       <label className="block space-y-2">
-        <span className="flex items-center justify-between text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+        <span className="flex items-center justify-between text-[11px] font-medium uppercase tracking-widest text-stone-600">
           Campaign statement
-          <span className="tabular-nums text-zinc-600">
+          <span className="tabular-nums text-stone-600">
             {identity.bio.length}/{BIO_MAX}
           </span>
         </span>
@@ -366,7 +366,7 @@ function IdentityStep({
           maxLength={BIO_MAX}
           rows={4}
           placeholder="One paragraph on why this seat, and why now."
-          className="w-full rounded-md border border-gold/40 bg-zinc-950 px-3 py-3 text-sm leading-6 text-parchment outline-none transition-colors placeholder:text-zinc-600 focus:border-gold focus:ring-2 focus:ring-gold/30"
+          className="w-full rounded-md border border-gold/40 bg-white px-3 py-3 text-sm leading-6 text-stone-900 outline-none transition-colors placeholder:text-stone-600 focus:border-gold focus:ring-2 focus:ring-gold/30"
           onChange={(event) => onChange({ ...identity, bio: event.target.value })}
         />
       </label>
@@ -388,13 +388,13 @@ function CalibrationStep({
   return (
     <div className="mt-10 space-y-6">
       <header>
-        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800">
           {STEPS[1].eyebrow}
         </p>
-        <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight text-parchment">
+        <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight text-stone-900">
           {STEPS[1].title}
         </h2>
-        <p className="mt-2 text-sm leading-6 text-zinc-400">
+        <p className="mt-2 text-sm leading-6 text-stone-600">
           Five-point scale on each issue, from Strongly Oppose to Strongly Support. The
           scores become your ideological vector.
         </p>
@@ -429,14 +429,14 @@ function PolicySlider({
   const track = useMemo(() => goldTrack(value), [value]);
 
   return (
-    <div className="rounded-xl border border-gold/50 bg-zinc-900 p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)]">
-      <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">{topic}</p>
-      <p className="mt-2 text-sm leading-6 text-parchment">{prompt}</p>
+    <div className="rounded-xl border border-gold/50 bg-white p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)]">
+      <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800">{topic}</p>
+      <p className="mt-2 text-sm leading-6 text-stone-900">{prompt}</p>
       <div className="mt-5 flex items-baseline justify-between gap-3">
-        <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+        <p className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
           Position
         </p>
-        <p className="font-display text-sm font-semibold tracking-tight text-gold">
+        <p className="font-display text-sm font-semibold tracking-tight text-amber-800">
           {likertLabel(value)}
         </p>
       </div>
@@ -455,13 +455,13 @@ function PolicySlider({
         className="ideology-slider mt-4"
         style={{ background: track }}
       />
-      <div className="mt-3 flex justify-between gap-1 text-[10px] font-medium uppercase tracking-widest text-zinc-500">
+      <div className="mt-3 flex justify-between gap-1 text-[10px] font-medium uppercase tracking-widest text-stone-600">
         {LIKERT_POINTS.map((point) => (
           <span
             key={point.value}
             className={cn(
               "max-w-[4.5rem] text-center leading-4",
-              point.value === value && "text-gold",
+              point.value === value && "text-amber-800",
             )}
           >
             {point.label}
@@ -484,17 +484,17 @@ function PacStep({
   return (
     <div className="mt-10 space-y-6">
       <header>
-        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800">
           {STEPS[2].eyebrow}
         </p>
-        <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight text-parchment">
+        <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight text-stone-900">
           {STEPS[2].title}
         </h2>
-        <p className="mt-2 text-sm leading-6 text-zinc-400">{STEPS[2].description}</p>
+        <p className="mt-2 text-sm leading-6 text-stone-600">{STEPS[2].description}</p>
       </header>
 
-      <div className="rounded-xl border border-gold/50 bg-zinc-900 p-6 text-sm leading-6 text-zinc-300 shadow-[inset_3px_0_0_0_var(--gold-strong)]">
-        <p className="font-display text-base font-semibold text-parchment">
+      <div className="rounded-xl border border-gold/50 bg-white p-6 text-sm leading-6 text-stone-600 shadow-[inset_3px_0_0_0_var(--gold-strong)]">
+        <p className="font-display text-base font-semibold text-stone-900">
           WHERE 2 RUN Conduit PAC
         </p>
         <p className="mt-4">
@@ -507,20 +507,20 @@ function PacStep({
           <li>Capture is conditional on filing. If you do not file, the authorization expires.</li>
           <li>You authorize WHERE 2 RUN to transmit conduit disbursements to your campaign committee.</li>
         </ul>
-        <p className="mt-4 text-[11px] uppercase tracking-widest text-zinc-500">
+        <p className="mt-4 text-[11px] uppercase tracking-widest text-stone-600">
           Paid for by WHERE 2 RUN Conduit PAC. Not authorized by any candidate or
           candidate&apos;s committee until filing.
         </p>
       </div>
 
-      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gold/40 bg-zinc-950 px-4 py-4">
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gold/40 bg-white px-4 py-4">
         <input
           type="checkbox"
           checked={accepted}
           onChange={(event) => onChange(event.target.checked)}
           className="mt-1 h-4 w-4 accent-gold"
         />
-        <span className="text-sm leading-6 text-parchment">
+        <span className="text-sm leading-6 text-stone-900">
           I accept the Conduit PAC agreement and authorize vaulted pledges to capture
           when I file for this office.
         </span>

@@ -17,9 +17,9 @@ export type ProfileMatch = {
 };
 
 const OUTCOME_CLASS = {
-  won: "border-gold bg-gold/15 text-gold",
-  lost: "border-red-400/50 bg-red-400/10 text-red-300",
-  tied: "border-zinc-600 bg-zinc-800 text-zinc-300",
+  won: "border-gold bg-gold/15 text-amber-800",
+  lost: "border-red-400/50 bg-red-400/10 text-red-700",
+  tied: "border-amber-500/40 bg-stone-100 text-stone-600",
 } as const;
 
 const OUTCOME_LABEL = {
@@ -42,16 +42,16 @@ function formatConcludedDate(iso: string) {
 export function DebateHistory({ matches }: { matches: ProfileMatch[] }) {
   return (
     <section aria-labelledby="debate-history-heading">
-      <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+      <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
         Debates archive
       </p>
       <h2
         id="debate-history-heading"
-        className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment"
+        className="mt-3 font-display text-2xl font-semibold tracking-tight text-stone-900"
       >
         Match history
       </h2>
-      <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+      <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
         Completed debates, with the election question and the final result.
       </p>
 
@@ -69,9 +69,9 @@ export function DebateHistory({ matches }: { matches: ProfileMatch[] }) {
           {matches.map((match) => (
             <li key={match.id}>
               <Link href={`/debates/${match.id}`} className="block">
-                <article className="rounded-xl border border-gold/50 bg-zinc-900 p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)] transition-colors hover:border-gold">
+                <article className="rounded-xl border border-gold/50 bg-white p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)] transition-colors hover:border-gold">
                   <div className="flex items-start justify-between gap-4">
-                    <h3 className="min-w-0 font-display text-lg font-semibold leading-snug tracking-tight text-parchment">
+                    <h3 className="min-w-0 font-display text-lg font-semibold leading-snug tracking-tight text-stone-900">
                       {match.question}
                     </h3>
                     <span
@@ -83,7 +83,7 @@ export function DebateHistory({ matches }: { matches: ProfileMatch[] }) {
                       {OUTCOME_LABEL[match.outcome]}
                     </span>
                   </div>
-                  <p className="mt-3 text-sm leading-6 text-zinc-400">
+                  <p className="mt-3 text-sm leading-6 text-stone-600">
                     Concluded{" "}
                     <time dateTime={match.concludedAt}>
                       {formatConcludedDate(match.concludedAt)}

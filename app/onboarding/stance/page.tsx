@@ -92,16 +92,16 @@ export default function StanceQuestionnairePage() {
   }
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-xl flex-1 flex-col px-6 py-10 pb-16">
         <header>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
             Onboarding
           </p>
-          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment">
+          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-stone-900">
             Set your ideological stances
           </h1>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+          <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
             Six questions, each from strongly oppose (−1) to strongly support (+1).
             Voters and candidates share this six-axis stance vector for ideological matchmaking.
           </p>
@@ -113,19 +113,19 @@ export default function StanceQuestionnairePage() {
             return (
               <fieldset
                 key={question.id}
-                className="rounded-xl border border-gold/50 bg-zinc-900 p-6 shadow-[inset_3px_0_0_0_var(--gold-strong)]"
+                className="rounded-xl border border-gold/50 bg-white p-6 shadow-[inset_3px_0_0_0_var(--gold-strong)]"
               >
-                <legend className="px-1 text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+                <legend className="px-1 text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800">
                   {question.topic}
                 </legend>
-                <p className="mt-3 font-display text-xl font-semibold leading-snug tracking-tight text-parchment">
+                <p className="mt-3 font-display text-xl font-semibold leading-snug tracking-tight text-stone-900">
                   {question.prompt}
                 </p>
                 <div className="mt-6 flex items-baseline justify-between gap-4">
-                  <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                  <p className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
                     Your stance
                   </p>
-                  <p className="font-display text-2xl font-semibold tabular-nums tracking-tight text-parchment">
+                  <p className="font-display text-2xl font-semibold tabular-nums tracking-tight text-stone-900">
                     {formatAxis(value)}
                   </p>
                 </div>
@@ -142,17 +142,17 @@ export default function StanceQuestionnairePage() {
                   aria-valuenow={value}
                   aria-valuetext={formatAxis(value)}
                   onChange={(event) => setResponse(index, Number(event.target.value))}
-                  className="mt-4 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-zinc-800 accent-gold"
+                  className="mt-4 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-stone-100 accent-gold"
                 />
-                <div className="mt-5 grid gap-4 text-sm leading-6 text-zinc-400 sm:grid-cols-2">
+                <div className="mt-5 grid gap-4 text-sm leading-6 text-stone-600 sm:grid-cols-2">
                   <p>
-                    <span className="block text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                    <span className="block text-[11px] font-medium uppercase tracking-widest text-stone-600">
                       Strongly oppose
                     </span>
                     {question.oppose}
                   </p>
                   <p className="sm:text-right">
-                    <span className="block text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                    <span className="block text-[11px] font-medium uppercase tracking-widest text-stone-600">
                       Strongly support
                     </span>
                     {question.support}

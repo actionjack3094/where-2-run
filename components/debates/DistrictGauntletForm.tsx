@@ -19,10 +19,10 @@ export function DistrictGauntletForm({
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <section className="mt-8 rounded-xl border border-amber-500/30 bg-zinc-900 px-5 py-5">
-      <p className="text-[11px] uppercase tracking-[0.2em] text-gold">The District Gauntlet</p>
-      <h2 className="mt-2 font-display text-2xl text-parchment">{office}</h2>
-      <p className="mt-2 text-sm leading-6 text-zinc-400">
+    <section className="mt-8 rounded-xl border border-amber-500/30 bg-white px-5 py-5">
+      <p className="text-[11px] uppercase tracking-[0.2em] text-amber-800">The District Gauntlet</p>
+      <h2 className="mt-2 font-display text-2xl text-stone-900">{office}</h2>
+      <p className="mt-2 text-sm leading-6 text-stone-600">
         You are unopposed inside 45 days of the filing deadline. File a formal stance on each of
         the top three queued issues. Each stance is {ROUND_CHAR_LIMIT} characters at most.
       </p>
@@ -43,8 +43,8 @@ export function DistrictGauntletForm({
               });
             }}
           >
-            <p className="text-sm font-medium text-parchment">{prompt.title}</p>
-            <p className="text-sm leading-6 text-zinc-400">{prompt.content}</p>
+            <p className="text-sm font-medium text-stone-900">{prompt.title}</p>
+            <p className="text-sm leading-6 text-stone-600">{prompt.content}</p>
             <textarea
               name="content"
               required
@@ -52,12 +52,12 @@ export function DistrictGauntletForm({
               maxLength={ROUND_CHAR_LIMIT}
               rows={4}
               defaultValue={prompt.filed ?? ""}
-              className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-parchment"
+              className="rounded-lg border border-amber-500/30 bg-white px-3 py-2 text-sm text-stone-900"
             />
             <button
               type="submit"
               disabled={pending != null}
-              className="justify-self-start rounded-md bg-gold-strong px-3 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-zinc-950 disabled:opacity-50"
+              className="justify-self-start rounded-md bg-gold-strong px-3 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-stone-900 disabled:opacity-50"
             >
               {prompt.filed ? "Update stance" : pending === prompt.id ? "Filing…" : "File stance"}
             </button>
@@ -65,9 +65,9 @@ export function DistrictGauntletForm({
         ))}
       </div>
       {prompts.length === 0 ? (
-        <p className="mt-4 text-sm text-zinc-400">The Agenda Queue has no issues for this race yet.</p>
+        <p className="mt-4 text-sm text-stone-600">The Agenda Queue has no issues for this race yet.</p>
       ) : null}
-      {error ? <p className="mt-3 text-sm text-zinc-300">{error}</p> : null}
+      {error ? <p className="mt-3 text-sm text-stone-600">{error}</p> : null}
     </section>
   );
 }

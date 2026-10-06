@@ -17,24 +17,24 @@ export default async function DistrictOnboardingPage() {
   const districts = ((data ?? []) as DistrictOption[]).filter((district) => district.id && district.name);
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-xl flex-1 flex-col px-6 py-10 pb-16">
         <header>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
             Onboarding
           </p>
-          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment">
+          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-stone-900">
             Verify your local district
           </h1>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+          <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
             Your district fences the civic feed and the candidates you can match with.
           </p>
         </header>
 
         {error ? (
-          <p className="mt-10 text-sm leading-6 text-zinc-400">{error.message}</p>
+          <p className="mt-10 text-sm leading-6 text-stone-600">{error.message}</p>
         ) : districts.length === 0 ? (
-          <p className="mt-10 text-sm leading-6 text-zinc-400">
+          <p className="mt-10 text-sm leading-6 text-stone-600">
             No districts are available yet.
           </p>
         ) : (

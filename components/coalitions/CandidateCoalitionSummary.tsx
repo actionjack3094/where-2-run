@@ -14,16 +14,16 @@ export function CandidateCoalitionSummary({
 
   return (
     <section aria-labelledby="candidate-coalition-heading">
-      <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">Coalition</p>
+      <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">Coalition</p>
       <h2
         id="candidate-coalition-heading"
-        className="mt-3 font-display text-xl font-semibold tracking-tight text-parchment"
+        className="mt-3 font-display text-xl font-semibold tracking-tight text-stone-900"
       >
         Affiliation &amp; endorsements
       </h2>
 
       {coalitions.length === 0 ? (
-        <p className="mt-4 text-sm leading-6 text-zinc-400">
+        <p className="mt-4 text-sm leading-6 text-stone-600">
           {candidateName} isn&apos;t seated in a coalition.
         </p>
       ) : (
@@ -31,7 +31,7 @@ export function CandidateCoalitionSummary({
           {coalitions.map((coalition) => (
             <li key={coalition.id} className="flex items-center gap-2">
               <CoalitionBadge name={coalition.name} />
-              <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
+              <span className="text-[10px] font-medium uppercase tracking-widest text-stone-600">
                 {coalition.memberCount} {coalition.memberCount === 1 ? "member" : "members"}
               </span>
             </li>
@@ -39,7 +39,7 @@ export function CandidateCoalitionSummary({
         </ul>
       )}
 
-      <p className="mt-6 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+      <p className="mt-6 text-[11px] font-medium uppercase tracking-widest text-stone-600">
         {endorsementCount === 0
           ? "No endorsements yet"
           : `${endorsementCount} ${endorsementCount === 1 ? "endorsement" : "endorsements"}`}
@@ -50,10 +50,10 @@ export function CandidateCoalitionSummary({
             <li key={endorsement.endorserId}>
               <Link
                 href={`/candidate/${endorsement.endorserId}`}
-                className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-parchment transition-colors hover:border-gold/60"
+                className="flex items-center justify-between rounded-lg border border-amber-500/30 bg-white px-4 py-3 text-sm text-stone-900 transition-colors hover:border-gold/60"
               >
                 <span className="truncate">{endorsement.username}</span>
-                <span className="ml-3 shrink-0 text-xs tabular-nums text-gold">
+                <span className="ml-3 shrink-0 text-xs tabular-nums text-amber-800">
                   {endorsement.eloRating} Civic Standing
                 </span>
               </Link>

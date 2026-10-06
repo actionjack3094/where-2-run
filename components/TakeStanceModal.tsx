@@ -151,24 +151,24 @@ export function TakeStanceModal({ compact = false }: { compact?: boolean }) {
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className="w-full max-w-lg rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-100 shadow-2xl"
+            className="w-full max-w-lg rounded-xl border border-amber-500/30 bg-white text-stone-900 shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex flex-col gap-1.5 px-5 py-4">
-              <p className="text-xs font-medium uppercase tracking-widest text-zinc-500">
+              <p className="text-xs font-medium uppercase tracking-widest text-stone-600">
                 Civic Feed
               </p>
               <h2 id={titleId} className="text-lg font-semibold tracking-tight">
                 Take a Stance
               </h2>
-              <p className="text-sm leading-6 text-zinc-400">
+              <p className="text-sm leading-6 text-stone-600">
                 File a proposition for your district. Matches are scored against nearby ideology.
               </p>
             </div>
 
             <form className="flex flex-col gap-4 px-5 pb-5" onSubmit={(event) => void handleSubmit(event)}>
               <label className="flex flex-col gap-1.5 text-sm">
-                <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">
+                <span className="text-xs font-medium uppercase tracking-widest text-stone-600">
                   Proposition / Claim
                 </span>
                 <input
@@ -177,12 +177,12 @@ export function TakeStanceModal({ compact = false }: { compact?: boolean }) {
                   required
                   autoFocus
                   placeholder="Austin should eliminate minimum parking mandates"
-                  className="h-10 rounded-md border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-zinc-400"
+                  className="h-10 rounded-md border border-amber-500/30 bg-white px-3 text-sm text-stone-900 outline-none placeholder:text-stone-400 focus:border-amber-600"
                 />
               </label>
 
               <fieldset className="flex flex-col gap-1.5">
-                <legend className="text-xs font-medium uppercase tracking-widest text-zinc-500">
+                <legend className="text-xs font-medium uppercase tracking-widest text-stone-600">
                   Stance
                 </legend>
                 <div className="grid grid-cols-2 gap-2">
@@ -195,8 +195,8 @@ export function TakeStanceModal({ compact = false }: { compact?: boolean }) {
                       className={cn(
                         "inline-flex h-10 items-center justify-center rounded-md border text-sm font-medium transition-colors",
                         stance === option
-                          ? "border-zinc-100 bg-zinc-100 text-zinc-950"
-                          : "border-zinc-700 bg-zinc-950 text-zinc-300 hover:bg-zinc-800",
+                          ? "border-stone-200 bg-stone-100 text-stone-900"
+                          : "border-amber-500/30 bg-white text-stone-600 hover:bg-stone-100",
                       )}
                     >
                       {option}
@@ -206,7 +206,7 @@ export function TakeStanceModal({ compact = false }: { compact?: boolean }) {
               </fieldset>
 
               <label className="flex flex-col gap-1.5 text-sm">
-                <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">
+                <span className="text-xs font-medium uppercase tracking-widest text-stone-600">
                   Supporting Argument
                 </span>
                 <textarea
@@ -215,18 +215,18 @@ export function TakeStanceModal({ compact = false }: { compact?: boolean }) {
                   required
                   rows={5}
                   placeholder="Write 3 to 5 sentences detailing the rationale."
-                  className="resize-none rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm leading-6 text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-zinc-400"
+                  className="resize-none rounded-md border border-amber-500/30 bg-white px-3 py-2 text-sm leading-6 text-stone-900 outline-none placeholder:text-stone-400 focus:border-amber-600"
                 />
               </label>
 
               <label className="flex flex-col gap-1.5 text-sm">
-                <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">
+                <span className="text-xs font-medium uppercase tracking-widest text-stone-600">
                   District
                 </span>
                 <select
                   value={districtId}
                   onChange={(event) => setDistrictId(event.target.value)}
-                  className="h-10 rounded-md border border-zinc-700 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-zinc-400"
+                  className="h-10 rounded-md border border-amber-500/30 bg-white px-3 text-sm text-stone-900 outline-none focus:border-amber-600"
                 >
                   {districts.map((name) => (
                     <option key={name} value={name}>
@@ -236,13 +236,13 @@ export function TakeStanceModal({ compact = false }: { compact?: boolean }) {
                 </select>
               </label>
 
-              {formError && <p className="text-sm text-red-300">{formError}</p>}
+              {formError && <p className="text-sm text-red-700">{formError}</p>}
 
               <div className="flex gap-2">
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="inline-flex h-10 flex-1 items-center justify-center rounded-md bg-zinc-100 px-4 text-sm font-medium text-zinc-950 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-10 flex-1 items-center justify-center rounded-md bg-stone-100 px-4 text-sm font-medium text-stone-900 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {submitting ? "Publishing…" : "Publish stance"}
                 </button>
@@ -250,7 +250,7 @@ export function TakeStanceModal({ compact = false }: { compact?: boolean }) {
                   type="button"
                   onClick={close}
                   disabled={submitting}
-                  className="inline-flex h-10 items-center justify-center rounded-md border border-zinc-700 px-4 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-10 items-center justify-center rounded-md border border-amber-500/30 px-4 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Cancel
                 </button>

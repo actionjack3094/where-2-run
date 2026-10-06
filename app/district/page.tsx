@@ -94,11 +94,11 @@ export default function LeaderboardsIndexPage() {
     <main className="mx-auto flex min-h-full w-full max-w-2xl flex-1 flex-col px-6 py-10">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
             Leaderboards
           </p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">Districts</h1>
-          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="mt-2 text-sm text-stone-600 ">
             Open a seat and see who is winning debates on that floor.
           </p>
         </div>
@@ -108,12 +108,12 @@ export default function LeaderboardsIndexPage() {
       </div>
 
       {stage === "loading" && (
-        <p className="mt-16 text-sm text-zinc-500">Mapping the seats…</p>
+        <p className="mt-16 text-sm text-stone-600">Mapping the seats…</p>
       )}
 
       {stage === "error" && (
         <section className="mt-16 space-y-4">
-          <p className="text-sm text-zinc-600 dark:text-zinc-300">
+          <p className="text-sm text-stone-600 ">
             {error ?? "Could not load district leaderboards."}
           </p>
           <Button type="button" onClick={retry}>
@@ -141,19 +141,19 @@ export default function LeaderboardsIndexPage() {
               <Link key={district.id} href={`/district/${district.id}`} className="block">
                 <Card
                   className={cn(
-                    "transition-colors hover:border-zinc-400 dark:hover:border-zinc-500",
+                    "transition-colors hover:border-amber-600 ",
                     selected &&
-                      "border-zinc-950 ring-1 ring-zinc-950 dark:border-zinc-50 dark:ring-zinc-50",
+                      "border-stone-900 ring-1 ring-zinc-950  ",
                   )}
                 >
                   <CardHeader>
                     <div className="flex flex-wrap items-center gap-2">
                       {selected ? (
-                        <span className="rounded-full border border-zinc-950 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-widest text-zinc-950 dark:border-zinc-50 dark:text-zinc-50">
+                        <span className="rounded-full border border-stone-900 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-widest text-stone-900  ">
                           Your district
                         </span>
                       ) : null}
-                      <span className="rounded-full border border-zinc-200 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-widest text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+                      <span className="rounded-full border border-stone-200 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-widest text-stone-600  ">
                         {district.level}
                       </span>
                     </div>
@@ -163,12 +163,12 @@ export default function LeaderboardsIndexPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex items-end justify-between">
-                    <p className="text-xs uppercase tracking-widest text-zinc-400">
+                    <p className="text-xs uppercase tracking-widest text-stone-600">
                       {district.candidateCount}{" "}
                       {district.candidateCount === 1 ? "candidate" : "candidates"}
                     </p>
                     <div className="text-right">
-                      <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-400">
+                      <p className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
                         Top wins
                       </p>
                       <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">

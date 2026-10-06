@@ -14,20 +14,20 @@ export default async function MatchmakerPage() {
 
   if (!user) {
     return (
-      <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+      <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
         <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
           <header>
-            <h1 className="font-display text-3xl font-semibold tracking-[0.18em] text-parchment">
+            <h1 className="font-display text-3xl font-semibold tracking-[0.18em] text-stone-900">
               YOUR MATCHES
             </h1>
           </header>
-          <div className="mt-10 rounded-xl border border-gold/50 bg-zinc-900 px-5 py-5">
-            <p className="text-sm leading-6 text-parchment">
+          <div className="mt-10 rounded-xl border border-gold/50 bg-white px-5 py-5">
+            <p className="text-sm leading-6 text-stone-900">
               Sign in to find your matches
             </p>
             <Link
               href="/auth/login"
-              className="mt-3 inline-block text-[11px] font-medium uppercase tracking-widest text-gold hover:text-parchment"
+              className="mt-3 inline-block text-[11px] font-medium uppercase tracking-widest text-amber-800 hover:text-stone-900"
             >
               Sign in
             </Link>
@@ -46,16 +46,16 @@ export default async function MatchmakerPage() {
 
   if (!stanceError && (profile == null || profile.target_district_id == null)) {
     return (
-      <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+      <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
         <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
           <Link
             href="/onboarding"
-            className="block w-full rounded-xl border border-gold bg-zinc-900 px-6 py-8 shadow-[inset_3px_0_0_0_var(--gold-strong)] transition-colors hover:border-gold hover:bg-zinc-900/80"
+            className="block w-full rounded-xl border border-gold bg-white px-6 py-8 shadow-[inset_3px_0_0_0_var(--gold-strong)] transition-colors hover:border-gold hover:bg-stone-50"
           >
-            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800">
               Verify district
             </p>
-            <p className="mt-3 font-display text-2xl font-semibold leading-snug tracking-tight text-parchment">
+            <p className="mt-3 font-display text-2xl font-semibold leading-snug tracking-tight text-stone-900">
               Welcome! To unlock your live civic feed and voter matchmaking, please verify your
               local district.
             </p>
@@ -68,16 +68,16 @@ export default async function MatchmakerPage() {
   const stanceVector = stanceError ? undefined : (profile?.stance_vector ?? null);
   if (stanceVector === null) {
     return (
-      <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+      <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
         <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 pb-16">
           <Link
             href="/onboarding"
-            className="block w-full rounded-xl border border-gold bg-zinc-900 px-6 py-8 shadow-[inset_3px_0_0_0_var(--gold-strong)] transition-colors hover:border-gold hover:bg-zinc-900/80"
+            className="block w-full rounded-xl border border-gold bg-white px-6 py-8 shadow-[inset_3px_0_0_0_var(--gold-strong)] transition-colors hover:border-gold hover:bg-stone-50"
           >
-            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold">
+            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-amber-800">
               Stance Quiz
             </p>
-            <p className="mt-3 font-display text-2xl font-semibold leading-snug tracking-tight text-parchment">
+            <p className="mt-3 font-display text-2xl font-semibold leading-snug tracking-tight text-stone-900">
               Discover your ideological matches. Complete the 2-minute Stance Quiz to instantly
               see which local candidates align with your values.
             </p>
@@ -97,21 +97,21 @@ export default async function MatchmakerPage() {
   }
 
   return (
-    <main className="flex min-h-full w-full flex-1 flex-col bg-zinc-950 text-zinc-100">
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10 pb-16">
         <header>
-          <h1 className="font-display text-3xl font-semibold tracking-[0.18em] text-parchment">
+          <h1 className="font-display text-3xl font-semibold tracking-[0.18em] text-stone-900">
             YOUR MATCHES
           </h1>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-400">
+          <p className="mt-3 max-w-xl text-sm leading-6 text-stone-600">
             Primary tournaments nationwide, ranked by ideological distance. Physical location is ignored.
           </p>
         </header>
 
         {errorMessage ? (
-          <p className="mt-10 text-sm leading-6 text-zinc-400">{errorMessage}</p>
+          <p className="mt-10 text-sm leading-6 text-stone-600">{errorMessage}</p>
         ) : tournaments.length === 0 ? (
-          <p className="mt-10 text-sm leading-6 text-zinc-400">
+          <p className="mt-10 text-sm leading-6 text-stone-600">
             No matches yet. File a stance so the matchmaker can score primaries.
           </p>
         ) : (
@@ -124,14 +124,14 @@ export default async function MatchmakerPage() {
               return (
                 <li key={election.id}>
                   <Link href={`/elections/district/${election.id}`} className="group block h-full">
-                    <Card className="h-full transition-all group-hover:border-zinc-500">
+                    <Card className="h-full transition-all group-hover:border-amber-600">
                       <CardContent className="flex items-center gap-4 px-5 py-5">
-                        <span className="w-10 shrink-0 font-display text-lg tabular-nums text-gold">
+                        <span className="w-10 shrink-0 font-display text-lg tabular-nums text-amber-800">
                           {index + 1}
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate font-medium text-parchment">{title}</span>
-                          <span className="mt-1 block text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                          <span className="block truncate font-medium text-stone-900">{title}</span>
+                          <span className="mt-1 block text-[11px] font-medium uppercase tracking-widest text-stone-600">
                             Ideological distance {Math.round(distance)}
                           </span>
                         </span>

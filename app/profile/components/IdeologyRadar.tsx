@@ -18,7 +18,7 @@ export function IdeologyRadar({
     <section aria-labelledby="ideology-compass-heading">
       <h2
         id="ideology-compass-heading"
-        className="inline-flex items-center gap-2 font-display text-2xl font-semibold tracking-tight text-parchment"
+        className="inline-flex items-center gap-2 font-display text-2xl font-semibold tracking-tight text-stone-900"
       >
         Ideology Compass
         <InfoTooltip label="Ideology Compass" text={IDEOLOGY_COMPASS_TIP} />

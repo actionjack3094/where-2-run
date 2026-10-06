@@ -42,28 +42,28 @@ export function IdeologyCompass({
 }) {
   return (
     <figure className={className ?? "w-full max-w-sm"}>
-      <figcaption className="text-center text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+      <figcaption className="text-center text-[11px] uppercase tracking-[0.16em] text-stone-600">
         Progressive / Reform
       </figcaption>
-      <div className="relative mt-2 aspect-square rounded-xl border border-zinc-700 bg-zinc-950">
+      <div className="relative mt-2 aspect-square rounded-xl border border-amber-500/30 bg-white">
         {[0.25, 0.5, 0.75].map((mark) => (
           <span key={`v-${mark}`}>
             <span
-              className="absolute inset-y-3 w-px bg-zinc-800"
+              className="absolute inset-y-3 w-px bg-stone-100"
               style={{ left: `${mark * 100}%` }}
             />
             <span
-              className="absolute inset-x-3 h-px bg-zinc-800"
+              className="absolute inset-x-3 h-px bg-stone-100"
               style={{ top: `${mark * 100}%` }}
             />
           </span>
         ))}
-        <span className="absolute inset-y-3 left-1/2 w-px bg-zinc-600" />
-        <span className="absolute inset-x-3 top-1/2 h-px bg-zinc-600" />
-        <span className="absolute bottom-2 left-2 text-[10px] uppercase tracking-widest text-zinc-500">
+        <span className="absolute inset-y-3 left-1/2 w-px bg-stone-300" />
+        <span className="absolute inset-x-3 top-1/2 h-px bg-stone-300" />
+        <span className="absolute bottom-2 left-2 text-[10px] uppercase tracking-widest text-stone-600">
           Left / Collective
         </span>
-        <span className="absolute bottom-2 right-2 text-[10px] uppercase tracking-widest text-zinc-500">
+        <span className="absolute bottom-2 right-2 text-[10px] uppercase tracking-widest text-stone-600">
           Right / Market
         </span>
         {points.map((point, index) => {
@@ -87,7 +87,7 @@ export function IdeologyCompass({
           );
         })}
       </div>
-      <figcaption className="mt-2 text-center text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+      <figcaption className="mt-2 text-center text-[11px] uppercase tracking-[0.16em] text-stone-600">
         Traditional / Order
       </figcaption>
     </figure>

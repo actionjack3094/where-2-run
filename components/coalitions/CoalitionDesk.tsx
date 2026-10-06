@@ -207,7 +207,7 @@ export function CoalitionDesk({ directory }: { directory: CoalitionDirectory }) 
 
   if (stage === "booting") {
     return (
-      <p className="mt-10 text-sm leading-6 text-zinc-400">
+      <p className="mt-10 text-sm leading-6 text-stone-600">
         Opening the coalition desk against your stance vector…
       </p>
     );
@@ -227,12 +227,12 @@ export function CoalitionDesk({ directory }: { directory: CoalitionDirectory }) 
   return (
     <div className="mt-10 flex flex-col gap-14">
       {error ? (
-        <p className="text-sm leading-6 text-red-300/90" role="alert">
+        <p className="text-sm leading-6 text-red-700/90" role="alert">
           {error}
         </p>
       ) : null}
       {banner ? (
-        <p className="text-sm leading-6 text-gold" role="status">
+        <p className="text-sm leading-6 text-amber-800" role="status">
           {banner}
         </p>
       ) : null}
@@ -240,17 +240,17 @@ export function CoalitionDesk({ directory }: { directory: CoalitionDirectory }) 
       <CreateCoalitionForm key={formKey} onCreate={handleCreate} />
 
       <section>
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
           Outstanding
         </p>
-        <h2 className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment">
+        <h2 className="mt-3 font-display text-2xl font-semibold tracking-tight text-stone-900">
           Pending endorsements
         </h2>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+        <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
           Accept a seat to bind your campaign to that charter.
         </p>
         {pendingInvites.length === 0 ? (
-          <p className="mt-6 text-sm leading-6 text-zinc-500">
+          <p className="mt-6 text-sm leading-6 text-stone-600">
             No pending invites. Aligned tickets will land here.
           </p>
         ) : (
@@ -258,15 +258,15 @@ export function CoalitionDesk({ directory }: { directory: CoalitionDirectory }) 
             {pendingInvites.map((coalition) => (
               <article
                 key={coalition.id}
-                className="rounded-xl border border-gold/50 bg-zinc-900 p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)]"
+                className="rounded-xl border border-gold/50 bg-white p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)]"
               >
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
                     <CoalitionBadge name={coalition.name} />
-                    <p className="mt-3 text-sm leading-6 text-zinc-400">
+                    <p className="mt-3 text-sm leading-6 text-stone-600">
                       {coalition.charter_statement}
                     </p>
-                    <p className="mt-2 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                    <p className="mt-2 text-[11px] font-medium uppercase tracking-widest text-stone-600">
                       Founded by {coalition.founder?.username ?? "unknown"}
                     </p>
                   </div>
@@ -288,17 +288,17 @@ export function CoalitionDesk({ directory }: { directory: CoalitionDirectory }) 
       </section>
 
       <section>
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
           Alliances
         </p>
-        <h2 className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment">
+        <h2 className="mt-3 font-display text-2xl font-semibold tracking-tight text-stone-900">
           Active coalitions
         </h2>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+        <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
           Manage seated members and send cross-district endorsements to aligned campaigns.
         </p>
         {activeAlliances.length === 0 ? (
-          <p className="mt-6 text-sm leading-6 text-zinc-500">
+          <p className="mt-6 text-sm leading-6 text-stone-600">
             You are not seated in a coalition yet. Charter one above, or accept an invite.
           </p>
         ) : (
@@ -321,25 +321,25 @@ export function CoalitionDesk({ directory }: { directory: CoalitionDirectory }) 
       </section>
 
       <section>
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-600">
           Discovery
         </p>
-        <h2 className="mt-3 font-display text-2xl font-semibold tracking-tight text-parchment">
+        <h2 className="mt-3 font-display text-2xl font-semibold tracking-tight text-stone-900">
           Recommended coalitions
         </h2>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+        <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
           Ranked by cosine alignment between your stance vector and each caucus centroid.
         </p>
         {viewerVector.length === 0 ? (
-          <p className="mt-6 text-sm leading-6 text-zinc-500">
+          <p className="mt-6 text-sm leading-6 text-stone-600">
             Record stances on{" "}
-            <Link href="/my-campaign" className="text-gold hover:text-parchment">
+            <Link href="/my-campaign" className="text-amber-800 hover:text-stone-900">
               My Campaign
             </Link>{" "}
             so we can match you to a charter.
           </p>
         ) : recommended.length === 0 ? (
-          <p className="mt-6 text-sm leading-6 text-zinc-500">
+          <p className="mt-6 text-sm leading-6 text-stone-600">
             No open coalitions sit close to your vector. Charter one and invite the field.
           </p>
         ) : (
@@ -349,16 +349,16 @@ export function CoalitionDesk({ directory }: { directory: CoalitionDirectory }) 
               return (
                 <Card key={coalition.id}>
                   <CardHeader>
-                    <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+                    <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
                       {formatAlignment(coalition.alignmentPct)}
                     </p>
-                    <CardTitle className="font-display text-lg text-parchment">
+                    <CardTitle className="font-display text-lg text-stone-900">
                       {coalition.name}
                     </CardTitle>
                     <CardDescription>{coalition.charter_statement}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                    <p className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
                       {coalition.members.filter((seat) => seat.status === "active").length} seated
                       {pending ? " · invite pending" : ""}
                     </p>
@@ -381,10 +381,10 @@ function CreateCoalitionForm({
   return (
     <Card>
       <CardHeader>
-        <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+        <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
           Charter
         </p>
-        <CardTitle className="font-display text-lg text-parchment">
+        <CardTitle className="font-display text-lg text-stone-900">
           Found a coalition
         </CardTitle>
         <CardDescription>
@@ -395,7 +395,7 @@ function CreateCoalitionForm({
       <CardContent>
         <form action={onCreate} className="flex flex-col gap-4">
           <label className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+            <span className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
               Coalition name
             </span>
             <input
@@ -404,11 +404,11 @@ function CreateCoalitionForm({
               minLength={2}
               maxLength={COALITION_NAME_MAX}
               placeholder="Municipal Reform Caucus"
-              className="h-10 rounded-md border border-gold/40 bg-zinc-950 px-3 text-sm text-parchment outline-none placeholder:text-zinc-600 focus-visible:border-gold focus-visible:ring-2 focus-visible:ring-gold/40"
+              className="h-10 rounded-md border border-gold/40 bg-white px-3 text-sm text-stone-900 outline-none placeholder:text-stone-600 focus-visible:border-gold focus-visible:ring-2 focus-visible:ring-gold/40"
             />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+            <span className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
               Charter statement
             </span>
             <textarea
@@ -418,7 +418,7 @@ function CreateCoalitionForm({
               maxLength={COALITION_CHARTER_MAX}
               rows={4}
               placeholder="Declare the shared plank this coalition will defend across districts."
-              className="rounded-md border border-gold/40 bg-zinc-950 px-3 py-2 text-sm leading-6 text-parchment outline-none placeholder:text-zinc-600 focus-visible:border-gold focus-visible:ring-2 focus-visible:ring-gold/40"
+              className="rounded-md border border-gold/40 bg-white px-3 py-2 text-sm leading-6 text-stone-900 outline-none placeholder:text-stone-600 focus-visible:border-gold focus-visible:ring-2 focus-visible:ring-gold/40"
             />
           </label>
           <SubmitButton label="Charter coalition" pendingLabel="Chartering…" />
@@ -464,13 +464,13 @@ function ManagedCoalition({
   if (!canInviteTo(coalition, viewerId)) return null;
 
   return (
-    <article className="rounded-xl border border-gold/50 bg-zinc-900 p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)]">
+    <article className="rounded-xl border border-gold/50 bg-white p-5 shadow-[inset_3px_0_0_0_var(--gold-strong)]">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <CoalitionBadge name={coalition.name} />
-          <p className="mt-3 text-sm leading-6 text-zinc-400">{coalition.charter_statement}</p>
+          <p className="mt-3 text-sm leading-6 text-stone-600">{coalition.charter_statement}</p>
         </div>
-        <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+        <p className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
           {active.length} seated
         </p>
       </div>
@@ -481,15 +481,15 @@ function ManagedCoalition({
           return (
             <li
               key={seat.id}
-              className="flex items-center justify-between gap-3 rounded-md border border-gold/20 bg-zinc-950/60 px-3 py-2"
+              className="flex items-center justify-between gap-3 rounded-md border border-gold/20 bg-white/60 px-3 py-2"
             >
               <Link
                 href={`/profile/${seat.candidate_id}`}
-                className="min-w-0 truncate font-display text-sm font-semibold text-parchment hover:text-gold"
+                className="min-w-0 truncate font-display text-sm font-semibold text-stone-900 hover:text-amber-800"
               >
                 {candidate?.username ?? "Unknown campaign"}
               </Link>
-              <span className="shrink-0 text-[11px] font-medium uppercase tracking-widest text-gold">
+              <span className="shrink-0 text-[11px] font-medium uppercase tracking-widest text-amber-800">
                 {seat.candidate_id === coalition.founder_id ? "Founder" : statusLabel(seat.status)}
                 {candidate?.district_name ? ` · ${candidate.district_name}` : ""}
               </span>
@@ -500,14 +500,14 @@ function ManagedCoalition({
 
       {pending.length > 0 ? (
         <div className="mt-4">
-          <p className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+          <p className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
             Awaiting reply
           </p>
           <ul className="mt-2 flex flex-col gap-1.5">
             {pending.map((seat) => {
               const candidate = seat.candidate ?? candidateById.get(seat.candidate_id) ?? null;
               return (
-                <li key={seat.id} className="text-sm text-zinc-400">
+                <li key={seat.id} className="text-sm text-stone-600">
                   {candidate?.username ?? "Unknown campaign"}
                   {candidate?.district_name ? ` · ${candidate.district_name}` : ""}
                 </li>
@@ -518,14 +518,14 @@ function ManagedCoalition({
       ) : null}
 
       <div className="mt-6 border-t border-gold/20 pt-5">
-        <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+        <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
           Cross-district invites
         </p>
-        <p className="mt-1 text-sm leading-6 text-zinc-500">
+        <p className="mt-1 text-sm leading-6 text-stone-600">
           Candidates closest to this charter&apos;s stance vector, with other districts ranked first.
         </p>
         {invitees.length === 0 ? (
-          <p className="mt-3 text-sm text-zinc-500">
+          <p className="mt-3 text-sm text-stone-600">
             No aligned campaigns remain to invite.
           </p>
         ) : (
@@ -535,13 +535,13 @@ function ManagedCoalition({
               return (
                 <li
                   key={candidate.id}
-                  className="flex items-center justify-between gap-3 rounded-md border border-gold/20 bg-zinc-950/60 px-3 py-2"
+                  className="flex items-center justify-between gap-3 rounded-md border border-gold/20 bg-white/60 px-3 py-2"
                 >
                   <div className="min-w-0">
-                    <p className="truncate font-display text-sm font-semibold text-parchment">
+                    <p className="truncate font-display text-sm font-semibold text-stone-900">
                       {candidate.username}
                     </p>
-                    <p className="mt-0.5 text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                    <p className="mt-0.5 text-[11px] font-medium uppercase tracking-widest text-stone-600">
                       {formatAlignment(candidate.alignmentPct)}
                       {candidate.crossDistrict ? " · Cross-district" : ""}
                       {candidate.district_name ? ` · ${candidate.district_name}` : ""}

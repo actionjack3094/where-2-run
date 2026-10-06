@@ -27,15 +27,15 @@ export function AvatarUpload({
   const [pending, setPending] = useState(false);
 
   return (
-    <form className="mt-8 rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-5">
+    <form className="mt-8 rounded-xl border border-amber-500/30 bg-white px-5 py-5">
       <div className="flex items-center gap-4">
         <CandidateAvatar name={name} avatarUrl={current} size="lg" />
         <div>
-          <p className="text-sm font-medium text-parchment">{name}</p>
-          <p className="mt-1 text-sm leading-6 text-zinc-400">JPG, PNG, or WebP. Under 2MB.</p>
+          <p className="text-sm font-medium text-stone-900">{name}</p>
+          <p className="mt-1 text-sm leading-6 text-stone-600">JPG, PNG, or WebP. Under 2MB.</p>
         </div>
       </div>
-      <label className="mt-5 inline-flex cursor-pointer items-center rounded-md bg-gold-strong px-4 py-2 text-xs font-semibold uppercase tracking-widest text-zinc-950">
+      <label className="mt-5 inline-flex cursor-pointer items-center rounded-md bg-gold-strong px-4 py-2 text-xs font-semibold uppercase tracking-widest text-stone-900">
         {pending ? "Uploading…" : "Choose photo"}
         <input
           type="file"
@@ -84,8 +84,8 @@ export function AvatarUpload({
           }}
         />
       </label>
-      {message ? <p className="mt-3 text-sm text-parchment">{message}</p> : null}
-      {error ? <p className="mt-3 text-sm text-zinc-300">{error}</p> : null}
+      {message ? <p className="mt-3 text-sm text-stone-900">{message}</p> : null}
+      {error ? <p className="mt-3 text-sm text-stone-600">{error}</p> : null}
     </form>
   );
 }

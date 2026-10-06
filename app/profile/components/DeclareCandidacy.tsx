@@ -71,15 +71,15 @@ export function DeclareCandidacy({
 
   return (
     <section aria-labelledby="run-for-office-heading">
-      <article className="rounded-xl border border-gold/50 bg-zinc-900 px-6 py-8 shadow-[inset_3px_0_0_0_var(--gold-strong)]">
-        <p className="text-[11px] font-medium uppercase tracking-widest text-gold">Campaign Hub</p>
+      <article className="rounded-xl border border-gold/50 bg-white px-6 py-8 shadow-[inset_3px_0_0_0_var(--gold-strong)]">
+        <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">Campaign Hub</p>
         <h2
           id="run-for-office-heading"
-          className="mt-3 font-display text-3xl font-semibold tracking-tight text-parchment"
+          className="mt-3 font-display text-3xl font-semibold tracking-tight text-stone-900"
         >
           Run for Office
         </h2>
-        <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-400">
+        <p className="mt-3 max-w-xl text-sm leading-6 text-stone-600">
           Declare a race in your district to open your escrow vault and start an alignment
           streak at zero.
         </p>
@@ -108,33 +108,33 @@ export function DeclareCandidacy({
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className="w-full max-w-lg rounded-xl border border-gold/50 bg-zinc-900 px-6 py-6"
+            className="w-full max-w-lg rounded-xl border border-gold/50 bg-white px-6 py-6"
             onClick={(event) => event.stopPropagation()}
           >
-            <p className="text-[11px] font-medium uppercase tracking-widest text-gold">
+            <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
               Declare candidacy
             </p>
             <h3
               id={titleId}
-              className="mt-2 font-display text-2xl font-semibold tracking-tight text-parchment"
+              className="mt-2 font-display text-2xl font-semibold tracking-tight text-stone-900"
             >
               Pick your race
             </h3>
-            <p className="mt-2 text-sm leading-6 text-zinc-400">
+            <p className="mt-2 text-sm leading-6 text-stone-600">
               Upcoming elections that match your district.
             </p>
 
             {loading ? (
-              <p className="mt-6 text-sm leading-6 text-zinc-400">Loading local races…</p>
+              <p className="mt-6 text-sm leading-6 text-stone-600">Loading local races…</p>
             ) : races.length === 0 ? (
-              <p className="mt-6 text-sm leading-6 text-zinc-400">
+              <p className="mt-6 text-sm leading-6 text-stone-600">
                 No upcoming races in your district yet. Finish onboarding so we can match a
                 ZIP to a congressional seat.
               </p>
             ) : (
               <form className="mt-6 flex flex-col gap-4" onSubmit={(event) => void submit(event)}>
                 <label className="flex flex-col gap-2" htmlFor={selectId}>
-                  <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+                  <span className="text-[11px] font-medium uppercase tracking-widest text-stone-600">
                     Local race
                   </span>
                   <select
@@ -145,7 +145,7 @@ export function DeclareCandidacy({
                       setSelectedId(event.target.value);
                       setError(null);
                     }}
-                    className="h-12 w-full rounded-md border border-gold/40 bg-zinc-950 px-3 text-sm text-parchment outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
+                    className="h-12 w-full rounded-md border border-gold/40 bg-white px-3 text-sm text-stone-900 outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
                   >
                     {races.map((race) => (
                       <option key={race.id} value={race.id}>
