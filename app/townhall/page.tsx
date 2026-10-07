@@ -9,7 +9,8 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "The Townhall · WHERE 2 RUN",
-  description: "File five foundational policy statements before entering the platform.",
+  description:
+    "Four baseline questions set your ideological vector. The policy deck continues after that, and Skip Question leaves the vector unchanged.",
 };
 
 export default async function TownhallPage() {
@@ -43,8 +44,8 @@ export default async function TownhallPage() {
             The Townhall
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
-            This is the step that opens the rest of WHERE 2 RUN. Your sliders place you on the
-            ideology plane. The weight under each one decides how hard that statement pulls.
+            Four questions set your starting ideological vector. After that, the policy
+            deck continues without an end. Skip Question leaves that vector where it is.
           </p>
         </header>
         <TownhallGate saved={saved} />

@@ -1,9 +1,9 @@
 import Link from "next/link";
 
 const links = [
-  { href: "/townhall", label: "The Townhall" },
   { href: "/soapbox", label: "The Soapbox" },
   { href: "/debates", label: "The Debates" },
+  { href: "/townhall", label: "The Townhall" },
   { href: "/ballot", label: "My Ballot" },
   { href: "/elections", label: "Elections" },
   { href: "/dashboard", label: "Candidate HQ" },
