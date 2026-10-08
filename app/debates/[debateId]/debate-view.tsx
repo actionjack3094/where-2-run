@@ -73,6 +73,55 @@ function findNextTurn(args: Argument[], debate: DebateWithCandidates | null) {
   return null;
 }
 
+function asArgument(value: unknown): Argument | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Argument;
+  if (
+    typeof row.id !== "string" ||
+    typeof row.debate_id !== "string" ||
+    typeof row.author_id !== "string" ||
+    typeof row.round_number !== "number" ||
+    typeof row.content !== "string"
+  ) {
+    return null;
+  }
+  return row;
+}
+
+function mergeArgument(current: Argument[], incoming: Argument): Argument[] {
+  const index = current.findIndex((entry) => entry.id === incoming.id);
+  const next =
+    index === -1
+      ? [...current, incoming]
+      : current.map((entry, position) =>
+          position === index ? { ...entry, ...incoming } : entry,
+        );
+  return next.sort((left, right) => {
+    if (left.round_number !== right.round_number) return left.round_number - right.round_number;
+    return left.created_at.localeCompare(right.created_at);
+  });
+}
+
+function patchDebate(
+  current: DebateWithCandidates,
+  row: Record<string, unknown>,
+): DebateWithCandidates {
+  const next = { ...current };
+  if (typeof row.status === "string") next.status = row.status;
+  if (typeof row.current_round === "number") next.current_round = row.current_round;
+  if (typeof row.expires_at === "string") next.expires_at = row.expires_at;
+  if (typeof row.candidate_a_argument === "string" || row.candidate_a_argument === null) {
+    next.candidate_a_argument = row.candidate_a_argument;
+  }
+  if (typeof row.candidate_b_argument === "string" || row.candidate_b_argument === null) {
+    next.candidate_b_argument = row.candidate_b_argument;
+  }
+  if (typeof row.winner_id === "string" || row.winner_id === null) next.winner_id = row.winner_id;
+  if (typeof row.candidate_a_votes === "number") next.candidate_a_votes = row.candidate_a_votes;
+  if (typeof row.candidate_b_votes === "number") next.candidate_b_votes = row.candidate_b_votes;
+  return next;
+}
+
 function findArgument(
   args: Argument[],
   authorId: string | null,
@@ -144,7 +193,12 @@ export function DebateView({
       ]);
 
     setDebate(data as DebateWithCandidates);
-    setArgs(argumentRows ?? []);
+    setArgs((current) =>
+      (argumentRows ?? []).reduce(
+        (rows, incoming) => mergeArgument(rows, incoming as Argument),
+        current.filter((row) => row.debate_id === debateId),
+      ),
+    );
     setVotes(voteRows ?? []);
     if (!evaluationsResult.error) {
       setEvaluations((evaluationsResult.data ?? []) as DebateEvaluation[]);
@@ -189,14 +243,77 @@ export function DebateView({
     }
 
     void boot();
-    const interval = window.setInterval(() => {
-      void loadDebate().catch(() => undefined);
-    }, 2500);
 
     return () => {
       cancelled = true;
       graderWaitRef.current += 1;
-      window.clearInterval(interval);
+    };
+  }, [debateId, loadDebate]);
+
+  useEffect(() => {
+    let active = true;
+
+    function appendArgument(row: Argument) {
+      if (!active || row.debate_id !== debateId) return;
+      setArgs((current) => mergeArgument(current, row));
+    }
+
+    function applyDebateUpdate(row: Record<string, unknown>) {
+      if (!active || row.id !== debateId) return;
+      setDebate((current) => (current ? patchDebate(current, row) : current));
+    }
+
+    const channel = supabase
+      .channel(`live-debate:${debateId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "arguments",
+          filter: `debate_id=eq.${debateId}`,
+        },
+        (payload) => {
+          const row = asArgument(payload.new);
+          if (row) appendArgument(row);
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "arguments",
+          filter: `debate_id=eq.${debateId}`,
+        },
+        (payload) => {
+          const row = asArgument(payload.new);
+          if (row) appendArgument(row);
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "debates",
+          filter: `id=eq.${debateId}`,
+        },
+        (payload) => {
+          if (payload.new && typeof payload.new === "object") {
+            applyDebateUpdate(payload.new as Record<string, unknown>);
+          }
+        },
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          void loadDebate().catch(() => undefined);
+        }
+      });
+
+    return () => {
+      active = false;
+      void supabase.removeChannel(channel);
     };
   }, [debateId, loadDebate]);
 

@@ -14,6 +14,30 @@ export function RealtimeDebateListener({ debateId }: { debateId: string }) {
       .on(
         "postgres_changes",
         {
+          event: "INSERT",
+          schema: "public",
+          table: "arguments",
+          filter: `debate_id=eq.${debateId}`,
+        },
+        () => {
+          router.refresh();
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "arguments",
+          filter: `debate_id=eq.${debateId}`,
+        },
+        () => {
+          router.refresh();
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
           event: "UPDATE",
           schema: "public",
           table: "debates",
