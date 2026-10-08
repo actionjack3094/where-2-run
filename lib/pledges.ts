@@ -3,6 +3,8 @@ import { supabase } from "@/lib/db/supabase";
 import type { Pledge } from "@/types/database.types";
 
 export const GRASSROOTS_THRESHOLD = 5000;
+export const BALLOT_ACCESS_THRESHOLD = 25_000;
+export const BALLOT_PLEDGE_TIERS = [5, 15, 50] as const;
 export const QUICK_PLEDGE_AMOUNTS = [5, 15, 25, 50] as const;
 export const ANONYMOUS_DONOR = "Anonymous Citizen";
 export const MAX_PLEDGE_AMOUNT = 10_000;

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CampaignFinanceCard } from "@/components/ballot/CampaignFinanceCard";
+import { DistrictSelector } from "@/components/ballot/DistrictSelector";
 import { MatchConfidence } from "@/components/ballot/MatchConfidence";
 import { SoapboxSnippet } from "@/components/ballot/SoapboxSnippet";
 import { BallotEngage } from "@/components/platform/ArenaForms";
@@ -11,6 +13,7 @@ import { loadBallotDecorations, type SoapboxFeedPost } from "@/lib/ballot/load-f
 import { rankFeedItems } from "@/lib/ballot/feed";
 import { isMissingSchema } from "@/lib/db/schema-errors";
 import { getServerUser } from "@/lib/db/supabase-server";
+import { loadLocalBallotSlate } from "@/lib/ballot/local-slate";
 import { loadBallot } from "@/lib/platform/queries";
 import { loadProfile, platformAdmin } from "@/lib/platform/records";
 import { constituentAccess } from "@/lib/platform/tier2";
@@ -29,8 +32,16 @@ function raceLabel(state: string, district: string | null, office: string) {
   return `${seat} · ${office}`;
 }
 
-export default async function BallotPage() {
+export default async function BallotPage(props: { searchParams: Promise<{ state?: string }> }) {
+  const searchParams = await props.searchParams;
   const user = await getServerUser();
+  let slate: Awaited<ReturnType<typeof loadLocalBallotSlate>> | null = null;
+  let slateError: string | null = null;
+  try {
+    slate = await loadLocalBallotSlate(user?.id ?? null, searchParams.state ?? null);
+  } catch (caught) {
+    slateError = caught instanceof Error ? caught.message : "Could not load the local slate.";
+  }
   let board: Awaited<ReturnType<typeof loadBallot>> | null = null;
   let setup: string | null = null;
   let verified = false;
@@ -97,7 +108,9 @@ export default async function BallotPage() {
           </p>
         </header>
 
-        {setup ? <p className="mt-8 text-sm leading-6 text-stone-600">{setup}</p> : null}
+        {setup || slateError ? (
+          <p className="mt-8 text-sm leading-6 text-stone-600">{setup ?? slateError}</p>
+        ) : null}
         {board?.signedOut ? (
           <p className="mt-8 text-sm leading-6 text-stone-600">
             <Link href="/auth/login" className="text-amber-800">
@@ -106,7 +119,49 @@ export default async function BallotPage() {
             to see the races on your address.
           </p>
         ) : null}
-        {board?.needsAddress ? (
+        {slate && !slate.signedOut && slate.verified && slate.placeLabel ? (
+          <p className="mt-4 text-sm text-stone-900">Registered district · {slate.placeLabel}</p>
+        ) : null}
+        {slate && !slate.signedOut && !slate.verified ? (
+          <DistrictSelector selected={slate.previewState} />
+        ) : null}
+        {slate && !slate.signedOut && (slate.verified || slate.previewState) && slate.candidates.length === 0 ? (
+          <p className="mt-8 text-sm text-stone-600">
+            No local primary is filed for this district yet.
+          </p>
+        ) : null}
+        {slate && slate.candidates.length > 0 ? (
+          <section className="mt-10">
+            <h2 className="font-display text-xl text-stone-900">Local slate</h2>
+            {slate.previewState && !slate.verified ? (
+              <p className="mt-2 text-sm text-stone-600">
+                Previewing {slate.previewState}. Verify your address to lock this ballot to your district.
+              </p>
+            ) : (
+              <p className="mt-2 text-sm text-stone-600">
+                Candidates filed inside your verified district.
+              </p>
+            )}
+            <div className="mt-4 grid gap-4">
+              {slate.candidates.map((candidate) => (
+                <CampaignFinanceCard
+                  key={`${candidate.id}:${candidate.primaryId}`}
+                  candidateId={candidate.id}
+                  name={candidate.name}
+                  office={candidate.office}
+                  party={candidate.party}
+                  state={candidate.state}
+                  district={candidate.district}
+                  slug={candidate.slug}
+                  grassroots={candidate.grassroots}
+                  institutional={candidate.institutional}
+                  signedIn={Boolean(user)}
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
+        {board?.needsAddress && !slate ? (
           <Link
             href="/onboarding/address"
             className="mt-8 block rounded-xl border border-gold bg-white px-6 py-8"
