@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { stateByCode } from "@/lib/platform/states";
+import { resolveStateParam } from "@/lib/platform/states";
 
 type LegacyStatePageProps = {
   params: Promise<{ state: string }>;
@@ -10,8 +10,8 @@ type LegacyStatePageProps = {
 export default async function LegacyStateElectionsRedirect(props: LegacyStatePageProps) {
   const { state } = await props.params;
   const searchParams = await props.searchParams;
-  const match = stateByCode(state);
-  const target = match?.code ?? state.trim().toUpperCase();
+  const match = resolveStateParam(state);
+  const target = match?.code ?? state.trim().toLowerCase();
   const level = searchParams.level;
   redirect(level ? `/elections/${target}?level=${level}` : `/elections/${target}`);
 }

@@ -63,6 +63,17 @@ export function stateByName(name: string) {
   return US_STATES.find((state) => state.name.toLowerCase() === normalized) ?? null;
 }
 
+/** Match a URL segment to a state: `tx`, `TX`, `texas`, or `new-york`. */
+export function resolveStateParam(param: string) {
+  const decoded = decodeURIComponent(param).trim();
+  const lower = decoded.toLowerCase().replace(/[_-]+/g, " ");
+  return (
+    US_STATES.find((state) => state.code.toLowerCase() === lower) ??
+    US_STATES.find((state) => state.name.toLowerCase() === lower) ??
+    null
+  );
+}
+
 export type ElectionLevel = "federal" | "state" | "local";
 
 export function inferElectionLevel(officeName: string): ElectionLevel {
