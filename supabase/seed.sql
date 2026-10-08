@@ -1929,3 +1929,6 @@ set
   candidate_a_score = null,
   candidate_b_score = null,
   updated_at = now();
+
+-- Nationwide 50-state US Senate baseline (primaries, candidates, primary_questions)
+-- lives in supabase/seed_nationwide_primaries.sql and runs next via config.toml.

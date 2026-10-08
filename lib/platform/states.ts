@@ -58,6 +58,11 @@ export function stateByCode(code: string) {
   return US_STATES.find((state) => state.code === normalized) ?? null;
 }
 
+export function stateByName(name: string) {
+  const normalized = name.trim().toLowerCase().replace(/[_-]+/g, " ");
+  return US_STATES.find((state) => state.name.toLowerCase() === normalized) ?? null;
+}
+
 export type ElectionLevel = "federal" | "state" | "local";
 
 export function inferElectionLevel(officeName: string): ElectionLevel {

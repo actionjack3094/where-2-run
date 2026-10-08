@@ -26,7 +26,7 @@ export default function ElectionStatesPage() {
           {US_STATES.map((state) => (
             <li key={state.code}>
               <Link
-                href={`/elections/states/${state.code}`}
+                href={`/elections/${state.code}`}
                 className="flex items-baseline justify-between rounded-xl border border-amber-500/30 bg-white px-4 py-3 transition-colors hover:border-amber-600"
               >
                 <span className="text-sm text-stone-900">{state.name}</span>

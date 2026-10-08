@@ -134,7 +134,7 @@ export async function submitPledge(
 
     revalidatePath(`/candidate/${candidate}`);
     revalidatePath(`/profile/${candidate}`);
-    revalidatePath("/elections/[slug]/profile", "page");
+    revalidatePath("/elections/[state]", "page");
     revalidatePath("/spectator");
     revalidatePath("/my-campaign");
 

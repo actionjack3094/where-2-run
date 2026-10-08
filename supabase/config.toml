@@ -31,4 +31,4 @@ entrypoint = "./functions/grade-debate/index.ts"
 
 [db.seed]
 enabled = true
-sql_paths = ["./seed.sql"]
+sql_paths = ["./seed.sql", "./seed_nationwide_primaries.sql"]

@@ -99,6 +99,8 @@ export interface Primary {
   id: string;
   party: PrimaryParty | string;
   office_name: string;
+  /** Nationwide ballot label; defaults to US Senate for 50-state rows. */
+  office?: string | null;
   state: string;
   district: string | null;
   ocd_id: string;
@@ -110,9 +112,19 @@ export interface Primary {
   cycle_year: number;
   primary_date: string;
   general_election_date: string | null;
+  /** Calendar election day for nationwide seed rows. */
+  election_date?: string | null;
   term_length_years: number;
   senate_class: number | null;
   status: "active" | "frozen" | string;
+  created_at: string;
+}
+
+export interface PrimaryQuestion {
+  id: string;
+  primary_id: string;
+  prompt: string;
+  kind: "community" | "debate" | string;
   created_at: string;
 }
 
@@ -772,6 +784,10 @@ export interface Candidate {
   bio: string | null;
   residency_state: string | null;
   ideology_vector: IdeologyVector | string;
+  /** Nationwide primary this ticket is filed in. */
+  primary_id?: string | null;
+  /** 2D matching coordinate, e.g. { x, y }. */
+  ideological_vector?: { x: number; y: number } | Record<string, unknown> | null;
   pac_agreement_accepted: boolean;
   pac_agreement_accepted_at: string | null;
   /** Campaign manager who filed a tier-3 claim on this seeded ticket. */
@@ -1762,6 +1778,20 @@ export interface Database {
         Relationships: [
           {
             foreignKeyName: "community_prompts_primary_id_fkey";
+            columns: ["primary_id"];
+            isOneToOne: false;
+            referencedRelation: "primaries";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      primary_questions: {
+        Row: PrimaryQuestion;
+        Insert: Partial<PrimaryQuestion> & Pick<PrimaryQuestion, "primary_id" | "prompt" | "kind">;
+        Update: Partial<PrimaryQuestion>;
+        Relationships: [
+          {
+            foreignKeyName: "primary_questions_primary_id_fkey";
             columns: ["primary_id"];
             isOneToOne: false;
             referencedRelation: "primaries";
