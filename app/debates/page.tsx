@@ -3,10 +3,12 @@ import Link from "next/link";
 import { CIVIC_STANDING_TIP, IDEOLOGY_COMPASS_TIP, InfoTooltip } from "@/components/InfoTooltip";
 import { DistrictGauntletForm } from "@/components/debates/DistrictGauntletForm";
 import { ChallengeForm, LockedSeat } from "@/components/platform/ArenaForms";
+import { TownHall } from "@/components/platform/TownHall";
 import { stanceIsStale } from "@/lib/ballot/fading";
 import { loadDistrictGauntlet } from "@/lib/debates/load-gauntlet";
 import { roundByNumber } from "@/lib/debates/structure";
-import { platformAdmin } from "@/lib/platform/records";
+import { loadProfile, platformAdmin } from "@/lib/platform/records";
+import { loadTownHalls } from "@/lib/platform/town-hall";
 import { ReportDebateButton } from "@/components/platform/ReportDebateButton";
 import { CandidateAvatar } from "@/components/profile/CandidateAvatar";
 import { isMissingSchema } from "@/lib/db/schema-errors";
@@ -52,17 +54,27 @@ export default async function DebatesPage(props: { searchParams: Promise<{ filed
 
   let feed: Awaited<ReturnType<typeof loadArenaFeed>> | null = null;
   let matched: Awaited<ReturnType<typeof loadIdeologicalDebateFeed>> | null = null;
+  let voterVerified = false;
   try {
     [feed, matched] = await Promise.all([
       loadArenaFeed(user?.id ?? null),
       loadIdeologicalDebateFeed(user?.id ?? null),
     ]);
+    if (user?.id) {
+      const profile = await loadProfile(platformAdmin(), user.id);
+      voterVerified = profile?.is_verified === true;
+    }
   } catch (caught) {
     const message = caught instanceof Error ? caught.message : "Could not load Debates.";
     setup = isMissingSchema({ message })
       ? "Apply the platform architecture migration, then reload."
       : message;
   }
+  const debateIds = [
+    ...(feed?.cards.map((card) => card.id) ?? []),
+    ...(matched?.showdowns.map((debate) => debate.id) ?? []),
+  ];
+  const halls = debateIds.length > 0 ? await loadTownHalls(debateIds).catch(() => new Map()) : new Map();
 
   return (
     <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
@@ -192,6 +204,14 @@ export default async function DebatesPage(props: { searchParams: Promise<{ filed
                       ) : null}
                     </>
                   ) : null}
+                  <TownHall
+                    debateId={debate.id}
+                    questions={halls.get(debate.id) ?? []}
+                    viewerId={user?.id ?? null}
+                    verified={voterVerified}
+                    candidateAId={debate.candidateAId}
+                    candidateBId={debate.candidateBId}
+                  />
                 </article>
               ))}
             </div>
@@ -276,6 +296,14 @@ export default async function DebatesPage(props: { searchParams: Promise<{ filed
                     <p className="text-sm text-stone-600">Waiting on an intra-party challenge.</p>
                   ) : null}
                 </div>
+                <TownHall
+                  debateId={card.id}
+                  questions={halls.get(card.id) ?? []}
+                  viewerId={user?.id ?? null}
+                  verified={voterVerified}
+                  candidateAId={card.sideA.id}
+                  candidateBId={card.sideB?.id ?? null}
+                />
               </article>
             );
           })}

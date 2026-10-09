@@ -40,6 +40,8 @@ export type MatchedShowdown = {
   stanceB: string | null;
   sideA: string;
   sideB: string | null;
+  candidateAId: string;
+  candidateBId: string | null;
   distance: number;
   office: string;
   slug: string;
@@ -221,6 +223,8 @@ export async function loadIdeologicalDebateFeed(userId: string | null): Promise<
         stanceB: debate.stance_b,
         sideA: displayName(profiles.get(debate.candidate_a_id) ?? null),
         sideB: debate.candidate_b_id ? displayName(profiles.get(debate.candidate_b_id) ?? null) : null,
+        candidateAId: debate.candidate_a_id,
+        candidateBId: debate.candidate_b_id,
         distance: distanceByPrimary.get(debate.primary_id) ?? Number.POSITIVE_INFINITY,
         office: officeOf(debate.primary_id),
         slug: primary?.slug ?? debate.primary_id,

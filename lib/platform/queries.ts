@@ -90,17 +90,21 @@ function card(
   };
 }
 
+const PRIMARY_ID_CHUNK = 80;
+
 async function loadOpenCounts(admin: PlatformAdmin, primaryIds: string[]) {
   const counts = new Map<string, number>();
-  if (primaryIds.length === 0) return counts;
-  const { data, error } = await admin
-    .from("arena_debates")
-    .select("primary_id, status")
-    .in("primary_id", primaryIds)
-    .eq("status", "open_challenge");
-  if (error) throw new Error(schemaMessage(error) ?? error.message);
-  for (const row of (data ?? []) as { primary_id: string }[]) {
-    counts.set(row.primary_id, (counts.get(row.primary_id) ?? 0) + 1);
+  for (let index = 0; index < primaryIds.length; index += PRIMARY_ID_CHUNK) {
+    const slice = primaryIds.slice(index, index + PRIMARY_ID_CHUNK);
+    const { data, error } = await admin
+      .from("arena_debates")
+      .select("primary_id, status")
+      .in("primary_id", slice)
+      .eq("status", "open_challenge");
+    if (error) throw new Error(schemaMessage(error) ?? error.message);
+    for (const row of (data ?? []) as { primary_id: string }[]) {
+      counts.set(row.primary_id, (counts.get(row.primary_id) ?? 0) + 1);
+    }
   }
   return counts;
 }

@@ -16,7 +16,6 @@ import { getServerUser } from "@/lib/db/supabase-server";
 import { loadLocalBallotSlate } from "@/lib/ballot/local-slate";
 import { loadBallot } from "@/lib/platform/queries";
 import { loadProfile, platformAdmin } from "@/lib/platform/records";
-import { constituentAccess } from "@/lib/platform/tier2";
 import { loadTownHalls } from "@/lib/platform/town-hall";
 import { tierLabel, type BallotMatch } from "@/lib/platform/types";
 
@@ -44,7 +43,7 @@ export default async function BallotPage(props: { searchParams: Promise<{ state?
   }
   let board: Awaited<ReturnType<typeof loadBallot>> | null = null;
   let setup: string | null = null;
-  let verified = false;
+  let voterVerified = false;
   try {
     board = await loadBallot(user?.id ?? null);
   } catch (caught) {
@@ -55,13 +54,12 @@ export default async function BallotPage(props: { searchParams: Promise<{ state?
   if (user && board) {
     try {
       const profile = await loadProfile(platformAdmin(), user.id);
-      const access = await constituentAccess(platformAdmin(), user.id);
-      verified = access.ok;
+      voterVerified = profile?.is_verified === true;
       if (profile?.ideology_x != null && profile.ideology_y != null) {
         viewerPoint = { id: user.id, x: profile.ideology_x, y: profile.ideology_y };
       }
     } catch {
-      verified = false;
+      voterVerified = false;
     }
   }
   let soapbox: SoapboxFeedPost[] = [];
@@ -87,9 +85,7 @@ export default async function BallotPage(props: { searchParams: Promise<{ state?
   const matchesById = new Map<string, BallotMatch>((board?.matches ?? []).map((match) => [match.id, match]));
   const soapboxById = new Map(soapbox.map((post) => [post.id, post]));
   const halls = board
-    ? await loadTownHalls(
-        board.matches.filter((match) => match.status === "concluded").map((match) => match.id),
-      ).catch(() => new Map())
+    ? await loadTownHalls(board.matches.map((match) => match.id)).catch(() => new Map())
     : new Map();
 
   return (
@@ -293,16 +289,14 @@ export default async function BallotPage(props: { searchParams: Promise<{ state?
                   Result recorded for {match.winnerId === match.sideA.id ? match.sideA.name : match.sideB.name}.
                 </p>
               ) : null}
-              {match.status === "concluded" ? (
-                <TownHall
-                  debateId={match.id}
-                  questions={halls.get(match.id) ?? []}
-                  viewerId={user?.id ?? null}
-                  verified={verified}
-                  candidateAId={match.sideA.id}
-                  candidateBId={match.sideB.id || null}
-                />
-              ) : null}
+              <TownHall
+                debateId={match.id}
+                questions={halls.get(match.id) ?? []}
+                viewerId={user?.id ?? null}
+                verified={voterVerified}
+                candidateAId={match.sideA.id}
+                candidateBId={match.sideB.id || null}
+              />
               <BallotEngage
                 debateId={match.id}
                 sideA={match.sideA}
