@@ -7,12 +7,22 @@ import { createServerSupabase } from "@/lib/db/supabase-server";
 import { isMissingSchema } from "@/lib/db/schema-errors";
 import { resolveStateParam } from "@/lib/platform/states";
 import { partyLabel } from "@/lib/platform/types";
+import { cn } from "@/lib/utils";
 import type { Candidate, Primary, PrimaryQuestion } from "@/types/database.types";
 
 export const dynamic = "force-dynamic";
 
 type StatePageProps = {
   params: Promise<{ state: string }>;
+  searchParams: Promise<{ tab?: string }>;
+};
+
+type AgendaRow = {
+  id: string;
+  primary_id: string;
+  title: string;
+  content: string;
+  upvote_count: number;
 };
 
 type IdeologicalVector = { x: number; y: number };
@@ -41,8 +51,9 @@ export async function generateMetadata(props: StatePageProps): Promise<Metadata>
 /** Localized nationwide primaries, candidates, and community agenda for one state. */
 export default async function StateElectionsPage(props: StatePageProps) {
   const { state: raw } = await props.params;
+  const { tab } = await props.searchParams;
   const state = resolveStateParam(raw);
-  if (!state) return <ElectionRaceHub slug={raw} />;
+  if (!state) return <ElectionRaceHub slug={raw} tab={tab} />;
 
   const supabase = await createServerSupabase();
   let setup: string | null = null;
@@ -105,9 +116,26 @@ export default async function StateElectionsPage(props: StatePageProps) {
     candidatesByPrimary.set(candidate.primary_id, list);
   }
 
-  const agenda = questions.filter((row) => row.kind === "community");
   const debateQueue = questions.filter((row) => row.kind === "debate");
   const primaryById = new Map(primaries.map((row) => [row.id, row]));
+  const agendaTab = tab === "agenda";
+
+  let agendaPrompts: AgendaRow[] = [];
+  let agendaMissing = false;
+  if (!setup && primaryIds.length > 0) {
+    const promptResult = await supabase
+      .from("community_prompts")
+      .select("id, primary_id, title, content, upvote_count")
+      .in("primary_id", primaryIds)
+      .order("upvote_count", { ascending: false })
+      .order("created_at", { ascending: true });
+    if (promptResult.error) {
+      agendaMissing = isMissingSchema(promptResult.error);
+      if (!agendaMissing) setup = promptResult.error.message;
+    } else {
+      agendaPrompts = (promptResult.data ?? []) as AgendaRow[];
+    }
+  }
 
   return (
     <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
@@ -124,13 +152,42 @@ export default async function StateElectionsPage(props: StatePageProps) {
           </p>
         </header>
 
+        <div role="tablist" aria-label="State elections" className="mt-8 flex flex-wrap gap-2">
+          <Link
+            href={`/elections/${state.code}`}
+            role="tab"
+            aria-selected={!agendaTab}
+            className={cn(
+              "inline-flex h-10 items-center justify-center rounded-full px-4 text-[11px] font-medium uppercase tracking-widest",
+              !agendaTab
+                ? "bg-gold-strong text-stone-900"
+                : "border border-gold/40 text-stone-600 hover:border-gold hover:text-stone-900",
+            )}
+          >
+            Candidates
+          </Link>
+          <Link
+            href={`/elections/${state.code}?tab=agenda`}
+            role="tab"
+            aria-selected={agendaTab}
+            className={cn(
+              "inline-flex h-10 items-center justify-center rounded-full px-4 text-[11px] font-medium uppercase tracking-widest",
+              agendaTab
+                ? "bg-gold-strong text-stone-900"
+                : "border border-gold/40 text-stone-600 hover:border-gold hover:text-stone-900",
+            )}
+          >
+            Agenda Queue
+          </Link>
+        </div>
+
         {setup ? <p className="mt-8 text-sm text-stone-600">{setup}</p> : null}
 
         {!setup && primaries.length === 0 ? (
           <p className="mt-8 text-sm text-stone-600">No primaries filed in {state.name} yet.</p>
         ) : null}
 
-        {!setup && primaries.length > 0 ? (
+        {!setup && !agendaTab && primaries.length > 0 ? (
           <section className="mt-10">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="font-display text-xl text-stone-900">Candidates</h2>
@@ -206,54 +263,70 @@ export default async function StateElectionsPage(props: StatePageProps) {
           </section>
         ) : null}
 
-        {!setup ? (
+        {!setup && agendaTab ? (
           <section className="mt-10">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="font-display text-xl text-stone-900">Community agenda</h2>
+              <h2 className="font-display text-xl text-stone-900">Agenda Queue</h2>
               <InfoTooltip label="District Agenda" text={DISTRICT_AGENDA_TIP} />
             </div>
             <p className="mt-2 text-sm leading-6 text-stone-600">
-              Queue of community prompts attached to this state&apos;s primaries.
+              Issues filed by verified voters, ranked by upvotes. Open a primary to file or upvote.
             </p>
-            {agenda.length === 0 ? (
-              <p className="mt-4 text-sm text-stone-600">No community questions in the queue yet.</p>
+            {agendaMissing ? (
+              <p className="mt-4 text-sm text-stone-600">Apply the constituent agenda migration, then reload.</p>
+            ) : agendaPrompts.length === 0 ? (
+              <p className="mt-4 text-sm text-stone-600">No community issues in the queue yet.</p>
             ) : (
               <ol className="mt-4 grid gap-3">
-                {agenda.map((item, index) => {
+                {agendaPrompts.map((item, index) => {
                   const primary = primaryById.get(item.primary_id);
                   return (
                     <li key={item.id} className="rounded-xl border border-amber-500/30 bg-white px-5 py-4">
-                      <p className="text-[11px] uppercase tracking-widest text-stone-600">
-                        {index + 1}. {primary ? partyLabel(primary.party) : "Primary"}
-                        {primary ? ` · ${primary.slug}` : null}
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-stone-900">{item.prompt}</p>
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-[11px] uppercase tracking-widest text-stone-600">
+                          {index + 1}. {primary ? partyLabel(primary.party) : "Primary"}
+                          {primary ? ` · ${primary.office_name}` : null}
+                        </p>
+                        <p className="shrink-0 text-[11px] uppercase tracking-widest text-stone-700">
+                          {item.upvote_count} upvotes
+                        </p>
+                      </div>
+                      <h3 className="mt-2 text-sm font-medium text-stone-900">{item.title}</h3>
+                      <p className="mt-2 text-sm leading-6 text-stone-600">{item.content}</p>
+                      {primary ? (
+                        <Link
+                          href={`/elections/${primary.slug}?tab=agenda`}
+                          className="mt-3 inline-flex text-[11px] uppercase tracking-widest text-amber-800"
+                        >
+                          Open primary
+                        </Link>
+                      ) : null}
                     </li>
                   );
                 })}
               </ol>
             )}
+          </section>
+        ) : null}
 
-            {debateQueue.length > 0 ? (
-              <div className="mt-8">
-                <h3 className="text-sm font-medium uppercase tracking-[0.16em] text-stone-600">
-                  Debate prompts
-                </h3>
-                <ul className="mt-3 grid gap-3">
-                  {debateQueue.map((item) => {
-                    const primary = primaryById.get(item.primary_id);
-                    return (
-                      <li key={item.id} className="rounded-xl border border-amber-500/30 px-5 py-4">
-                        <p className="text-[11px] uppercase tracking-widest text-stone-600">
-                          {primary?.slug ?? "Primary"}
-                        </p>
-                        <p className="mt-2 text-sm leading-6 text-stone-900">{item.prompt}</p>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ) : null}
+        {!setup && !agendaTab && debateQueue.length > 0 ? (
+          <section className="mt-10">
+            <h3 className="text-sm font-medium uppercase tracking-[0.16em] text-stone-600">
+              Debate prompts
+            </h3>
+            <ul className="mt-3 grid gap-3">
+              {debateQueue.map((item) => {
+                const primary = primaryById.get(item.primary_id);
+                return (
+                  <li key={item.id} className="rounded-xl border border-amber-500/30 px-5 py-4">
+                    <p className="text-[11px] uppercase tracking-widest text-stone-600">
+                      {primary?.slug ?? "Primary"}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-stone-900">{item.prompt}</p>
+                  </li>
+                );
+              })}
+            </ul>
           </section>
         ) : null}
       </div>

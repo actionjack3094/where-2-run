@@ -18,6 +18,7 @@ import { loadPrimaryHub } from "@/lib/platform/queries";
 import { loadProfile, platformAdmin } from "@/lib/platform/records";
 import { partyFromCoordinate } from "@/lib/platform/scoring";
 import { formatCoordinate, partyLabel, tierLabel } from "@/lib/platform/types";
+import { cn } from "@/lib/utils";
 
 function partyHref(
   target: "democrat" | "republican",
@@ -32,7 +33,8 @@ function partyHref(
 }
 
 /** Primary hub for a race slug (e.g. tx-senate-2026-dem). */
-export async function ElectionRaceHub({ slug }: { slug: string }) {
+export async function ElectionRaceHub({ slug, tab }: { slug: string; tab?: string }) {
+  const section = tab === "agenda" ? "agenda" : tab === "seats" ? "seats" : "board";
   let hub: Awaited<ReturnType<typeof loadPrimaryHub>> = null;
   let setup: string | null = null;
   try {
@@ -174,6 +176,35 @@ export async function ElectionRaceHub({ slug }: { slug: string }) {
               <p className="mt-1 text-xs text-stone-600">{hub.ocdId}</p>
             </header>
 
+            <div role="tablist" aria-label="Primary hub" className="mt-8 flex flex-wrap gap-2">
+              {(
+                [
+                  { id: "board", label: "Leaderboard", href: `/elections/${hub.slug}` },
+                  { id: "agenda", label: "Agenda Queue", href: `/elections/${hub.slug}?tab=agenda` },
+                  { id: "seats", label: "Open seats", href: `/elections/${hub.slug}?tab=seats` },
+                ] as const
+              ).map((item) => {
+                const selected = section === item.id;
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    role="tab"
+                    aria-selected={selected}
+                    className={cn(
+                      "inline-flex h-10 items-center justify-center rounded-full px-4 text-[11px] font-medium uppercase tracking-widest",
+                      selected
+                        ? "bg-gold-strong text-stone-900"
+                        : "border border-gold/40 text-stone-600 hover:border-gold hover:text-stone-900",
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+
+            {section === "board" ? (
             <section className="mt-10">
               <h2 className="inline-flex items-center gap-2 font-display text-xl text-stone-900">
                 Leaderboard
@@ -263,10 +294,12 @@ export async function ElectionRaceHub({ slug }: { slug: string }) {
                 </div>
               ) : null}
             </section>
+            ) : null}
 
+            {section === "agenda" ? (
             <section className="mt-10">
               <h2 className="inline-flex items-center gap-2 font-display text-xl text-stone-900">
-                District Agenda
+                Agenda Queue
                 <InfoTooltip label="District Agenda" text={DISTRICT_AGENDA_TIP} />
               </h2>
               <p className="mt-2 text-sm leading-6 text-stone-600">
@@ -284,7 +317,10 @@ export async function ElectionRaceHub({ slug }: { slug: string }) {
                 />
               )}
             </section>
+            ) : null}
 
+            {section === "seats" ? (
+            <>
             <section className="mt-10">
               <h2 className="font-display text-xl text-stone-900">Open questions</h2>
               <div className="mt-4 grid gap-4">
@@ -347,6 +383,8 @@ export async function ElectionRaceHub({ slug }: { slug: string }) {
                 </p>
               )}
             </section>
+            </>
+            ) : null}
           </>
         )}
       </div>

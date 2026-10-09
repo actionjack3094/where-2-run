@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { submitCommunityPrompt, togglePromptUpvote } from "@/lib/actions/agenda";
+import { submitCommunityPrompt, togglePromptUpvote } from "@/app/lib/actions/agenda";
 import type { AgendaPrompt } from "@/lib/platform/agenda";
 import { AGENDA_CONTENT_MAX, AGENDA_TITLE_MAX } from "@/lib/platform/agenda";
 
