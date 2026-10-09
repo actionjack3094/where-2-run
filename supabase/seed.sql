@@ -1821,6 +1821,7 @@ from (
     (
       'd3b70001-0001-4000-8000-000000000001'::uuid,
       'tx-senate-dem',
+      2026,
       'b07a0001-0002-4000-8000-000000000002'::uuid,
       'Should the Democratic nominee for U.S. Senate in Texas campaign on a public option and a secure border?',
       'I want a Democratic primary that can win suburban counties: a public option, a secure border, and a narrow path to legal status.',
@@ -1830,6 +1831,7 @@ from (
     (
       'd3b70001-0002-4000-8000-000000000002'::uuid,
       'tx-senate-rep',
+      2026,
       'b07a0001-0004-4000-8000-000000000004'::uuid,
       'Should the Republican nominee for U.S. Senate in Texas cut taxes for small employers and leave abortion policy to the states?',
       'I want lower taxes for small employers, a secure border, and abortion policy left to the states.',
@@ -1839,6 +1841,7 @@ from (
     (
       'd3b70001-0003-4000-8000-000000000003'::uuid,
       'ny-mayor-dem',
+      2025,
       'b07a0001-0001-4000-8000-000000000001'::uuid,
       'Should the Democratic nominee for mayor of New York City replace private insurance for city workers with a public plan?',
       'I want a public health plan for city workers, sector-wide bargaining, and civil-rights rules the city actually enforces.',
@@ -1848,14 +1851,15 @@ from (
     (
       'd3b70001-0004-4000-8000-000000000004'::uuid,
       'fl-governor-rep',
+      2026,
       'b07a0001-0003-4000-8000-000000000003'::uuid,
       'Should the Republican nominee for governor of Florida cut the state budget and set traditional standards in public schools?',
       'I want deep spending cuts, traditional standards in public schools, and a much smaller state code.',
       0.82::double precision,
       0.68::double precision
     )
-) as v(id, slug, author_id, prompt_text, stance_text, ideology_x, ideology_y)
-join public.primaries p on p.slug = v.slug
+) as v(id, slug, cycle_year, author_id, prompt_text, stance_text, ideology_x, ideology_y)
+join public.primaries p on p.slug = v.slug and p.cycle_year = v.cycle_year
 on conflict (id) do update
 set
   primary_id = excluded.primary_id,
@@ -1888,6 +1892,7 @@ from (
       'a4e40001-0001-4000-8000-000000000001'::uuid,
       'd3b70001-0001-4000-8000-000000000001'::uuid,
       'tx-senate-dem',
+      2026,
       'b07a0001-0002-4000-8000-000000000002'::uuid,
       'I want a Democratic primary that can win suburban counties: a public option, a secure border, and a narrow path to legal status.'
     ),
@@ -1895,6 +1900,7 @@ from (
       'a4e40001-0002-4000-8000-000000000002'::uuid,
       'd3b70001-0002-4000-8000-000000000002'::uuid,
       'tx-senate-rep',
+      2026,
       'b07a0001-0004-4000-8000-000000000004'::uuid,
       'I want lower taxes for small employers, a secure border, and abortion policy left to the states.'
     ),
@@ -1902,6 +1908,7 @@ from (
       'a4e40001-0003-4000-8000-000000000003'::uuid,
       'd3b70001-0003-4000-8000-000000000003'::uuid,
       'ny-mayor-dem',
+      2025,
       'b07a0001-0001-4000-8000-000000000001'::uuid,
       'I want a public health plan for city workers, sector-wide bargaining, and civil-rights rules the city actually enforces.'
     ),
@@ -1909,11 +1916,12 @@ from (
       'a4e40001-0004-4000-8000-000000000004'::uuid,
       'd3b70001-0004-4000-8000-000000000004'::uuid,
       'fl-governor-rep',
+      2026,
       'b07a0001-0003-4000-8000-000000000003'::uuid,
       'I want deep spending cuts, traditional standards in public schools, and a much smaller state code.'
     )
-) as v(id, prompt_id, slug, author_id, stance_text)
-join public.primaries p on p.slug = v.slug
+) as v(id, prompt_id, slug, cycle_year, author_id, stance_text)
+join public.primaries p on p.slug = v.slug and p.cycle_year = v.cycle_year
 on conflict (id) do update
 set
   primary_id = excluded.primary_id,
@@ -1929,6 +1937,954 @@ set
   candidate_a_score = null,
   candidate_b_score = null,
   updated_at = now();
+
+-- Q&A and Agenda fixture.
+-- Two verified voters and two Democratic candidates on the Texas Senate 2026
+-- primary. Password for every account is seed-local-dev.
+--
+--   nora.ellis@seed.where2run.local    verified voter, already asked
+--   owen.briggs@seed.where2run.local   verified voter, can still ask
+--   lena.ortiz@seed.where2run.local    candidate A, grassroots-funded, already replied
+--   caleb.nguyen@seed.where2run.local  candidate B, PAC-funded, can still reply
+
+do $$
+begin
+  if not exists (
+    select 1
+    from public.primaries
+    where slug = 'tx-senate-dem'
+      and cycle_year = 2026
+  ) then
+    raise exception 'Texas Senate 2026 Democratic primary is missing.';
+  end if;
+end $$;
+
+update public.primaries
+set status = 'active'
+where slug = 'tx-senate-dem'
+  and cycle_year = 2026;
+
+insert into auth.users (
+  instance_id,
+  id,
+  aud,
+  role,
+  email,
+  encrypted_password,
+  email_confirmed_at,
+  raw_app_meta_data,
+  raw_user_meta_data,
+  created_at,
+  updated_at,
+  confirmation_token,
+  email_change,
+  email_change_token_new,
+  recovery_token,
+  is_sso_user,
+  is_anonymous
+)
+values
+  (
+    '00000000-0000-0000-0000-000000000000',
+    'a0a00001-0001-4000-8000-000000000001',
+    'authenticated',
+    'authenticated',
+    'nora.ellis@seed.where2run.local',
+    extensions.crypt('seed-local-dev', extensions.gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"full_name":"Nora Ellis"}'::jsonb,
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    '',
+    false,
+    false
+  ),
+  (
+    '00000000-0000-0000-0000-000000000000',
+    'a0a00001-0002-4000-8000-000000000002',
+    'authenticated',
+    'authenticated',
+    'owen.briggs@seed.where2run.local',
+    extensions.crypt('seed-local-dev', extensions.gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"full_name":"Owen Briggs"}'::jsonb,
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    '',
+    false,
+    false
+  ),
+  (
+    '00000000-0000-0000-0000-000000000000',
+    'a0a00001-0003-4000-8000-000000000003',
+    'authenticated',
+    'authenticated',
+    'lena.ortiz@seed.where2run.local',
+    extensions.crypt('seed-local-dev', extensions.gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"full_name":"Lena Ortiz"}'::jsonb,
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    '',
+    false,
+    false
+  ),
+  (
+    '00000000-0000-0000-0000-000000000000',
+    'a0a00001-0004-4000-8000-000000000004',
+    'authenticated',
+    'authenticated',
+    'caleb.nguyen@seed.where2run.local',
+    extensions.crypt('seed-local-dev', extensions.gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"full_name":"Caleb Nguyen"}'::jsonb,
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    '',
+    false,
+    false
+  )
+on conflict (id) do nothing;
+
+insert into auth.identities (
+  id,
+  user_id,
+  identity_data,
+  provider,
+  provider_id,
+  last_sign_in_at,
+  created_at,
+  updated_at
+)
+values
+  (
+    'a0a00001-0001-4000-8000-000000000001',
+    'a0a00001-0001-4000-8000-000000000001',
+    '{"sub":"a0a00001-0001-4000-8000-000000000001","email":"nora.ellis@seed.where2run.local"}'::jsonb,
+    'email',
+    'nora.ellis@seed.where2run.local',
+    now(),
+    now(),
+    now()
+  ),
+  (
+    'a0a00001-0002-4000-8000-000000000002',
+    'a0a00001-0002-4000-8000-000000000002',
+    '{"sub":"a0a00001-0002-4000-8000-000000000002","email":"owen.briggs@seed.where2run.local"}'::jsonb,
+    'email',
+    'owen.briggs@seed.where2run.local',
+    now(),
+    now(),
+    now()
+  ),
+  (
+    'a0a00001-0003-4000-8000-000000000003',
+    'a0a00001-0003-4000-8000-000000000003',
+    '{"sub":"a0a00001-0003-4000-8000-000000000003","email":"lena.ortiz@seed.where2run.local"}'::jsonb,
+    'email',
+    'lena.ortiz@seed.where2run.local',
+    now(),
+    now(),
+    now()
+  ),
+  (
+    'a0a00001-0004-4000-8000-000000000004',
+    'a0a00001-0004-4000-8000-000000000004',
+    '{"sub":"a0a00001-0004-4000-8000-000000000004","email":"caleb.nguyen@seed.where2run.local"}'::jsonb,
+    'email',
+    'caleb.nguyen@seed.where2run.local',
+    now(),
+    now(),
+    now()
+  )
+on conflict (id) do nothing;
+
+insert into public.profiles (
+  id,
+  email,
+  full_name,
+  display_name,
+  legal_name,
+  ideology_x,
+  ideology_y,
+  onboarding_completed,
+  is_verified,
+  tier2_status,
+  candidate_tier,
+  state_code,
+  ocd_ids,
+  is_synthetic,
+  updated_at
+)
+values
+  (
+    'a0a00001-0001-4000-8000-000000000001',
+    'nora.ellis@seed.where2run.local',
+    'Nora Ellis',
+    'Nora Ellis',
+    'Nora Ellis',
+    -0.36,
+    0.08,
+    true,
+    true,
+    'verified',
+    'pundit',
+    'TX',
+    array['ocd-division/country:us/state:tx']::text[],
+    false,
+    now()
+  ),
+  (
+    'a0a00001-0002-4000-8000-000000000002',
+    'owen.briggs@seed.where2run.local',
+    'Owen Briggs',
+    'Owen Briggs',
+    'Owen Briggs',
+    -0.28,
+    0.15,
+    true,
+    true,
+    'verified',
+    'pundit',
+    'TX',
+    array['ocd-division/country:us/state:tx']::text[],
+    false,
+    now()
+  ),
+  (
+    'a0a00001-0003-4000-8000-000000000003',
+    'lena.ortiz@seed.where2run.local',
+    'Lena Ortiz',
+    'Lena Ortiz',
+    'Lena Ortiz',
+    -0.40,
+    0.10,
+    true,
+    true,
+    'verified',
+    'declared_candidate',
+    'TX',
+    array['ocd-division/country:us/state:tx']::text[],
+    false,
+    now()
+  ),
+  (
+    'a0a00001-0004-4000-8000-000000000004',
+    'caleb.nguyen@seed.where2run.local',
+    'Caleb Nguyen',
+    'Caleb Nguyen',
+    'Caleb Nguyen',
+    -0.22,
+    0.20,
+    true,
+    true,
+    'verified',
+    'declared_candidate',
+    'TX',
+    array['ocd-division/country:us/state:tx']::text[],
+    false,
+    now()
+  )
+on conflict (id) do update
+set
+  email = excluded.email,
+  full_name = excluded.full_name,
+  display_name = excluded.display_name,
+  legal_name = excluded.legal_name,
+  ideology_x = excluded.ideology_x,
+  ideology_y = excluded.ideology_y,
+  onboarding_completed = excluded.onboarding_completed,
+  is_verified = excluded.is_verified,
+  tier2_status = excluded.tier2_status,
+  candidate_tier = excluded.candidate_tier,
+  state_code = excluded.state_code,
+  ocd_ids = excluded.ocd_ids,
+  is_synthetic = excluded.is_synthetic,
+  updated_at = now();
+
+insert into public.users (
+  id,
+  username,
+  ideology_vector,
+  target_district_id,
+  residency_state,
+  residency_zip,
+  ocd_identifiers,
+  home_ocd_ids,
+  tier_2_verified,
+  is_verified,
+  is_eligible_federal,
+  is_eligible_local,
+  verification_tier,
+  elo_rating,
+  updated_at
+)
+values
+  (
+    'a0a00001-0001-4000-8000-000000000001',
+    'seed-nora-ellis',
+    '[0.62,0.58,0.44,0.40,0.66,0.58,0.36,0.40,0.64,0.64]'::vector(10),
+    'd1570001-0037-4000-8000-000000000037',
+    'TX',
+    '78701',
+    array['ocd-division/country:us/state:tx']::text[],
+    array['ocd-division/country:us/state:tx']::text[],
+    true,
+    true,
+    true,
+    true,
+    'voter_verified',
+    1200,
+    now()
+  ),
+  (
+    'a0a00001-0002-4000-8000-000000000002',
+    'seed-owen-briggs',
+    '[0.58,0.60,0.48,0.42,0.60,0.60,0.40,0.42,0.60,0.58]'::vector(10),
+    'd1570001-0037-4000-8000-000000000037',
+    'TX',
+    '78701',
+    array['ocd-division/country:us/state:tx']::text[],
+    array['ocd-division/country:us/state:tx']::text[],
+    true,
+    true,
+    true,
+    true,
+    'voter_verified',
+    1200,
+    now()
+  ),
+  (
+    'a0a00001-0003-4000-8000-000000000003',
+    'seed-lena-ortiz',
+    '[0.66,0.60,0.42,0.38,0.70,0.60,0.32,0.38,0.68,0.68]'::vector(10),
+    'd1570001-0037-4000-8000-000000000037',
+    'TX',
+    '78701',
+    array['ocd-division/country:us/state:tx']::text[],
+    array['ocd-division/country:us/state:tx']::text[],
+    true,
+    true,
+    true,
+    true,
+    'candidate_verified',
+    1320,
+    now()
+  ),
+  (
+    'a0a00001-0004-4000-8000-000000000004',
+    'seed-caleb-nguyen',
+    '[0.54,0.56,0.50,0.46,0.58,0.56,0.44,0.46,0.56,0.52]'::vector(10),
+    'd1570001-0037-4000-8000-000000000037',
+    'TX',
+    '78701',
+    array['ocd-division/country:us/state:tx']::text[],
+    array['ocd-division/country:us/state:tx']::text[],
+    true,
+    true,
+    true,
+    true,
+    'candidate_verified',
+    1460,
+    now()
+  )
+on conflict (id) do update
+set
+  username = excluded.username,
+  ideology_vector = excluded.ideology_vector,
+  target_district_id = excluded.target_district_id,
+  residency_state = excluded.residency_state,
+  residency_zip = excluded.residency_zip,
+  ocd_identifiers = excluded.ocd_identifiers,
+  home_ocd_ids = excluded.home_ocd_ids,
+  tier_2_verified = excluded.tier_2_verified,
+  is_verified = excluded.is_verified,
+  is_eligible_federal = excluded.is_eligible_federal,
+  is_eligible_local = excluded.is_eligible_local,
+  verification_tier = excluded.verification_tier,
+  elo_rating = excluded.elo_rating,
+  updated_at = now();
+
+insert into public.candidates (
+  id,
+  display_name,
+  office_sought,
+  bio,
+  residency_state,
+  ideology_vector,
+  ideological_vector,
+  primary_id,
+  pac_agreement_accepted,
+  pac_agreement_accepted_at,
+  onboarding_completed,
+  updated_at
+)
+select
+  v.id,
+  v.display_name,
+  'U.S. Senate',
+  v.bio,
+  'TX',
+  v.ideology_vector,
+  v.ideological_vector,
+  p.id,
+  true,
+  now(),
+  true,
+  now()
+from (
+  values
+    (
+      'a0a00001-0003-4000-8000-000000000003'::uuid,
+      'Lena Ortiz',
+      'Grassroots Democrat for U.S. Senate. Public option, Medicaid expansion, and a narrower coverage gap.',
+      '[0.66,0.60,0.42,0.38,0.70,0.60,0.32,0.38,0.68,0.68]'::vector(10),
+      '{"x":-0.40,"y":0.10}'::jsonb
+    ),
+    (
+      'a0a00001-0004-4000-8000-000000000004'::uuid,
+      'Caleb Nguyen',
+      'PAC-backed Democrat for U.S. Senate. Suburban outreach, a public option, and a secure border.',
+      '[0.54,0.56,0.50,0.46,0.58,0.56,0.44,0.46,0.56,0.52]'::vector(10),
+      '{"x":-0.22,"y":0.20}'::jsonb
+    )
+) as v(id, display_name, bio, ideology_vector, ideological_vector)
+join public.primaries p
+  on p.slug = 'tx-senate-dem'
+ and p.cycle_year = 2026
+on conflict (id) do update
+set
+  display_name = excluded.display_name,
+  office_sought = excluded.office_sought,
+  bio = excluded.bio,
+  residency_state = excluded.residency_state,
+  ideology_vector = excluded.ideology_vector,
+  ideological_vector = excluded.ideological_vector,
+  primary_id = excluded.primary_id,
+  pac_agreement_accepted = excluded.pac_agreement_accepted,
+  pac_agreement_accepted_at = excluded.pac_agreement_accepted_at,
+  onboarding_completed = excluded.onboarding_completed,
+  updated_at = now();
+
+insert into public.community_prompts (
+  id,
+  primary_id,
+  voter_id,
+  title,
+  content,
+  upvote_count,
+  created_at
+)
+select
+  v.id,
+  p.id,
+  v.voter_id,
+  v.title,
+  v.content,
+  v.upvote_count,
+  v.created_at
+from (
+  values
+    (
+      'c40a0001-0001-4000-8000-000000000001'::uuid,
+      'a0a00001-0001-4000-8000-000000000001'::uuid,
+      'Expand Medicaid and close the coverage gap',
+      'Texas still leaves a coverage gap between Medicaid and the marketplace. The nominee should say how they would expand coverage without blowing a hole in the state budget.',
+      18,
+      timezone('utc'::text, now()) - interval '3 days'
+    ),
+    (
+      'c40a0001-0002-4000-8000-000000000002'::uuid,
+      'a0a00001-0002-4000-8000-000000000002'::uuid,
+      'Cap homestead property-tax growth',
+      'Appraisal spikes are pricing people out of houses they already own. Cap homestead growth and say what replaces the school revenue.',
+      7,
+      timezone('utc'::text, now()) - interval '2 days'
+    ),
+    (
+      'c40a0001-0003-4000-8000-000000000003'::uuid,
+      'a0a00001-0001-4000-8000-000000000001'::uuid,
+      'Weatherize the grid before the next freeze',
+      'Another winter storm should not take the power down. Weatherize plants and say who pays: ratepayers, the state, or the generators.',
+      3,
+      timezone('utc'::text, now()) - interval '1 day'
+    )
+) as v(id, voter_id, title, content, upvote_count, created_at)
+join public.primaries p
+  on p.slug = 'tx-senate-dem'
+ and p.cycle_year = 2026
+on conflict (id) do update
+set
+  primary_id = excluded.primary_id,
+  voter_id = excluded.voter_id,
+  title = excluded.title,
+  content = excluded.content,
+  upvote_count = excluded.upvote_count,
+  created_at = excluded.created_at;
+
+insert into public.debate_prompts (
+  id,
+  primary_id,
+  author_id,
+  author_kind,
+  prompt_text,
+  stance_text,
+  ideology_x,
+  ideology_y,
+  status,
+  source_prompt_id
+)
+select
+  'd3b7a001-0001-4000-8000-0000000000a1'::uuid,
+  p.id,
+  'a0a00001-0003-4000-8000-000000000003'::uuid,
+  'user',
+  'Expand Medicaid and close the coverage gap',
+  'I would expand Medicaid, pay for it by closing the coverage-gap churn, and keep a public option beside it so people are not dropped between jobs.',
+  -0.40,
+  0.10,
+  'locked',
+  'c40a0001-0001-4000-8000-000000000001'::uuid
+from public.primaries p
+where p.slug = 'tx-senate-dem'
+  and p.cycle_year = 2026
+on conflict (id) do update
+set
+  primary_id = excluded.primary_id,
+  author_id = excluded.author_id,
+  author_kind = excluded.author_kind,
+  prompt_text = excluded.prompt_text,
+  stance_text = excluded.stance_text,
+  ideology_x = excluded.ideology_x,
+  ideology_y = excluded.ideology_y,
+  status = excluded.status,
+  source_prompt_id = excluded.source_prompt_id;
+
+insert into public.arena_debates (
+  id,
+  primary_id,
+  prompt_id,
+  candidate_a_id,
+  candidate_b_id,
+  stance_a,
+  stance_b,
+  seat_locked_until,
+  status,
+  exchange_round,
+  is_tie
+)
+select
+  'a4e4a001-0001-4000-8000-0000000000a1'::uuid,
+  p.id,
+  'd3b7a001-0001-4000-8000-0000000000a1'::uuid,
+  'a0a00001-0003-4000-8000-000000000003'::uuid,
+  'a0a00001-0004-4000-8000-000000000004'::uuid,
+  'I would expand Medicaid, pay for it by closing the coverage-gap churn, and keep a public option beside it so people are not dropped between jobs.',
+  'Expand coverage, but do not open the full Medicaid rolls on day one. Start with a public option for people in the gap and a federal match that does not stick the state with the whole bill.',
+  timezone('utc'::text, now()) + interval '18 hours',
+  'active',
+  2,
+  false
+from public.primaries p
+where p.slug = 'tx-senate-dem'
+  and p.cycle_year = 2026
+on conflict (id) do update
+set
+  primary_id = excluded.primary_id,
+  prompt_id = excluded.prompt_id,
+  candidate_a_id = excluded.candidate_a_id,
+  candidate_b_id = excluded.candidate_b_id,
+  stance_a = excluded.stance_a,
+  stance_b = excluded.stance_b,
+  seat_locked_until = excluded.seat_locked_until,
+  status = excluded.status,
+  exchange_round = excluded.exchange_round,
+  is_tie = false,
+  winner_id = null,
+  candidate_a_score = null,
+  candidate_b_score = null,
+  updated_at = now();
+
+-- arguments.debate_id points at public.debates, so the live floor shares this id.
+insert into public.debates (
+  id,
+  district_id,
+  election_id,
+  topic,
+  candidate_a_id,
+  candidate_b_id,
+  status,
+  current_round,
+  expires_at
+)
+select
+  'a4e4a001-0001-4000-8000-0000000000a1'::uuid,
+  'd1570001-0037-4000-8000-000000000037'::uuid,
+  e.id,
+  'Expand Medicaid and close the coverage gap',
+  'a0a00001-0003-4000-8000-000000000003'::uuid,
+  'a0a00001-0004-4000-8000-000000000004'::uuid,
+  'active',
+  2,
+  timezone('utc'::text, now()) + interval '18 hours'
+from public.elections e
+where e.slug = 'tx-us-house-37-2026'
+on conflict (id) do update
+set
+  district_id = excluded.district_id,
+  election_id = excluded.election_id,
+  topic = excluded.topic,
+  candidate_a_id = excluded.candidate_a_id,
+  candidate_b_id = excluded.candidate_b_id,
+  status = excluded.status,
+  current_round = excluded.current_round,
+  expires_at = excluded.expires_at;
+
+alter table public.arguments disable trigger grade_debate_on_argument_insert;
+
+insert into public.arguments (
+  id,
+  debate_id,
+  author_id,
+  round_number,
+  content,
+  consistency_score,
+  consistency_critique,
+  graded_at
+)
+values
+  (
+    'a496a001-0001-4000-8000-000000000001',
+    'a4e4a001-0001-4000-8000-0000000000a1',
+    'a0a00001-0003-4000-8000-000000000003',
+    1,
+    'I would expand Medicaid, pay for it by closing the coverage-gap churn, and keep a public option beside it so people are not dropped between jobs.',
+    88,
+    'Stays on coverage and how to pay for it.',
+    timezone('utc'::text, now()) - interval '6 hours'
+  ),
+  (
+    'a496a001-0002-4000-8000-000000000002',
+    'a4e4a001-0001-4000-8000-0000000000a1',
+    'a0a00001-0004-4000-8000-000000000004',
+    1,
+    'Expand coverage, but do not open the full Medicaid rolls on day one. Start with a public option for people in the gap and a federal match that does not stick the state with the whole bill.',
+    84,
+    'Accepts expansion and limits the first step. On topic.',
+    timezone('utc'::text, now()) - interval '4 hours'
+  ),
+  (
+    'a496a001-0003-4000-8000-000000000003',
+    'a4e4a001-0001-4000-8000-0000000000a1',
+    'a0a00001-0003-4000-8000-000000000003',
+    2,
+    'A public option alone still leaves people in the gap who never see a marketplace plan. Round two is the Medicaid expansion itself, with the public option as the bridge, not the substitute.',
+    null,
+    null,
+    null
+  )
+on conflict (id) do update
+set
+  debate_id = excluded.debate_id,
+  author_id = excluded.author_id,
+  round_number = excluded.round_number,
+  content = excluded.content,
+  consistency_score = excluded.consistency_score,
+  consistency_critique = excluded.consistency_critique,
+  graded_at = excluded.graded_at;
+
+alter table public.arguments enable trigger grade_debate_on_argument_insert;
+
+insert into public.primary_standings (
+  id,
+  user_id,
+  primary_id,
+  civic_standing,
+  debates_count,
+  debates_logged,
+  ties,
+  policy_consistency,
+  pledged_war_chest,
+  institutional_war_chest,
+  is_nominee
+)
+select
+  v.id,
+  v.user_id,
+  p.id,
+  v.civic_standing,
+  1,
+  0,
+  0,
+  100,
+  v.grassroots,
+  v.institutional,
+  false
+from (
+  values
+    (
+      '57a00001-0001-4000-8000-000000000001'::uuid,
+      'a0a00001-0003-4000-8000-000000000003'::uuid,
+      1320,
+      4800::numeric,
+      600::numeric
+    ),
+    (
+      '57a00001-0002-4000-8000-000000000002'::uuid,
+      'a0a00001-0004-4000-8000-000000000004'::uuid,
+      1460,
+      900::numeric,
+      7500::numeric
+    )
+) as v(id, user_id, civic_standing, grassroots, institutional)
+join public.primaries p
+  on p.slug = 'tx-senate-dem'
+ and p.cycle_year = 2026
+on conflict (user_id, primary_id) do update
+set
+  civic_standing = excluded.civic_standing,
+  debates_count = excluded.debates_count,
+  debates_logged = excluded.debates_logged,
+  ties = excluded.ties,
+  policy_consistency = excluded.policy_consistency,
+  pledged_war_chest = excluded.pledged_war_chest,
+  institutional_war_chest = excluded.institutional_war_chest,
+  is_nominee = excluded.is_nominee,
+  updated_at = now();
+
+insert into public.platform_pledges (
+  id,
+  donor_id,
+  candidate_id,
+  primary_id,
+  amount,
+  source,
+  status,
+  entity_id
+)
+select
+  v.id,
+  v.donor_id,
+  v.candidate_id,
+  p.id,
+  v.amount,
+  v.source,
+  'pledged',
+  e.id
+from (
+  values
+    (
+      'f1a00001-0001-4000-8000-000000000001'::uuid,
+      'a0a00001-0001-4000-8000-000000000001'::uuid,
+      'a0a00001-0003-4000-8000-000000000003'::uuid,
+      4800::numeric,
+      'grassroots',
+      null::text
+    ),
+    (
+      'f1a00001-0002-4000-8000-000000000002'::uuid,
+      'a0a00001-0002-4000-8000-000000000002'::uuid,
+      'a0a00001-0003-4000-8000-000000000003'::uuid,
+      600::numeric,
+      'institutional',
+      'lone-star-prosperity'
+    ),
+    (
+      'f1a00001-0003-4000-8000-000000000003'::uuid,
+      'a0a00001-0001-4000-8000-000000000001'::uuid,
+      'a0a00001-0004-4000-8000-000000000004'::uuid,
+      900::numeric,
+      'grassroots',
+      null::text
+    ),
+    (
+      'f1a00001-0004-4000-8000-000000000004'::uuid,
+      'a0a00001-0002-4000-8000-000000000002'::uuid,
+      'a0a00001-0004-4000-8000-000000000004'::uuid,
+      7500::numeric,
+      'institutional',
+      'lone-star-prosperity'
+    )
+) as v(id, donor_id, candidate_id, amount, source, entity_slug)
+join public.primaries p
+  on p.slug = 'tx-senate-dem'
+ and p.cycle_year = 2026
+left join public.entities e
+  on e.slug = v.entity_slug
+on conflict (id) do update
+set
+  donor_id = excluded.donor_id,
+  candidate_id = excluded.candidate_id,
+  primary_id = excluded.primary_id,
+  amount = excluded.amount,
+  source = excluded.source,
+  status = excluded.status,
+  entity_id = excluded.entity_id;
+
+insert into public.institutional_pledges (
+  id,
+  entity_id,
+  candidate_id,
+  primary_id,
+  amount,
+  status
+)
+select
+  v.id,
+  e.id,
+  v.candidate_id,
+  p.id,
+  v.amount,
+  'accepted'
+from (
+  values
+    (
+      'f1a00001-0005-4000-8000-000000000005'::uuid,
+      'a0a00001-0003-4000-8000-000000000003'::uuid,
+      600::numeric
+    ),
+    (
+      'f1a00001-0006-4000-8000-000000000006'::uuid,
+      'a0a00001-0004-4000-8000-000000000004'::uuid,
+      7500::numeric
+    )
+) as v(id, candidate_id, amount)
+join public.entities e
+  on e.slug = 'lone-star-prosperity'
+join public.primaries p
+  on p.slug = 'tx-senate-dem'
+ and p.cycle_year = 2026
+on conflict (id) do update
+set
+  entity_id = excluded.entity_id,
+  candidate_id = excluded.candidate_id,
+  primary_id = excluded.primary_id,
+  amount = excluded.amount,
+  status = excluded.status;
+
+insert into public.campaign_pledges (
+  id,
+  donor_id,
+  user_id,
+  candidate_id,
+  election_id,
+  amount,
+  unlock_condition,
+  debate_id,
+  stripe_customer_id,
+  stripe_payment_method_id,
+  stripe_setup_intent_id,
+  status
+)
+select
+  v.id,
+  v.donor_id,
+  v.donor_id,
+  v.candidate_id,
+  e.id,
+  v.amount,
+  v.unlock_condition,
+  'a4e4a001-0001-4000-8000-0000000000a1'::uuid,
+  v.customer_id,
+  v.payment_method_id,
+  v.setup_intent_id,
+  'held'
+from (
+  values
+    (
+      'f1a00001-0007-4000-8000-000000000007'::uuid,
+      'a0a00001-0001-4000-8000-000000000001'::uuid,
+      'a0a00001-0003-4000-8000-000000000003'::uuid,
+      250::numeric,
+      'debate_won',
+      'cus_seed_nora',
+      'pm_seed_nora',
+      'seti_seed_qa_nora_lena'
+    ),
+    (
+      'f1a00001-0008-4000-8000-000000000008'::uuid,
+      'a0a00001-0002-4000-8000-000000000002'::uuid,
+      'a0a00001-0004-4000-8000-000000000004'::uuid,
+      800::numeric,
+      'ballot_access_filed',
+      'cus_seed_owen',
+      'pm_seed_owen',
+      'seti_seed_qa_owen_caleb'
+    )
+) as v(
+  id,
+  donor_id,
+  candidate_id,
+  amount,
+  unlock_condition,
+  customer_id,
+  payment_method_id,
+  setup_intent_id
+)
+join public.elections e
+  on e.slug = 'tx-us-house-37-2026'
+on conflict (id) do update
+set
+  donor_id = excluded.donor_id,
+  user_id = excluded.user_id,
+  candidate_id = excluded.candidate_id,
+  election_id = excluded.election_id,
+  amount = excluded.amount,
+  unlock_condition = excluded.unlock_condition,
+  debate_id = excluded.debate_id,
+  stripe_customer_id = excluded.stripe_customer_id,
+  stripe_payment_method_id = excluded.stripe_payment_method_id,
+  stripe_setup_intent_id = excluded.stripe_setup_intent_id,
+  status = excluded.status,
+  updated_at = now();
+
+insert into public.constituent_questions (
+  id,
+  debate_id,
+  voter_id,
+  content
+)
+values
+  (
+    'c0a5a001-0001-4000-8000-000000000001',
+    'a4e4a001-0001-4000-8000-0000000000a1',
+    'a0a00001-0001-4000-8000-000000000001',
+    'If you expand Medicaid, what do you cut or raise so rural hospitals are not left with the bill?'
+  )
+on conflict (debate_id, voter_id) do update
+set content = excluded.content;
+
+insert into public.candidate_answers (
+  id,
+  question_id,
+  candidate_id,
+  content
+)
+values
+  (
+    'c0a5a001-0002-4000-8000-000000000002',
+    'c0a5a001-0001-4000-8000-000000000001',
+    'a0a00001-0003-4000-8000-000000000003',
+    'The federal match covers most of the expansion. I would pair it with a hospital directed-payment program so rural facilities are paid for the uncompensated care they already deliver, instead of shifting that cost onto local property taxes.'
+  )
+on conflict (question_id, candidate_id) do update
+set content = excluded.content;
 
 -- Nationwide 50-state US Senate baseline (primaries, candidates, primary_questions)
 -- lives in supabase/seed_nationwide_primaries.sql and runs next via config.toml.
