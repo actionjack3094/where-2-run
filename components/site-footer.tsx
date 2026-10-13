@@ -18,7 +18,7 @@ export function SiteFooter() {
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-10 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <Link
-            href="/ballot"
+            href="/"
             className="font-display text-xs font-medium uppercase tracking-[0.2em] text-amber-800"
           >
             Where 2 Run

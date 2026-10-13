@@ -40,14 +40,14 @@ export const getOnboardingProgress = cache(async function getOnboardingProgress(
   return { signedIn: true, hasHome, hasStance, complete: hasStance };
 });
 
-const EXEMPT_PREFIXES = ["/onboarding", "/townhall", "/auth", "/about", "/api"];
+const EXEMPT_PREFIXES = ["/onboarding", "/townhall", "/auth", "/about", "/api", "/soapbox"];
 
 function isOnboardingExempt(pathname: string) {
   if (!pathname || pathname === "/") return true;
   return EXEMPT_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
-/** Send signed-in users who have not filed the Townhall to `/townhall`. */
+/** Send signed-in users who have not filed the Townhall to `/townhall`. The Soapbox feed stays open. */
 export async function redirectIfOnboardingIncomplete() {
   const pathname = (await headers()).get("x-pathname") ?? "";
   if (isOnboardingExempt(pathname)) return;

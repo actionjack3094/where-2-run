@@ -15,7 +15,7 @@ const LINKS = [
   {
     href: "/soapbox",
     label: "The Soapbox",
-    match: (path: string) => path.startsWith("/soapbox"),
+    match: (path: string) => path === "/" || path.startsWith("/soapbox"),
   },
   {
     href: "/debates",
@@ -88,7 +88,7 @@ export function Navbar({ identity }: { identity: NavIdentity | null }) {
     <header className="border-b border-amber-500/30 bg-stone-50">
       <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-3 px-4 sm:px-6">
         <Link
-          href="/ballot"
+          href="/"
           aria-label="Where 2 Run home"
           className="font-display shrink-0 text-xs font-medium uppercase tracking-[0.2em] text-amber-800"
         >
