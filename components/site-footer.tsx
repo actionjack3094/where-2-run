@@ -7,7 +7,7 @@ const links = [
   { href: "/ballot", label: "My Ballot" },
   { href: "/elections", label: "Elections" },
   { href: "/dashboard", label: "Candidate HQ" },
-  { href: "/campaign", label: "Campaign Hub" },
+  { href: "/campaign-hub", label: "Campaign Hub" },
   { href: "/verify", label: "Verification" },
   { href: "/about", label: "About Us" },
 ] as const;

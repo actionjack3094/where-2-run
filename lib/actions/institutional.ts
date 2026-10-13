@@ -14,6 +14,7 @@ function refreshCandidate(candidateId: string) {
   revalidatePath("/ballot");
   revalidatePath("/soapbox");
   revalidatePath("/campaign");
+  revalidatePath("/campaign-hub");
 }
 
 export async function decideInstitutionalPledge(

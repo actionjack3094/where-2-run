@@ -235,7 +235,7 @@ function AccountSlot({
           className="absolute right-0 z-20 mt-2 w-52 rounded-lg border border-amber-500/30 bg-white py-1 shadow-lg"
         >
           <MenuLink href="/dashboard">Candidate HQ</MenuLink>
-          <MenuLink href="/campaign">Campaign Hub</MenuLink>
+          <MenuLink href="/campaign-hub">Campaign Hub</MenuLink>
           <MenuLink href={`/profile/${identity.id}`}>View Public Profile</MenuLink>
           <button
             type="button"

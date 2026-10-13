@@ -77,6 +77,7 @@ export async function pledgeWarChest(
     revalidatePath("/elections");
     revalidatePath(`/profile/${candidateId}`);
     revalidatePath("/campaign");
+    revalidatePath("/campaign-hub");
     return { message: `Pledged $${gift.toLocaleString("en-US")}.`, pledged: next };
   } catch (caught) {
     return { error: caught instanceof Error ? caught.message : "Could not record that pledge." };

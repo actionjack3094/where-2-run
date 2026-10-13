@@ -51,6 +51,7 @@ const EXEMPT_PREFIXES = [
   "/my-ballot",
   "/elections",
   "/campaign",
+  "/campaign-hub",
 ];
 
 function isOnboardingExempt(pathname: string) {

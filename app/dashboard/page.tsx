@@ -128,7 +128,7 @@ export default async function CandidateHqPage(props: {
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
             The queue, your Soapbox, and the people who enlisted. The milestone map lives in{" "}
-            <Link href="/campaign" className="text-amber-800">
+            <Link href="/campaign-hub" className="text-amber-800">
               Campaign Hub
             </Link>
             .

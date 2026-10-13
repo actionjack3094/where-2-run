@@ -39,6 +39,7 @@ export async function fileGauntletStance(primaryId: string, promptId: string, co
     }
     revalidatePath("/debates");
     revalidatePath("/campaign");
+    revalidatePath("/campaign-hub");
     return { message: "Gauntlet stance filed." };
   } catch (caught) {
     return { error: caught instanceof Error ? caught.message : "Could not file that stance." };

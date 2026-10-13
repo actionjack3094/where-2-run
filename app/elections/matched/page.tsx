@@ -163,7 +163,7 @@ export default async function MatchedElectionsPage(props: PageProps) {
             {races.map((race) => {
               const lane = alignedLane(race, viewer);
               const href = lane ? `/elections/${lane.slug}` : "/elections";
-              const running = lane ? `/campaign?primary=${lane.slug}` : "/campaign";
+              const running = lane ? `/campaign-hub?primary=${lane.slug}` : "/campaign-hub";
               return (
                 <li key={race.generalSlug} className="rounded-2xl border border-amber-500/30 bg-white px-5 py-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
