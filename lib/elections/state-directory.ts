@@ -19,6 +19,7 @@ export type DirectoryPrimary = {
   status: string;
   level: string | null;
   cycleYear: number;
+  ocdId?: string;
 };
 
 export type DirectoryLane = {
@@ -37,6 +38,7 @@ export type DirectoryRace = {
   tier: RaceTier;
   active: boolean;
   lanes: DirectoryLane[];
+  ocdId: string;
 };
 
 export type RankedRace = DirectoryRace & { distance: number };
@@ -97,14 +99,16 @@ export function groupGeneralRaces(primaries: DirectoryPrimary[]): DirectoryRace[
         baselineX: row.baselineX,
         baselineY: row.baselineY,
       }));
+    const anchor = rows.reduce((best, row) => (row.cycleYear >= best.cycleYear ? row : best), first);
     races.push({
       generalSlug,
-      officeName: first.officeName,
-      state: first.state,
-      district: first.district,
-      tier: directoryTier(first.officeName, first.level),
+      officeName: anchor.officeName,
+      state: anchor.state,
+      district: anchor.district,
+      tier: directoryTier(anchor.officeName, anchor.level),
       active: rows.some((row) => isActivePrimary(row.status)),
       lanes,
+      ocdId: anchor.ocdId?.trim() || "",
     });
   }
 

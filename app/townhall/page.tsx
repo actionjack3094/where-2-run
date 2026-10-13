@@ -44,8 +44,9 @@ export default async function TownhallPage() {
             The Townhall
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
-            Four questions set your starting ideological vector. After that, the policy
-            deck continues without an end. Skip Question leaves that vector where it is.
+            Four questions set your starting ideological vector. Finishing the fourth
+            opens your matched elections. The policy deck stays here after that. Skip
+            Question leaves the vector where it is.
           </p>
         </header>
         <TownhallGate saved={saved} />

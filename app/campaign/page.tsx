@@ -6,7 +6,7 @@ import { DropoutButton } from "@/components/pledges/DropoutButton";
 import { loadRoadmapInputs } from "@/lib/campaign/hq";
 import { campaignMilestones } from "@/lib/campaign/milestones";
 import { getServerUser } from "@/lib/db/supabase-server";
-import { platformAdmin } from "@/lib/platform/records";
+import { loadPrimaryBySlug, platformAdmin } from "@/lib/platform/records";
 
 export const dynamic = "force-dynamic";
 
@@ -15,9 +15,13 @@ export const metadata: Metadata = {
   description: "Milestone roadmap from the first debate to an official ballot filing.",
 };
 
-export default async function CampaignHubPage() {
+export default async function CampaignHubPage(props: { searchParams: Promise<{ primary?: string }> }) {
+  const primarySlug = (await props.searchParams).primary?.trim() || null;
   const user = await getServerUser().catch(() => null);
-  if (!user) redirect("/auth/login?next=%2Fcampaign");
+  if (!user) {
+    const next = primarySlug ? `/campaign?primary=${encodeURIComponent(primarySlug)}` : "/campaign";
+    redirect(`/auth/login?next=${encodeURIComponent(next)}`);
+  }
 
   let milestones = campaignMilestones({
     concludedDebates: 0,
@@ -27,6 +31,7 @@ export default async function CampaignHubPage() {
   });
   let setup: string | null = null;
   let primaryId: string | null = null;
+  let exploring: { office: string; slug: string } | null = null;
   try {
     const inputs = await loadRoadmapInputs(platformAdmin(), user.id);
     milestones = campaignMilestones(inputs);
@@ -37,6 +42,13 @@ export default async function CampaignHubPage() {
       .limit(1)
       .maybeSingle();
     primaryId = standing.error ? null : ((standing.data as { primary_id: string } | null)?.primary_id ?? null);
+    if (primarySlug) {
+      const primary = await loadPrimaryBySlug(platformAdmin(), primarySlug);
+      if (primary) {
+        const seat = primary.district ? `${primary.state}-${primary.district}` : primary.state;
+        exploring = { office: `${primary.office_name} · ${seat}`, slug: primary.slug };
+      }
+    }
   } catch (caught) {
     setup = caught instanceof Error ? caught.message : "Could not load the roadmap.";
   }
@@ -57,6 +69,15 @@ export default async function CampaignHubPage() {
             .
           </p>
         </header>
+        {exploring ? (
+          <p className="mt-8 rounded-xl border border-amber-500/30 bg-white px-5 py-4 text-sm leading-6 text-stone-900">
+            Exploring a run in {exploring.office}.{" "}
+            <Link href={`/elections/${exploring.slug}`} className="text-amber-800">
+              View the primary
+            </Link>
+            . The roadmap below is how that line on the ballot gets filed.
+          </p>
+        ) : null}
         {setup ? <p className="mt-8 text-sm leading-6 text-stone-600">{setup}</p> : <CampaignRoadmap milestones={milestones} />}
         {primaryId ? <DropoutButton primaryId={primaryId} /> : null}
       </div>

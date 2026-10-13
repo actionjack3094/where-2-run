@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { fileTownhall, recordTownhallCard } from "@/lib/actions/townhall";
 import {
   TOWNHALL_BASELINE,
@@ -37,6 +38,7 @@ export function TownhallGate({ saved }: { saved: TownhallAnswer[] | null }) {
   const [drafts, setDrafts] = useState(() => initialDrafts(saved));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const baseline = TOWNHALL_BASELINE[step];
   const card = TOWNHALL_DECK[deckIndex % TOWNHALL_DECK.length];
@@ -65,8 +67,8 @@ export function TownhallGate({ saved }: { saved: TownhallAnswer[] | null }) {
 
     try {
       await fileTownhall(answers);
-      setPhase("deck");
-      setDeckIndex(0);
+      router.push("/elections/matched");
+      router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not file the Townhall.");
     } finally {
@@ -265,7 +267,7 @@ export function TownhallGate({ saved }: { saved: TownhallAnswer[] | null }) {
           }}
           className="inline-flex h-12 flex-1 items-center justify-center rounded-md bg-amber-500 px-5 text-[11px] font-semibold uppercase tracking-widest text-stone-950 transition-colors hover:bg-amber-600 disabled:cursor-wait disabled:opacity-60"
         >
-          {busy ? "Filing Townhall…" : last ? "Open the policy deck" : "Next question"}
+          {busy ? "Filing Townhall…" : last ? "See your matches" : "Next question"}
         </button>
       </div>
     </section>

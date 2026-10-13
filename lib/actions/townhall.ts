@@ -23,6 +23,7 @@ function revalidateTownhallSurfaces() {
   revalidatePath("/ballot");
   revalidatePath("/debates");
   revalidatePath("/elections");
+  revalidatePath("/elections/matched");
   revalidatePath("/dashboard");
 }
 
