@@ -4,6 +4,10 @@ import { notFound } from "next/navigation";
 import { CountdownTimer } from "@/app/components/countdown-timer";
 import { RealtimeDebateListener } from "@/app/components/realtime-debate-listener";
 import { RoundTranscript } from "@/components/debates/RoundTranscript";
+import { TownHall } from "@/components/platform/TownHall";
+import { loadTownHalls } from "@/lib/platform/town-hall";
+import { loadProfile, platformAdmin } from "@/lib/platform/records";
+import { ArenaDebateRoom } from "./arena-room";
 import { isOfficialResolutionDue, resolveDebate } from "@/lib/actions/debate-resolution";
 import { isUuid } from "@/lib/arena/display";
 import { loadDebateComments } from "@/lib/comments";
@@ -106,19 +110,23 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
     error = fallback.error;
   }
 
-  if (error || !data) notFound();
+  if (error || !data) {
+    return <ArenaDebateRoom debateId={debateId} />;
+  }
   let debate = data as DebateRow;
 
   if (isOfficialResolutionDue(debate)) {
-    await resolveDebate(debate.id);
-    const refreshed = await supabase
-      .from("debates")
-      .select(debateColumns)
-      .eq("id", debate.id)
-      .maybeSingle();
-
-    if (refreshed.error || !refreshed.data) notFound();
-    debate = refreshed.data as DebateRow;
+    try {
+      await resolveDebate(debate.id);
+      const refreshed = await supabase
+        .from("debates")
+        .select(debateColumns)
+        .eq("id", debate.id)
+        .maybeSingle();
+      if (!refreshed.error && refreshed.data) debate = refreshed.data as DebateRow;
+    } catch {
+      // The floor stays readable when the judge cannot run.
+    }
   }
 
   let prompt = debate.topic.trim();
@@ -155,6 +163,12 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const halls = await loadTownHalls([debateId]).catch(() => new Map());
+  let voterVerified = false;
+  if (user?.id) {
+    const profile = await loadProfile(platformAdmin(), user.id).catch(() => null);
+    voterVerified = profile?.is_verified === true;
+  }
 
   const isCandidateA = user?.id != null && user.id === debate.candidate_a_id;
   const isCandidateB = user?.id != null && user.id === debate.candidate_b_id;
@@ -348,6 +362,17 @@ export default async function ActiveDebatePage({ params }: ActiveDebatePageProps
             </>
           )}
         </section>
+
+        <div id="questions">
+          <TownHall
+            debateId={debateId}
+            questions={halls.get(debateId) ?? []}
+            viewerId={user?.id ?? null}
+            verified={voterVerified}
+            candidateAId={debate.candidate_a_id ?? ""}
+            candidateBId={debate.candidate_b_id}
+          />
+        </div>
       </div>
 
       <DebateView
