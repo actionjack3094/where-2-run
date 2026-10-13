@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DISTRICT_AGENDA_TIP, InfoTooltip } from "@/components/InfoTooltip";
 import { isMissingSchema } from "@/lib/db/schema-errors";
 import { getServerUser } from "@/lib/db/supabase-server";
 import { loadHomeOcdIds, loadPrimaries, ocdMatches, platformAdmin } from "@/lib/platform/records";
@@ -67,10 +66,7 @@ export default async function MyBallotElectionsPage() {
           Elections
         </Link>
         <header className="mt-4">
-          <h1 className="inline-flex items-center gap-2 font-display text-3xl font-semibold tracking-tight text-stone-900">
-            My Ballot Elections
-            <InfoTooltip label="District Agenda" text={DISTRICT_AGENDA_TIP} />
-          </h1>
+          <h1 className="font-display text-3xl font-semibold tracking-tight text-stone-900">My Ballot Elections</h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
             Seats whose district is on your verified home address.
           </p>

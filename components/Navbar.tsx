@@ -100,17 +100,18 @@ export function Navbar({ identity }: { identity: NavIdentity | null }) {
               {link.label}
             </NavLink>
           ))}
-          {live ? <InboxMenu /> : null}
         </nav>
-        <div className="ml-auto flex items-center gap-3 md:ml-0">
+        <div className="ml-auto flex items-center gap-1.5 md:ml-0">
           {live ? (
-            <span className="inline-flex md:hidden">
+            <>
               <InboxMenu />
-            </span>
-          ) : null}
-          <div className="hidden md:block">
-            <AccountSlot identity={live} menuId={menuId} menuOpen={menuOpen} menuRef={menuRef} setMenuOpen={setMenuOpen} />
-          </div>
+              <AccountSlot identity={live} menuId={menuId} menuOpen={menuOpen} menuRef={menuRef} setMenuOpen={setMenuOpen} />
+            </>
+          ) : (
+            <div className="hidden md:block">
+              <AccountSlot identity={live} menuId={menuId} menuOpen={menuOpen} menuRef={menuRef} setMenuOpen={setMenuOpen} />
+            </div>
+          )}
         </div>
         <button
           type="button"
@@ -137,16 +138,18 @@ export function Navbar({ identity }: { identity: NavIdentity | null }) {
               {link.label}
             </Link>
           ))}
-          <div className="px-2 py-2">
-            <AccountSlot
-              identity={live}
-              menuId={menuId}
-              menuOpen={menuOpen}
-              menuRef={menuRef}
-              setMenuOpen={setMenuOpen}
-              stacked
-            />
-          </div>
+          {!live ? (
+            <div className="px-2 py-2">
+              <AccountSlot
+                identity={live}
+                menuId={menuId}
+                menuOpen={menuOpen}
+                menuRef={menuRef}
+                setMenuOpen={setMenuOpen}
+                stacked
+              />
+            </div>
+          ) : null}
         </nav>
       ) : null}
     </header>
@@ -220,8 +223,8 @@ function AccountSlot({
         onClick={() => setMenuOpen((current) => !current)}
       >
         <CandidateAvatar name={identity.name} avatarUrl={identity.avatarUrl} size="sm" />
-        <span className="max-w-[9rem] truncate text-sm text-stone-900">{identity.name}</span>
-        <span className="rounded-full border border-amber-500/40 px-2 py-0.5 text-[10px] uppercase tracking-widest text-amber-800">
+        <span className="hidden max-w-[9rem] truncate text-sm text-stone-900 md:inline">{identity.name}</span>
+        <span className="hidden rounded-full border border-amber-500/40 px-2 py-0.5 text-[10px] uppercase tracking-widest text-amber-800 md:inline">
           {tierLabel(identity.tier)}
         </span>
       </button>

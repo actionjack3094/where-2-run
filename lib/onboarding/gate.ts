@@ -40,7 +40,17 @@ export const getOnboardingProgress = cache(async function getOnboardingProgress(
   return { signedIn: true, hasHome, hasStance, complete: hasStance };
 });
 
-const EXEMPT_PREFIXES = ["/onboarding", "/townhall", "/auth", "/about", "/api", "/soapbox"];
+const EXEMPT_PREFIXES = [
+  "/onboarding",
+  "/townhall",
+  "/auth",
+  "/about",
+  "/api",
+  "/soapbox",
+  "/ballot",
+  "/my-ballot",
+  "/elections",
+];
 
 function isOnboardingExempt(pathname: string) {
   if (!pathname || pathname === "/") return true;

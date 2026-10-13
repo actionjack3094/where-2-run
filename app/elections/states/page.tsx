@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { InfoTooltip, CIVIC_STANDING_TIP } from "@/components/InfoTooltip";
 import { US_STATES } from "@/lib/platform/states";
 
 export const metadata: Metadata = {
@@ -16,10 +15,7 @@ export default function ElectionStatesPage() {
           Elections
         </Link>
         <header className="mt-4">
-          <h1 className="inline-flex items-center gap-2 font-display text-3xl font-semibold tracking-tight text-stone-900">
-            All Elections
-            <InfoTooltip label="Civic Standing" text={CIVIC_STANDING_TIP} />
-          </h1>
+          <h1 className="font-display text-3xl font-semibold tracking-tight text-stone-900">All Elections</h1>
           <p className="mt-2 text-sm leading-6 text-stone-600">Fifty states. Open one to filter its seats.</p>
         </header>
         <ul className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3">

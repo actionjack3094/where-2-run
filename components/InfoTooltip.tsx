@@ -7,6 +7,9 @@ export const IDEOLOGY_COMPASS_TIP =
 export const DISTRICT_AGENDA_TIP =
   "Verified district voters submit and upvote issues. Candidates must select from this list to debate.";
 
+export const STATEWIDE_ISSUES_TIP =
+  "Issues for Governor and U.S. Senate only. House, legislative, and local seats keep their own agendas.";
+
 export const TOWN_HALL_TIP =
   "Vertical Q&A: Only verified district voters can ask questions, and only the candidates can answer. No peer-to-peer arguing.";
 

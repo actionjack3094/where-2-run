@@ -326,10 +326,7 @@ export async function ElectionRaceHub({ slug, tab }: { slug: string; tab?: strin
               <div className="mt-4 grid gap-4">
                 {hub.openSeats.map((seat) => (
                   <article key={seat.id} className="rounded-xl border border-amber-500/30 px-4 py-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <h3 className="text-sm font-medium text-stone-900">{seat.prompt}</h3>
-                      <InfoTooltip label="Civic Standing" text={CIVIC_STANDING_TIP} />
-                    </div>
+                    <h3 className="text-sm font-medium text-stone-900">{seat.prompt}</h3>
                     <p className="mt-2 text-sm leading-6 text-stone-600">{seat.stanceA}</p>
                     <p className="mt-2 text-[11px] uppercase tracking-widest text-stone-600">
                       <Link href={`/profile/${seat.sideA.id}`} className="hover:text-amber-800">

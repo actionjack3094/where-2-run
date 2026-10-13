@@ -26,6 +26,7 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: "/feed", destination: "/ballot", permanent: false },
+      { source: "/my-ballot", destination: "/ballot", permanent: false },
       { source: "/discover", destination: "/debates", permanent: false },
       { source: "/primaries", destination: "/elections", permanent: false },
       { source: "/primaries/:slug", destination: "/elections/:slug", permanent: false },

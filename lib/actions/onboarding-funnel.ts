@@ -101,6 +101,7 @@ export async function saveTier1Zip(zip: string): Promise<Tier1Match> {
 
   revalidatePath("/onboarding");
   revalidatePath("/feed");
+  revalidatePath("/ballot");
   revalidatePath("/matchmaker");
 
   return {

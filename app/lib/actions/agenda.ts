@@ -5,6 +5,7 @@ import { requireActionUserId } from "@/lib/arena/auth";
 import { isUuid } from "@/lib/arena/display";
 import { isMissingSchema } from "@/lib/db/schema-errors";
 import { createServerSupabase } from "@/lib/db/supabase-server";
+import { isMacroStatewideOffice } from "@/lib/elections/state-directory";
 import { cleanAgendaContent, cleanAgendaTitle } from "@/lib/platform/agenda";
 import { constituentAccess } from "@/lib/platform/tier2";
 import { primaryClosed } from "@/lib/platform/cycle";
@@ -77,6 +78,36 @@ export async function submitCommunityPrompt(
 
   await refreshPrimary(gate.admin, primaryId);
   return { message: "Issue filed." };
+}
+
+export async function submitStatewideIssue(
+  primaryId: string,
+  titleText: string,
+  contentText: string,
+): Promise<AgendaResult> {
+  if (!isUuid(primaryId)) return { error: "That primary is not on the board." };
+  const gate = await verifiedVoter();
+  if (!gate.userId || !gate.admin) return { error: gate.error ?? "Sign in to take part in the district agenda." };
+  if (gate.error) return { error: gate.error };
+
+  const primary = await gate.admin
+    .from("primaries")
+    .select("office_name, state")
+    .eq("id", primaryId)
+    .maybeSingle();
+  if (primary.error) {
+    if (isMissingSchema(primary.error)) return { error: "Apply the constituent agenda migration, then reload." };
+    return { error: primary.error.message };
+  }
+  const row = primary.data as { office_name: string; state: string } | null;
+  if (!row) return { error: "That primary is not on the board." };
+  if (!isMacroStatewideOffice(row.office_name)) {
+    return { error: "Statewide issues are limited to Governor and U.S. Senate races." };
+  }
+
+  const result = await submitCommunityPrompt(primaryId, titleText, contentText);
+  if (!result.error && row.state) revalidatePath(`/elections/${row.state}`);
+  return result;
 }
 
 export async function togglePromptUpvote(promptId: string): Promise<AgendaResult> {
