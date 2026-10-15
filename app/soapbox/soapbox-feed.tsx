@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Play } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { SoapboxPreviewCard } from "@/app/soapbox/soapbox-card";
+import { SubNavTabs } from "@/components/ui/SubNavTabs";
 
 type FeedScope = "sphere" | "national";
 
@@ -104,32 +104,17 @@ export function SoapboxFeed({ localEnabled }: { localEnabled: boolean }) {
     <div className="flex w-full flex-1 flex-col">
       <header className="sticky top-0 z-30 border-b border-stone-200 bg-stone-50/95 backdrop-blur">
         <div className="mx-auto flex h-14 w-full max-w-xl items-center justify-center px-4">
-          <div role="tablist" aria-label="Soapbox feed" className="inline-flex rounded-full bg-stone-200/80 p-1">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={scope === "sphere"}
-              className={cn(
-                "rounded-full px-5 py-1.5 text-sm font-medium transition-colors",
-                scope === "sphere" ? "bg-white text-stone-900 shadow-sm" : "text-stone-600 hover:text-stone-900",
-              )}
-              onClick={() => select("sphere")}
-            >
-              My Sphere
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={scope === "national"}
-              className={cn(
-                "rounded-full px-5 py-1.5 text-sm font-medium transition-colors",
-                scope === "national" ? "bg-white text-stone-900 shadow-sm" : "text-stone-600 hover:text-stone-900",
-              )}
-              onClick={() => select("national")}
-            >
-              All Primaries
-            </button>
-          </div>
+          <SubNavTabs
+            label="Soapbox feed"
+            items={[
+              { id: "sphere", label: "My Sphere" },
+              { id: "national", label: "All Primaries" },
+            ]}
+            activeTab={scope}
+            onChange={(id) => {
+              if (id === "sphere" || id === "national") select(id);
+            }}
+          />
         </div>
       </header>
 
@@ -140,41 +125,7 @@ export function SoapboxFeed({ localEnabled }: { localEnabled: boolean }) {
           </p>
         ) : null}
         {scope === "national" || localEnabled
-          ? cards.map((post) => (
-          <article key={post.key} className="border-b border-stone-200 px-4 py-5">
-            <div className="flex gap-3">
-              <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-stone-200 text-xs font-semibold text-stone-600"
-                aria-hidden
-              >
-                {post.name.slice(0, 1)}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm leading-5">
-                  <span className="font-semibold text-stone-900">{post.name}</span>{" "}
-                  <span className="text-stone-500">@{post.handle}</span>
-                </p>
-                <p className="mt-2 text-[15px] leading-6 text-stone-800">{post.text}</p>
-                {post.video ? (
-                  <div
-                    className={cn(
-                      "relative mt-3 flex items-center justify-center overflow-hidden rounded-2xl bg-stone-900",
-                      post.video === "tall" ? "aspect-[9/14]" : "aspect-video",
-                    )}
-                  >
-                    <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-stone-900">
-                      <Play className="ml-0.5 h-6 w-6 fill-current" aria-hidden />
-                      <span className="sr-only">Video placeholder</span>
-                    </span>
-                    <p className="absolute bottom-3 left-3 text-xs font-medium uppercase tracking-widest text-white/80">
-                      Video
-                    </p>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          </article>
-        ))
+          ? cards.map((post) => <SoapboxPreviewCard key={post.key} post={post} />)
           : null}
         {scope === "sphere" && !localEnabled ? null : visible < PREVIEW_CAP ? (
           <div ref={sentinel} className="h-16" aria-hidden />

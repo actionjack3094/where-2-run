@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { BallotCard } from "@/app/ballot/ballot-card";
 import { BallotZipGate } from "@/app/ballot/zip-gate";
-import { electionsTabs, LaneTabs } from "@/components/lane-tabs";
+import { electionsTabs } from "@/components/elections-tabs";
+import { LaneTabs } from "@/components/lane-tabs";
 import { loadMyBallotFeed } from "@/lib/ballot/load-district-feed";
 import { getServerUser } from "@/lib/db/supabase-server";
 

@@ -1,5 +1,7 @@
-import Link from "next/link";
-import { cn } from "@/lib/utils";
+"use client";
+
+import { useRouter } from "next/navigation";
+import { SubNavTabs } from "@/components/ui/SubNavTabs";
 
 export function LaneTabs({
   label,
@@ -8,31 +10,17 @@ export function LaneTabs({
   label: string;
   tabs: { href: string; label: string; active: boolean }[];
 }) {
+  const router = useRouter();
+  const activeTab = tabs.find((tab) => tab.active)?.href ?? "";
+
   return (
-    <nav aria-label={label} className="flex flex-wrap gap-2">
-      {tabs.map((tab) => (
-        <Link
-          key={tab.href}
-          href={tab.href}
-          aria-current={tab.active ? "page" : undefined}
-          className={cn(
-            "rounded-full px-4 py-1.5 text-[11px] font-semibold uppercase tracking-widest",
-            tab.active
-              ? "bg-stone-900 text-stone-50"
-              : "bg-white text-stone-600 ring-1 ring-stone-200 hover:text-stone-900",
-          )}
-        >
-          {tab.label}
-        </Link>
-      ))}
+    <nav aria-label={label} className="max-w-full overflow-x-auto">
+      <SubNavTabs
+        label={label}
+        items={tabs.map((tab) => ({ id: tab.href, label: tab.label }))}
+        activeTab={activeTab}
+        onChange={(href) => router.push(href)}
+      />
     </nav>
   );
-}
-
-export function electionsTabs(current: "matched" | "ballot" | "directory") {
-  return [
-    { href: "/", label: "Matched Primaries", active: current === "matched" },
-    { href: "/?tab=ballot", label: "My Voter Ballot", active: current === "ballot" },
-    { href: "/?tab=directory", label: "State Directory", active: current === "directory" },
-  ];
 }

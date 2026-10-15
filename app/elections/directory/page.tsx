@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { electionsTabs, LaneTabs } from "@/components/lane-tabs";
+import { electionsTabs } from "@/components/elections-tabs";
+import { LaneTabs } from "@/components/lane-tabs";
 
 export const metadata: Metadata = {
   title: "State Directory · WHERE 2 RUN",

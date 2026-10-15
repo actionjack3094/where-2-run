@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { MatchedFilters } from "@/app/elections/matched/filters";
 import { MatchedLoopCard } from "@/app/elections/matched/loop-card";
-import { electionsTabs, LaneTabs } from "@/components/lane-tabs";
+import { electionsTabs } from "@/components/elections-tabs";
+import { LaneTabs } from "@/components/lane-tabs";
 import { getServerUser } from "@/lib/db/supabase-server";
 import { isMissingSchema } from "@/lib/db/schema-errors";
 import {
