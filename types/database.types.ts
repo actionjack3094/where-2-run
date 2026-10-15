@@ -560,6 +560,9 @@ export interface UserIdeology {
         townhall?: {
           answers: { id: string; score: number; weight: string }[];
         };
+        calibration?: {
+          answered: string[];
+        };
       }
     | string
     | null;

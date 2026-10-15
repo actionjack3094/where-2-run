@@ -280,6 +280,43 @@ h3,
   border: 2px solid #b45309;
 }
 
+@keyframes townhall-card-in {
+  from {
+    opacity: 0;
+    transform: translateX(1.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes townhall-card-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-1.75rem);
+  }
+}
+
+.townhall-card-in {
+  animation: townhall-card-in 320ms ease-out;
+}
+
+.townhall-card-out {
+  animation: townhall-card-out 280ms ease-in forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .townhall-card-in,
+  .townhall-card-out {
+    animation: none;
+  }
+}
+
 .stance-stale {
   background-image: repeating-linear-gradient(
     -45deg,
