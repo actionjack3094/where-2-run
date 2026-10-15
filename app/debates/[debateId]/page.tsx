@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CountdownTimer } from "@/app/components/countdown-timer";
 import { RealtimeDebateListener } from "@/app/components/realtime-debate-listener";
@@ -9,7 +8,9 @@ import { loadTownHalls } from "@/lib/platform/town-hall";
 import { loadProfile, platformAdmin } from "@/lib/platform/records";
 import { ArenaDebateRoom } from "./arena-room";
 import { isOfficialResolutionDue, resolveDebate } from "@/lib/actions/debate-resolution";
+import { ClashExperience } from "./clash-experience";
 import { isUuid } from "@/lib/arena/display";
+import { loadClashRoom } from "@/lib/debates/load-clash-room";
 import { loadDebateComments } from "@/lib/comments";
 import { createServerSupabase } from "@/lib/db/supabase-server";
 import { roundPairs, turnFor, type ArgumentRow } from "@/lib/debates/round-state";
@@ -68,6 +69,9 @@ function concludedOutcome(debate: DebateRow) {
 export default async function ActiveDebatePage({ params }: ActiveDebatePageProps) {
   const { debateId } = await params;
   if (!isUuid(debateId)) notFound();
+
+  const clash = await loadClashRoom(debateId);
+  if (clash) return <ClashExperience view={clash} />;
 
   const supabase = await createServerSupabase();
   const debateColumns =

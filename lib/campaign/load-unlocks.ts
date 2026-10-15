@@ -269,7 +269,11 @@ async function raisedEscrow(
   return ledger > 0 ? ledger : fallback;
 }
 
-async function countVerifiedInDistrictUpvotes(admin: PlatformAdmin, candidateId: string, ocdId: string | null) {
+export async function countVerifiedInDistrictUpvotes(
+  admin: PlatformAdmin,
+  candidateId: string,
+  ocdId: string | null,
+) {
   const target = normalizeOcdId(ocdId);
   if (!target) return 0;
 

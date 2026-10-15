@@ -206,6 +206,12 @@ export interface ConstituentQuestion {
   created_at: string;
 }
 
+export interface ConstituentQuestionVote {
+  question_id: string;
+  voter_id: string;
+  created_at: string;
+}
+
 export interface CandidateAnswer {
   id: string;
   question_id: string;
@@ -1832,6 +1838,21 @@ export interface Database {
             columns: ["debate_id"];
             isOneToOne: false;
             referencedRelation: "arena_debates";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      constituent_question_votes: {
+        Row: ConstituentQuestionVote;
+        Insert: Partial<ConstituentQuestionVote> &
+          Pick<ConstituentQuestionVote, "question_id" | "voter_id">;
+        Update: Partial<ConstituentQuestionVote>;
+        Relationships: [
+          {
+            foreignKeyName: "constituent_question_votes_question_id_fkey";
+            columns: ["question_id"];
+            isOneToOne: false;
+            referencedRelation: "constituent_questions";
             referencedColumns: ["id"];
           },
         ];
