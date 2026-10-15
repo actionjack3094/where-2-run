@@ -104,7 +104,7 @@ export function ChallengeForm({ debateId }: { debateId: string }) {
 }
 
 function formatLock(remainingMs: number) {
-  if (remainingMs <= 0) return "The 24-hour lock has expired.";
+  if (remainingMs <= 0) return "The 48-hour rebuttal window has expired.";
   const total = Math.floor(remainingMs / 1000);
   const hours = Math.floor(total / 3600);
   const minutes = Math.floor((total % 3600) / 60);

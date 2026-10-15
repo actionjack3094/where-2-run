@@ -8,9 +8,9 @@ import { readTownhallAnswers, type TownhallAnswer } from "@/lib/onboarding/townh
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "The Townhall · WHERE 2 RUN",
+  title: "Townhall · WHERE 2 RUN",
   description:
-    "Four baseline questions set your ideological vector. The policy deck continues after that, and Skip Question leaves the vector unchanged.",
+    "Wedge questions raise match confidence from the onboarding baseline toward 90 percent.",
 };
 
 export default async function TownhallPage() {
@@ -38,15 +38,15 @@ export default async function TownhallPage() {
       <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 py-10 pb-16">
         <header>
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-amber-700">
-            Onboarding
+            Calibration Lab
           </p>
           <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-stone-900">
-            The Townhall
+            Townhall
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
-            Four questions set your starting ideological vector. Finishing the fourth
-            opens your matched elections. The policy deck stays here after that. Skip
-            Question leaves the vector where it is.
+            Wedge questions follow the uncertainty in your vector and the battlegrounds
+            in your matched districts. Each answer pushes match confidence up from the
+            68% onboarding baseline. Skip Question leaves the vector where it is.
           </p>
         </header>
         <TownhallGate saved={saved} />

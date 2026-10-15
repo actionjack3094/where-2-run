@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type FeedScope = "trending" | "local";
+type FeedScope = "sphere" | "national";
 
 type MockPost = {
   name: string;
@@ -65,7 +65,7 @@ const PAGE_SIZE = 3;
 const PREVIEW_CAP = 15;
 
 function cardsFor(scope: FeedScope, count: number) {
-  const source = scope === "local" ? LOCAL : TRENDING;
+  const source = scope === "sphere" ? LOCAL : TRENDING;
   return Array.from({ length: count }, (_, index) => {
     const post = source[index % source.length];
     return { ...post, key: `${scope}-${index}` };
@@ -73,7 +73,7 @@ function cardsFor(scope: FeedScope, count: number) {
 }
 
 export function SoapboxFeed({ localEnabled }: { localEnabled: boolean }) {
-  const [scope, setScope] = useState<FeedScope>("trending");
+  const [scope, setScope] = useState<FeedScope>("sphere");
   const [visible, setVisible] = useState(PAGE_SIZE + 1);
   const sentinel = useRef<HTMLDivElement>(null);
 
@@ -94,7 +94,6 @@ export function SoapboxFeed({ localEnabled }: { localEnabled: boolean }) {
   }, [scope, visible]);
 
   function select(next: FeedScope) {
-    if (next === "local" && !localEnabled) return;
     setScope(next);
     setVisible(PAGE_SIZE + 1);
   }
@@ -109,43 +108,39 @@ export function SoapboxFeed({ localEnabled }: { localEnabled: boolean }) {
             <button
               type="button"
               role="tab"
-              aria-selected={scope === "trending"}
+              aria-selected={scope === "sphere"}
               className={cn(
                 "rounded-full px-5 py-1.5 text-sm font-medium transition-colors",
-                scope === "trending" ? "bg-white text-stone-900 shadow-sm" : "text-stone-600 hover:text-stone-900",
+                scope === "sphere" ? "bg-white text-stone-900 shadow-sm" : "text-stone-600 hover:text-stone-900",
               )}
-              onClick={() => select("trending")}
+              onClick={() => select("sphere")}
             >
-              Trending
+              My Sphere
             </button>
             <button
               type="button"
               role="tab"
-              aria-selected={scope === "local"}
-              disabled={!localEnabled}
-              title={
-                localEnabled
-                  ? "Posts from your ZIP code"
-                  : "Finish Townhall onboarding with a ZIP code to open Local"
-              }
+              aria-selected={scope === "national"}
               className={cn(
                 "rounded-full px-5 py-1.5 text-sm font-medium transition-colors",
-                localEnabled
-                  ? scope === "local"
-                    ? "bg-white text-stone-900 shadow-sm"
-                    : "text-stone-600 hover:text-stone-900"
-                  : "cursor-not-allowed text-stone-400",
+                scope === "national" ? "bg-white text-stone-900 shadow-sm" : "text-stone-600 hover:text-stone-900",
               )}
-              onClick={() => select("local")}
+              onClick={() => select("national")}
             >
-              Local
+              All Primaries
             </button>
           </div>
         </div>
       </header>
 
       <div className="mx-auto flex w-full max-w-xl flex-1 flex-col" data-feed-scope={scope}>
-        {cards.map((post) => (
+        {scope === "sphere" && !localEnabled ? (
+          <p className="px-4 py-8 text-sm leading-6 text-stone-600">
+            My Sphere shows peers and voters in your matched races. Finish onboarding with a voting ZIP code to open it.
+          </p>
+        ) : null}
+        {scope === "national" || localEnabled
+          ? cards.map((post) => (
           <article key={post.key} className="border-b border-stone-200 px-4 py-5">
             <div className="flex gap-3">
               <div
@@ -179,8 +174,9 @@ export function SoapboxFeed({ localEnabled }: { localEnabled: boolean }) {
               </div>
             </div>
           </article>
-        ))}
-        {visible < PREVIEW_CAP ? (
+        ))
+          : null}
+        {scope === "sphere" && !localEnabled ? null : visible < PREVIEW_CAP ? (
           <div ref={sentinel} className="h-16" aria-hidden />
         ) : (
           <p className="px-4 py-8 text-center text-sm text-stone-500">You&apos;re up to date on this preview.</p>

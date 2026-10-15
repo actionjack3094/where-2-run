@@ -1,3 +1,6 @@
+import { OPENING_CHAR_LIMIT } from "@/lib/debates/clash";
+
+export { OPENING_CHAR_LIMIT };
 export const ROUND_CHAR_LIMIT = 500;
 
 export const DEBATE_ROUNDS = [
@@ -17,6 +20,15 @@ export function roundByNumber(round: number): DebateRound | null {
 
 export function roundLabel(round: number) {
   return roundByNumber(round)?.label ?? `Round ${round}`;
+}
+
+export function cleanOpeningText(raw: string): { text: string } | { error: string } {
+  const text = raw.trim();
+  if (text.length < 20) return { error: "Opening Statement needs at least a short paragraph." };
+  if (text.length > OPENING_CHAR_LIMIT) {
+    return { error: `Opening Statement is ${OPENING_CHAR_LIMIT} characters at most.` };
+  }
+  return { text };
 }
 
 export function cleanRoundText(

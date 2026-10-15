@@ -51,12 +51,12 @@ export function LoginForm() {
     const complete = hasStanceVector(data?.stance_vector);
 
     if (complete) {
-      router.push(safeNextPath(searchParams.get("next")) ?? "/feed");
+      router.push(safeNextPath(searchParams.get("next")) ?? "/");
       router.refresh();
       return;
     }
 
-    router.push("/townhall");
+    router.push("/onboarding");
     router.refresh();
   }
 

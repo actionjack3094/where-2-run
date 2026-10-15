@@ -119,7 +119,7 @@ export function groupGeneralRaces(primaries: DirectoryPrimary[]): DirectoryRace[
   });
 }
 
-export function activeRaces(races: DirectoryRace[]) {
+export function activeRaces<T extends DirectoryRace>(races: T[]) {
   return races.filter((race) => race.active && race.lanes.length > 0);
 }
 

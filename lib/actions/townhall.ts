@@ -5,6 +5,7 @@ import { ensureArenaProfile } from "@/lib/arena/ensure-profile";
 import { isMissingSchema } from "@/lib/db/schema-errors";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 import { getServerUser } from "@/lib/db/supabase-server";
+import { matchConfidence } from "@/lib/onboarding/diagnostic";
 import {
   coordinateWithDeck,
   parseDeckStances,
@@ -23,6 +24,7 @@ function revalidateTownhallSurfaces() {
   revalidatePath("/ballot");
   revalidatePath("/debates");
   revalidatePath("/elections");
+  revalidatePath("/");
   revalidatePath("/elections/matched");
   revalidatePath("/dashboard");
 }
@@ -43,25 +45,26 @@ async function writeTownhall(userId: string, answers: TownhallAnswer[], deck: De
     .eq("id", userId);
   if (stanceError) throw new Error(stanceError.message);
 
-  const profile = await admin
-    .from("profiles")
-    .update({
-      ideology_x: coordinate.x,
-      ideology_y: coordinate.y,
-      onboarding_completed: true,
-    })
-    .eq("id", userId)
-    .select("id");
+  const profilePayload = {
+    ideology_x: coordinate.x,
+    ideology_y: coordinate.y,
+    confidence_score: matchConfidence(deck.length),
+    onboarding_completed: true,
+  };
+  let profile = await admin.from("profiles").update(profilePayload).eq("id", userId).select("id");
+  if (profile.error && isMissingSchema(profile.error)) {
+    const { confidence_score: _confidence, ...withoutConfidence } = profilePayload;
+    profile = await admin.from("profiles").update(withoutConfidence).eq("id", userId).select("id");
+  }
 
   if (profile.error) {
     if (!isMissingSchema(profile.error)) throw new Error(profile.error.message);
   } else if ((profile.data ?? []).length === 0) {
-    const inserted = await admin.from("profiles").insert({
-      id: userId,
-      ideology_x: coordinate.x,
-      ideology_y: coordinate.y,
-      onboarding_completed: true,
-    });
+    let inserted = await admin.from("profiles").insert({ id: userId, ...profilePayload });
+    if (inserted.error && isMissingSchema(inserted.error)) {
+      const { confidence_score: _confidence, ...withoutConfidence } = profilePayload;
+      inserted = await admin.from("profiles").insert({ id: userId, ...withoutConfidence });
+    }
     if (inserted.error && !isMissingSchema(inserted.error)) {
       throw new Error(inserted.error.message);
     }

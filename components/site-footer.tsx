@@ -1,11 +1,11 @@
 import Link from "next/link";
 
 const links = [
-  { href: "/soapbox", label: "The Soapbox" },
-  { href: "/debates", label: "The Debates" },
-  { href: "/townhall", label: "The Townhall" },
-  { href: "/ballot", label: "My Ballot" },
-  { href: "/elections", label: "Elections" },
+  { href: "/", label: "Elections" },
+  { href: "/debates", label: "Debates" },
+  { href: "/soapbox", label: "Soapbox" },
+  { href: "/townhall", label: "Townhall" },
+  { href: "/ballot", label: "My Voter Ballot" },
   { href: "/dashboard", label: "Candidate HQ" },
   { href: "/campaign-hub", label: "Campaign Hub" },
   { href: "/verify", label: "Verification" },

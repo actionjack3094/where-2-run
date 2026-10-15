@@ -149,8 +149,8 @@ export default async function StateElectionsPage(props: StatePageProps) {
 
         {viewer.signedIn && !viewer.point ? (
           <p className="mt-8 text-sm leading-6 text-stone-600">
-            <Link href="/townhall" className="text-amber-800">
-              Finish the Townhall baseline
+            <Link href="/onboarding" className="text-amber-800">
+              Finish onboarding
             </Link>{" "}
             to rank the closest elections in {state.name}.
           </p>

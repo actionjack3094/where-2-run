@@ -23,7 +23,8 @@ import { primaryClosed } from "@/lib/platform/cycle";
 import { closedPrimaryIds } from "@/lib/platform/freeze";
 import { BANNED_ARENA_MESSAGE } from "@/lib/platform/moderation";
 import { agendaPromptText, loadCommunityPrompts } from "@/lib/platform/agenda";
-import { appendRound, cleanRoundText, DEBATE_ROUNDS, ROUND_CHAR_LIMIT, TOTAL_ROUNDS } from "@/lib/debates/structure";
+import { REBUTTAL_WINDOW_LABEL, REBUTTAL_WINDOW_MS } from "@/lib/debates/clash";
+import { appendRound, cleanOpeningText, cleanRoundText, DEBATE_ROUNDS, TOTAL_ROUNDS } from "@/lib/debates/structure";
 import { partyFromCoordinate } from "@/lib/platform/scoring";
 import { incrementDebatesLogged } from "@/lib/platform/standings";
 import type { PublicJudgment } from "@/lib/platform/types";
@@ -207,7 +208,7 @@ export async function loadDiscoveryDebates(): Promise<{
   return { debates, error: null };
 }
 
-const SEAT_LOCK_MS = 24 * 60 * 60 * 1000;
+const SEAT_LOCK_MS = REBUTTAL_WINDOW_MS;
 const PROMPT_MIN = 12;
 
 export type DebateActionResult = {
@@ -259,7 +260,7 @@ function closedMessage(primary: Primary) {
   return "This primary has closed. Debates are locked.";
 }
 
-/** Reopen arena seats whose 24-hour lock expired before a rebuttal was filed. */
+/** Reopen arena seats whose 48-hour rebuttal window expired before a rebuttal was filed. */
 export async function releaseExpiredSeats(): Promise<{ released: number }> {
   await notifyExpiringSeats();
   const admin = platformAdmin();
@@ -277,18 +278,30 @@ export async function releaseExpiredSeats(): Promise<{ released: number }> {
   const cancel = rows.filter((row) => closed.has(row.primary_id));
 
   if (reopen.length > 0) {
-    const { error: reopenError } = await admin
+    const reopenPatch = {
+      status: "open_challenge" as const,
+      candidate_b_id: null,
+      seat_locked_until: null,
+      clash_stage: "opening" as const,
+      rebuttal_expires_at: null,
+      updated_at: now,
+    };
+    let reopened = await admin
       .from("arena_debates")
-      .update({
-        status: "open_challenge",
-        candidate_b_id: null,
-        seat_locked_until: null,
-        updated_at: now,
-      })
+      .update(reopenPatch)
       .in("id", reopen.map((row) => row.id))
       .eq("status", "active")
       .is("stance_b", null);
-    if (reopenError) throw new Error(reopenError.message);
+    if (reopened.error && isMissingSchema(reopened.error)) {
+      const { clash_stage: _stage, rebuttal_expires_at: _expires, ...withoutClash } = reopenPatch;
+      reopened = await admin
+        .from("arena_debates")
+        .update(withoutClash)
+        .in("id", reopen.map((row) => row.id))
+        .eq("status", "active")
+        .is("stance_b", null);
+    }
+    if (reopened.error) throw new Error(reopened.error.message);
     const promptIds = [...new Set(reopen.map((row) => row.prompt_id))];
     const { error: promptError } = await admin
       .from("debate_prompts")
@@ -349,7 +362,7 @@ export async function createPrimaryDebatePrompt(
     }
     const prompt = agendaPromptText(source.title, source.content);
     if (prompt.length < PROMPT_MIN) return { error: "That issue is too short to debate." };
-    const opening = cleanRoundText(stanceText, "Opening Statement");
+    const opening = cleanOpeningText(stanceText);
     if ("error" in opening) return { error: opening.error };
     const stance = opening.text;
 
@@ -391,11 +404,18 @@ export async function createPrimaryDebatePrompt(
       candidate_a_id: session.userId,
       stance_a: stance,
       status: "open_challenge" as const,
+      clash_stage: "opening" as const,
+      rebuttal_expires_at: null,
       bot_spar_at: botSparAt,
     };
     let inserted = await session.admin.from("arena_debates").insert(debateRow).select("id").single();
     if (inserted.error && isMissingSchema(inserted.error)) {
-      const { bot_spar_at: _schedule, ...withoutSchedule } = debateRow;
+      const {
+        bot_spar_at: _schedule,
+        clash_stage: _stage,
+        rebuttal_expires_at: _expires,
+        ...withoutSchedule
+      } = debateRow;
       inserted = await session.admin.from("arena_debates").insert(withoutSchedule).select("id").single();
     }
     if (inserted.error) return { error: inserted.error.message };
@@ -450,6 +470,8 @@ export async function acceptDebateChallenge(debateId: string): Promise<DebateAct
       candidate_b_id: session.userId,
       status: "active" as const,
       seat_locked_until: lockedUntil,
+      clash_stage: "rebuttal" as const,
+      rebuttal_expires_at: lockedUntil,
       bot_spar_at: null,
       updated_at: new Date().toISOString(),
     };
@@ -462,7 +484,12 @@ export async function acceptDebateChallenge(debateId: string): Promise<DebateAct
       .select("id")
       .maybeSingle();
     if (claimed.error && isMissingSchema(claimed.error)) {
-      const { bot_spar_at: _schedule, ...withoutSchedule } = claimPatch;
+      const {
+        bot_spar_at: _schedule,
+        clash_stage: _stage,
+        rebuttal_expires_at: _expires,
+        ...withoutSchedule
+      } = claimPatch;
       claimed = await session.admin
         .from("arena_debates")
         .update(withoutSchedule)
@@ -487,7 +514,9 @@ export async function acceptDebateChallenge(debateId: string): Promise<DebateAct
     }
 
     refreshArena(primary.slug);
-    return { message: "Seat locked for 24 hours. File your rebuttal before it expires." };
+    return {
+      message: `Seat locked for ${REBUTTAL_WINDOW_LABEL}. File your rebuttal before the window closes.`,
+    };
   } catch (caught) {
     return { error: caught instanceof Error ? caught.message : "Could not lock that seat." };
   }
@@ -505,7 +534,7 @@ export async function submitRebuttal(debateId: string, stanceText: string): Prom
 
     const lock = debate.seat_locked_until ? Date.parse(debate.seat_locked_until) : NaN;
     if (!Number.isFinite(lock) || lock <= Date.now()) {
-      return { error: "The 24-hour lock has expired." };
+      return { error: "The 48-hour rebuttal window has expired." };
     }
 
     const progress = await session.admin
@@ -540,11 +569,15 @@ export async function submitRebuttal(debateId: string, stanceText: string): Prom
       round_transcript?: ReturnType<typeof appendRound>;
       status: "active" | "concluded";
       seat_locked_until: string | null;
+      clash_stage: "rebuttal" | "closed";
+      rebuttal_expires_at: string | null;
       updated_at: string;
     } = {
       exchange_round: next,
       status: closing ? "concluded" : "active",
       seat_locked_until: closing ? null : lockUntil,
+      clash_stage: closing ? "closed" : "rebuttal",
+      rebuttal_expires_at: closing ? null : lockUntil,
       updated_at: now,
     };
     if (next === 2) patch.stance_b = cleaned.text;
@@ -556,14 +589,25 @@ export async function submitRebuttal(debateId: string, stanceText: string): Prom
       });
     }
 
-    const { data: filed, error } = await session.admin
+    let filedResult = await session.admin
       .from("arena_debates")
       .update(patch)
       .eq("id", debate.id)
       .eq("status", "active")
       .select("id")
       .maybeSingle();
-    if (error) return { error: error.message };
+    if (filedResult.error && isMissingSchema(filedResult.error)) {
+      const { clash_stage: _stage, rebuttal_expires_at: _expires, ...withoutClash } = patch;
+      filedResult = await session.admin
+        .from("arena_debates")
+        .update(withoutClash)
+        .eq("id", debate.id)
+        .eq("status", "active")
+        .select("id")
+        .maybeSingle();
+    }
+    if (filedResult.error) return { error: filedResult.error.message };
+    const filed = filedResult.data;
     if (!filed) return { error: "That seat is not waiting on a rebuttal." };
 
     if (!closing) {

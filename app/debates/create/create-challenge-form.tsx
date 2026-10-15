@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createPrimaryDebatePrompt } from "@/lib/actions/debates";
-import { ROUND_CHAR_LIMIT } from "@/lib/debates/structure";
+import { OPENING_CHAR_LIMIT } from "@/lib/debates/structure";
 import type { AgendaPrompt } from "@/lib/platform/agenda";
 
 export function CreateChallengeForm({
@@ -80,7 +80,7 @@ export function CreateChallengeForm({
           name="stance"
           required
           minLength={20}
-          maxLength={ROUND_CHAR_LIMIT}
+          maxLength={OPENING_CHAR_LIMIT}
           rows={5}
           className="rounded-lg border border-amber-500/30 bg-white px-3 py-2 text-stone-900"
         />

@@ -40,7 +40,7 @@ export function MilestoneUnlocks({
         ) : (
           <p className="mt-1 text-sm leading-6 text-stone-600">
             Choose a race to set the office name and the statutory filing fee.{" "}
-            <Link href="/elections/matched" className="text-amber-800">
+            <Link href="/" className="text-amber-800">
               Explore running for an office
             </Link>
             .

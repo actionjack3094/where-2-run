@@ -13,29 +13,28 @@ import { cn } from "@/lib/utils";
 
 const LINKS = [
   {
-    href: "/soapbox",
-    label: "The Soapbox",
-    match: (path: string) => path === "/" || path.startsWith("/soapbox"),
+    href: "/",
+    label: "Elections",
+    match: (path: string) =>
+      path === "/" ||
+      path.startsWith("/elections") ||
+      path.startsWith("/ballot") ||
+      path.startsWith("/primaries"),
   },
   {
     href: "/debates",
-    label: "The Debates",
+    label: "Debates",
     match: (path: string) => path.startsWith("/debates") || path.startsWith("/discover"),
   },
   {
+    href: "/soapbox",
+    label: "Soapbox",
+    match: (path: string) => path.startsWith("/soapbox"),
+  },
+  {
     href: "/townhall",
-    label: "The Townhall",
+    label: "Townhall",
     match: (path: string) => path.startsWith("/townhall"),
-  },
-  {
-    href: "/ballot",
-    label: "My Ballot",
-    match: (path: string) => path.startsWith("/ballot") || path.startsWith("/feed"),
-  },
-  {
-    href: "/elections",
-    label: "Elections",
-    match: (path: string) => path.startsWith("/elections") || path.startsWith("/primaries"),
   },
 ] as const;
 

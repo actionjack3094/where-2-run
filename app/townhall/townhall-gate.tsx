@@ -67,7 +67,7 @@ export function TownhallGate({ saved }: { saved: TownhallAnswer[] | null }) {
 
     try {
       await fileTownhall(answers);
-      router.push("/elections/matched");
+      router.push("/");
       router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not file the Townhall.");

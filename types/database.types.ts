@@ -69,6 +69,10 @@ export type AccountProfile = {
   identity_verified_at: string | null;
   ideology_x: number | null;
   ideology_y: number | null;
+  /** Match confidence from 0 to 1. Onboarding files 0.68. */
+  confidence_score?: number | null;
+  /** Five-digit ZIP used for local ballot access. */
+  voting_zip_code?: string | null;
   onboarding_completed: boolean;
   /** Stripe KYC. Required to rank or claim candidate status. */
   is_verified: boolean;
@@ -219,6 +223,10 @@ export interface ArenaDebate {
   stance_a: string;
   stance_b: string | null;
   seat_locked_until: string | null;
+  /** opening, rebuttal, or closed. */
+  clash_stage?: "opening" | "rebuttal" | "closed" | string | null;
+  /** End of the 48-hour rebuttal and Q&A window. */
+  rebuttal_expires_at?: string | null;
   /** When a human opening may be claimed by a same-party synthetic partner. */
   bot_spar_at: string | null;
   /** Soapbox stump speech this challenge answers. Null for Arena-native seats. */

@@ -7,7 +7,7 @@ import type { ArenaNotification, UserNotification } from "@/types/database.types
 
 function arenaMessage(type: string) {
   if (type === "challenge_accepted") {
-    return "Your seat is locked. The challenger has 24 hours to file a rebuttal.";
+    return "Your seat is locked. The challenger has 48 hours to file a rebuttal.";
   }
   if (type === "seat_expiring_soon") {
     return "Your locked seat expires in under two hours. File the rebuttal.";

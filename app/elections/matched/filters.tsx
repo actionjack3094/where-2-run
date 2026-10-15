@@ -26,7 +26,7 @@ function href(scope: GeoScope, level: OfficeFilter, seats: ViabilityFilter) {
   if (level !== "all") params.set("level", level);
   if (seats !== "all") params.set("seats", seats);
   const query = params.toString();
-  return query ? `/elections/matched?${query}` : "/elections/matched";
+  return query ? `/?${query}` : "/";
 }
 
 function Bar<T extends string>({

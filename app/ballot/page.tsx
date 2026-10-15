@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import { BallotCard } from "@/app/ballot/ballot-card";
 import { BallotZipGate } from "@/app/ballot/zip-gate";
+import { electionsTabs, LaneTabs } from "@/components/lane-tabs";
 import { loadMyBallotFeed } from "@/lib/ballot/load-district-feed";
 import { getServerUser } from "@/lib/db/supabase-server";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "My Ballot · WHERE 2 RUN",
-  description: "Active debates and policy statements in your district.",
+  title: "My Voter Ballot · WHERE 2 RUN",
+  description: "Races on your registered home district, for voting and pledging.",
 };
 
 export default async function BallotPage() {
@@ -24,7 +25,7 @@ export default async function BallotPage() {
             className="text-sm font-semibold text-stone-900"
             style={{ fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif" }}
           >
-            My Ballot
+            My Voter Ballot
           </h1>
           {feed.districtLabel ? (
             <p className="text-xs font-medium uppercase tracking-widest text-stone-500">{feed.districtLabel}</p>
@@ -32,6 +33,9 @@ export default async function BallotPage() {
         </div>
       </header>
 
+      <div className="mx-auto flex w-full max-w-xl flex-1 flex-col px-4 pt-4">
+        <LaneTabs label="Elections" tabs={electionsTabs("ballot")} />
+      </div>
       <div className="mx-auto flex w-full max-w-xl flex-1 flex-col">
         {feed.notice ? (
           <p className="border-b border-stone-200 px-4 py-3 text-sm leading-6 text-stone-600">{feed.notice}</p>
