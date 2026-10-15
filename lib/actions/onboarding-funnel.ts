@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { formatOcdDivision, isMissingCivicColumn, normalizeOcdId } from "@/lib/civic-fencing";
 import { lookupCongressionalOcdId } from "@/lib/civic/zip-district";
 import { isMissingRelation } from "@/lib/coalitions";
+import { isMissingSchema } from "@/lib/db/schema-errors";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 import { getServerUser } from "@/lib/db/supabase-server";
 import { normalizeZip } from "@/lib/electability";
@@ -99,10 +100,17 @@ export async function saveTier1Zip(zip: string): Promise<Tier1Match> {
     throw new Error(error.message);
   }
 
+  const profileZip = await admin.from("profiles").update({ voting_zip_code: digits }).eq("id", user.id);
+  if (profileZip.error && !isMissingSchema(profileZip.error)) {
+    throw new Error(profileZip.error.message);
+  }
+
   revalidatePath("/onboarding");
   revalidatePath("/feed");
   revalidatePath("/ballot");
   revalidatePath("/matchmaker");
+  revalidatePath("/");
+  revalidatePath("/elections");
 
   return {
     zip: digits,

@@ -24,7 +24,7 @@ export function ElectionLeaderboard({ rows }: { rows: LeaderboardEntry[] }) {
         <div role="group" aria-label="Rank leaderboard by" className="flex rounded-full border border-amber-500/30 p-1">
           {(
             [
-              ["civic", "Civic Standing"],
+              ["civic", "In-District Resonance"],
               ["chest", "Pledged Escrow"],
             ] as const
           ).map(([id, label]) => (
@@ -65,8 +65,8 @@ export function ElectionLeaderboard({ rows }: { rows: LeaderboardEntry[] }) {
                 </span>
                 <span className="text-right">
                   <span className="inline-flex items-center justify-end gap-1 text-[11px] uppercase tracking-widest text-stone-500">
-                    Civic Standing
-                    <InfoTooltip label="Civic Standing" text={CIVIC_STANDING_TIP} />
+                    In-District Resonance
+                    <InfoTooltip label="In-District Resonance" text={CIVIC_STANDING_TIP} />
                   </span>
                   <span className="font-display text-lg tabular-nums text-stone-900">
                     {row.civicStanding.toLocaleString("en-US")}

@@ -208,11 +208,11 @@ export async function ElectionRaceHub({ slug, tab }: { slug: string; tab?: strin
             <section className="mt-10">
               <h2 className="inline-flex items-center gap-2 font-display text-xl text-stone-900">
                 Leaderboard
-                <InfoTooltip label="Civic Standing" text={CIVIC_STANDING_TIP} />
+                <InfoTooltip label="In-District Resonance" text={CIVIC_STANDING_TIP} />
               </h2>
               <p className="mt-2 text-sm leading-6 text-stone-600">
                 Declared Candidates and Frontrunners are verified and listed under their legal name.
-                Everyone else keeps their Civic Standing in the unranked division.
+                Everyone else keeps their In-District Resonance in the unranked division.
               </p>
               {ranked.length === 0 ? (
                 <p className="mt-4 text-sm text-stone-600">No declared contenders in this primary yet.</p>
@@ -244,7 +244,7 @@ export async function ElectionRaceHub({ slug, tab }: { slug: string; tab?: strin
                             </span>
                           ) : null}
                         </p>
-                        <p className="text-sm text-stone-600">{row.civicStanding} Civic Standing</p>
+                        <p className="text-sm text-stone-600">{row.civicStanding} In-District Resonance</p>
                       </div>
                       <p className="mt-1 text-[11px] uppercase tracking-widest text-stone-600">
                         {tierLabel(row.tier)} · {row.debatesLogged} Debates Logged · {row.policyConsistency}% Policy Consistency
@@ -283,7 +283,7 @@ export async function ElectionRaceHub({ slug, tab }: { slug: string; tab?: strin
                               {row.displayName}
                             </Link>
                           </p>
-                          <p className="text-sm text-stone-600">{row.civicStanding} Civic Standing</p>
+                          <p className="text-sm text-stone-600">{row.civicStanding} In-District Resonance</p>
                         </div>
                         <p className="mt-1 text-[11px] uppercase tracking-widest text-stone-600">
                           {row.verified ? "Pundit" : "Unverified"} · {row.debatesLogged} Debates Logged · {row.policyConsistency}% Policy Consistency

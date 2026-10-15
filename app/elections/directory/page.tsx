@@ -10,17 +10,17 @@ export const metadata: Metadata = {
 const TIERS = [
   {
     id: "federal",
-    title: "Federal",
+    title: "Federal Seats",
     body: "President, Senate, and House seats.",
   },
   {
     id: "state",
-    title: "State",
-    body: "Governor, legislature, and statewide offices.",
+    title: "State Legislature",
+    body: "State senate, state house, and statewide offices.",
   },
   {
     id: "local",
-    title: "Local",
+    title: "Municipal & Local",
     body: "County, city, school, and municipal seats.",
   },
 ] as const;

@@ -1,15 +1,22 @@
 import type { Metadata } from "next";
-import { MatchedPrimaries } from "@/app/elections/matched/view";
+import { ElectionsExperience } from "@/app/elections/elections-experience";
+import { parseElectionsTab } from "@/lib/elections/hub-types";
+import { loadMatchedFeed } from "@/lib/elections/load-matched-feed";
+import { loadVoterBallot } from "@/lib/elections/load-voter-ballot";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Matched Primaries · WHERE 2 RUN",
-  description: "Races ranked by Euclidean alignment, with the top constituent question and a way onto the floor.",
+  title: "Elections · WHERE 2 RUN",
+  description: "Matched primaries, your voter ballot, and the state directory.",
 };
 
-export default function HomePage(props: {
-  searchParams: Promise<{ scope?: string; level?: string; seats?: string }>;
-}) {
-  return <MatchedPrimaries {...props} />;
+export default async function HomePage(props: { searchParams: Promise<{ tab?: string }> }) {
+  const tab = parseElectionsTab((await props.searchParams).tab);
+  const [matched, ballot] = await Promise.all([
+    tab === "matched" ? loadMatchedFeed() : Promise.resolve(null),
+    tab === "ballot" ? loadVoterBallot() : Promise.resolve(null),
+  ]);
+
+  return <ElectionsExperience tab={tab} matched={matched} ballot={ballot} />;
 }

@@ -283,8 +283,8 @@ function CandidatePane({
       )}
       <div>
         <div className="inline-flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          Civic Standing
-          <InfoTooltip label="Civic Standing" text={CIVIC_STANDING_TIP} />
+          In-District Resonance
+          <InfoTooltip label="In-District Resonance" text={CIVIC_STANDING_TIP} />
         </div>
         <p className="mt-1 font-serif text-3xl font-semibold tabular-nums tracking-tight text-primary">
           {candidate ? parseElo(candidate.elo_rating) : "—"}
