@@ -50,7 +50,7 @@ export function MatchedPanel({
               <div className="mt-5 flex flex-wrap gap-3">
                 <Link
                   href={race.floorHref}
-                  className="inline-flex h-10 items-center justify-center rounded-md bg-gold-strong px-4 text-[11px] font-semibold uppercase tracking-widest text-stone-900"
+                  className="inline-flex h-10 items-center justify-center rounded-md bg-amber-600 px-4 text-[11px] font-semibold uppercase tracking-widest text-white shadow-sm transition hover:bg-amber-700"
                 >
                   Take the Floor
                 </Link>

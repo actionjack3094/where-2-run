@@ -2,9 +2,8 @@ import { formatDistrictLabel, districtLabelFromOcd } from "@/lib/ballot/district
 import { isMissingSchema } from "@/lib/db/schema-errors";
 import { getServerUser } from "@/lib/db/supabase-server";
 import { normalizeZip } from "@/lib/electability";
-import { matchedOfficeLabel } from "@/lib/elections/matched";
+import { groupBallotRaces } from "@/lib/elections/ballot-races";
 import type { VoterBallotPanel, VoterBallotRace } from "@/lib/elections/hub-types";
-import { primaryOfficeName } from "@/lib/elections/state-directory";
 import { partyLabel, tierLabel } from "@/lib/platform/types";
 import {
   canRank,
@@ -16,7 +15,6 @@ import {
   platformAdmin,
 } from "@/lib/platform/records";
 import { parseTier } from "@/lib/platform/scoring";
-import type { Primary } from "@/types/database.types";
 
 const empty = (patch: Partial<VoterBallotPanel>): VoterBallotPanel => ({
   signedOut: false,
@@ -30,15 +28,6 @@ const empty = (patch: Partial<VoterBallotPanel>): VoterBallotPanel => ({
 function finite(value: unknown) {
   const number = typeof value === "number" ? value : Number(value);
   return Number.isFinite(number) ? number : 0;
-}
-
-function seatTitle(primary: Primary) {
-  const label = matchedOfficeLabel({
-    officeName: primaryOfficeName(primary.office_name, primary.office),
-    state: primary.state,
-    district: primary.district,
-  });
-  return /primary$/i.test(label) ? label : `${label} Primary`;
 }
 
 export async function loadVoterBallot(): Promise<VoterBallotPanel> {
@@ -133,25 +122,7 @@ export async function loadVoterBallot(): Promise<VoterBallotPanel> {
       byPrimary.set(primary.id, list);
     }
 
-    const seats = new Map<string, Primary[]>();
-    for (const primary of primaries) {
-      const list = seats.get(primary.general_slug) ?? [];
-      list.push(primary);
-      seats.set(primary.general_slug, list);
-    }
-
-    const races: VoterBallotRace[] = [...seats.entries()].map(([slug, rows]) => {
-      const anchor = rows[0];
-      const question = rows.map((row) => questionByPrimary.get(row.id)).find(Boolean) ?? null;
-      const qaPrimary = rows.find((row) => questionByPrimary.has(row.id)) ?? anchor;
-      return {
-        id: slug,
-        title: seatTitle(anchor),
-        question,
-        qaHref: `/elections/${qaPrimary.slug}`,
-        candidates: rows.flatMap((row) => byPrimary.get(row.id) ?? []),
-      };
-    });
+    const races: VoterBallotRace[] = groupBallotRaces(primaries, byPrimary, questionByPrimary);
 
     return empty({
       districtLabel,

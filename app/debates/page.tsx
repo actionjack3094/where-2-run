@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { DistrictGauntletForm } from "@/components/debates/DistrictGauntletForm";
+import { OpenChallengeItem } from "@/components/debates/OpenChallengeItem";
+import { UnansweredQuestionItem } from "@/components/debates/UnansweredQuestionItem";
 import { LaneTabs } from "@/components/lane-tabs";
 import { loadActionQueue } from "@/lib/debates/action-queue";
 import { loadDistrictGauntlet } from "@/lib/debates/load-gauntlet";
@@ -41,48 +42,21 @@ export default async function DebatesPage(props: { searchParams: Promise<{ tab?:
         {queue.notice ? <p className="mt-6 text-sm leading-6 text-stone-600">{queue.notice}</p> : null}
 
         {tab === "open" ? (
-          <ul className="mt-6 divide-y divide-stone-200 border-y border-stone-200">
+          <div className="mt-6">
             {queue.challenges.length === 0 ? (
-              <li className="py-6 text-sm text-stone-600">No stances are waiting for an opponent.</li>
+              <p className="py-6 text-sm text-stone-600">No stances are waiting for an opponent.</p>
             ) : (
-              queue.challenges.map((challenge) => (
-                <li key={challenge.id} className="py-5">
-                  <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">
-                    {challenge.party} · {challenge.office}
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-stone-800">{challenge.stance}</p>
-                  <Link
-                    href={`/debates/${challenge.id}`}
-                    className="mt-3 inline-flex h-10 items-center text-[11px] font-semibold uppercase tracking-widest text-amber-800"
-                  >
-                    Accept the clash
-                  </Link>
-                </li>
-              ))
+              queue.challenges.map((challenge) => <OpenChallengeItem key={challenge.id} challenge={challenge} />)
             )}
-          </ul>
+          </div>
         ) : (
-          <ul className="mt-6 divide-y divide-stone-200 border-y border-stone-200">
+          <div className="mt-6">
             {queue.questions.length === 0 ? (
-              <li className="py-6 text-sm text-stone-600">Every fresh agenda question has a first response.</li>
+              <p className="py-6 text-sm text-stone-600">Every fresh agenda question has a first response.</p>
             ) : (
-              queue.questions.map((question) => (
-                <li key={question.id} className="py-5">
-                  <p className="text-[11px] font-medium uppercase tracking-widest text-amber-800">{question.office}</p>
-                  <h2 className="mt-2 text-base font-semibold text-stone-900">{question.title}</h2>
-                  <p className="mt-2 text-sm leading-6 text-stone-700">{question.content}</p>
-                  {question.primarySlug ? (
-                    <Link
-                      href={`/debates/create?primary=${question.primarySlug}`}
-                      className="mt-3 inline-flex h-10 items-center text-[11px] font-semibold uppercase tracking-widest text-amber-800"
-                    >
-                      Take the Floor
-                    </Link>
-                  ) : null}
-                </li>
-              ))
+              queue.questions.map((question) => <UnansweredQuestionItem key={question.id} question={question} />)
             )}
-          </ul>
+          </div>
         )}
 
         {gauntlet ? (
