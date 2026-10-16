@@ -1,13 +1,20 @@
 import type { Metadata } from "next";
-import { SoapboxPage } from "@/app/soapbox/soapbox-page";
+import { SoapboxBoard } from "@/components/soapbox/SoapboxBoard";
+import { loadSoapboxViewer } from "@/lib/soapbox/viewer";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Soapbox · WHERE 2 RUN",
-  description: "The matched-sphere locker room, with a switch to every primary.",
+  description: "Campaign dispatches for matched primaries, and the local floor in your home district.",
 };
 
-export default function Page() {
-  return <SoapboxPage />;
+export default async function Page() {
+  const viewer = await loadSoapboxViewer();
+
+  return (
+    <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
+      <SoapboxBoard viewer={viewer} />
+    </main>
+  );
 }

@@ -1,0 +1,62 @@
+import type { SoapboxPost } from "@/components/soapbox/types";
+
+const HOUSE = "U.S. House TX-10";
+
+/** Candidate order is unsorted on purpose so the feed can lift verified runners. */
+export const SEED_POSTS: SoapboxPost[] = [
+  {
+    id: "seed-jordan",
+    name: "Jordan Hale",
+    text: "Housing costs are the race. The first session should cap local fees that never show up on a mailer.",
+    lens: "candidate",
+    badge: "PROSPECTIVE",
+    matchPercent: 62,
+    district: HOUSE,
+    zip: "78701",
+    clip: false,
+  },
+  {
+    id: "seed-mina",
+    name: "Mina Ortiz",
+    text: "The hospital levy is the quiet vote on this ballot. Keep the emergency room open and publish the bond math.",
+    lens: "candidate",
+    badge: "ON THE BALLOT",
+    matchPercent: 91,
+    district: HOUSE,
+    zip: "78701",
+    clip: false,
+  },
+  {
+    id: "seed-avery",
+    name: "Avery Chen",
+    text: "Fund the transit line that already has riders before drawing a new map.",
+    lens: "candidate",
+    badge: "CONTENDER",
+    matchPercent: 84,
+    district: HOUSE,
+    zip: "78746",
+    clip: true,
+  },
+  {
+    id: "seed-chris",
+    name: "Chris Patel",
+    text: "School bonds should expire when the project does. That is the stance I will defend.",
+    lens: "candidate",
+    badge: "PROSPECTIVE",
+    matchPercent: 54,
+    district: HOUSE,
+    zip: "78704",
+    clip: false,
+  },
+  {
+    id: "seed-foreign",
+    name: "Sam Ruiz",
+    text: "This note belongs to another district and should stay off a TX-10 voter floor.",
+    lens: "voter",
+    badge: null,
+    matchPercent: null,
+    district: "U.S. House CA-12",
+    zip: "94107",
+    clip: false,
+  },
+];
