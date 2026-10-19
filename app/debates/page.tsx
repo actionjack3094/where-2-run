@@ -18,7 +18,7 @@ export default async function DebatesPage(props: { searchParams: Promise<{ tab?:
   const tab = (await props.searchParams).tab === "questions" ? "questions" : "open";
   const user = await getServerUser();
   const [queue, gauntlet] = await Promise.all([
-    loadActionQueue(),
+    loadActionQueue(user?.id ?? null),
     tab === "open" && user?.id ? loadDistrictGauntlet(user.id).catch(() => null) : Promise.resolve(null),
   ]);
 
@@ -44,7 +44,9 @@ export default async function DebatesPage(props: { searchParams: Promise<{ tab?:
         {tab === "open" ? (
           <div className="mt-6">
             {queue.challenges.length === 0 ? (
-              <p className="py-6 text-sm text-stone-600">No stances are waiting for an opponent.</p>
+              queue.notice ? null : (
+                <p className="py-6 text-sm text-stone-600">No stances are waiting for an opponent.</p>
+              )
             ) : (
               queue.challenges.map((challenge) => <OpenChallengeItem key={challenge.id} challenge={challenge} />)
             )}
@@ -52,7 +54,9 @@ export default async function DebatesPage(props: { searchParams: Promise<{ tab?:
         ) : (
           <div className="mt-6">
             {queue.questions.length === 0 ? (
-              <p className="py-6 text-sm text-stone-600">Every fresh agenda question has a first response.</p>
+              queue.notice ? null : (
+                <p className="py-6 text-sm text-stone-600">Every fresh agenda question has a first response.</p>
+              )
             ) : (
               queue.questions.map((question) => <UnansweredQuestionItem key={question.id} question={question} />)
             )}

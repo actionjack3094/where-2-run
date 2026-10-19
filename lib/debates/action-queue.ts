@@ -1,4 +1,5 @@
 import { isMissingSchema } from "@/lib/db/schema-errors";
+import { loadMatchedPrimaryIds, type MatchedPrimaryScope } from "@/lib/debates/matched-primaries";
 import { excerpt, primaryLookup } from "@/lib/debates/queue-shared";
 import { loadUnansweredQuestions, type UnansweredQuestion } from "@/lib/debates/unanswered-questions";
 import { displayName, loadProfiles, platformAdmin } from "@/lib/platform/records";
@@ -23,12 +24,26 @@ export type ActionQueue = {
   notice: string | null;
 };
 
-export async function loadActionQueue(): Promise<ActionQueue> {
+function partyName(party: string) {
+  return party === "republican" ? "Republican" : "Democratic";
+}
+
+export async function loadActionQueue(userId: string | null = null): Promise<ActionQueue> {
   try {
     const admin = platformAdmin();
+    const scope = await loadMatchedPrimaryIds(userId);
+    if (!scope.calibrated || !scope.party) {
+      return {
+        challenges: [],
+        questions: [],
+        notice: userId
+          ? "Calibrate your ideology vector to open primaries in your party."
+          : "Sign in and calibrate to see primaries in your party.",
+      };
+    }
     const [challenges, questions] = await Promise.all([
-      loadOpenChallenges(admin),
-      loadUnansweredQuestions(admin),
+      loadOpenChallenges(admin, scope),
+      loadUnansweredQuestions(admin, scope),
     ]);
     return {
       challenges: challenges.rows,
@@ -45,12 +60,17 @@ export async function loadActionQueue(): Promise<ActionQueue> {
   }
 }
 
-async function loadOpenChallenges(admin: ReturnType<typeof platformAdmin>) {
+async function loadOpenChallenges(
+  admin: ReturnType<typeof platformAdmin>,
+  scope: MatchedPrimaryScope,
+) {
+  if (scope.ids.size === 0) return { rows: [], notice: null };
   const result = await admin
     .from("arena_debates")
     .select("id, stance_a, primary_id, candidate_a_id, created_at")
     .eq("status", "open_challenge")
     .is("candidate_b_id", null)
+    .in("primary_id", [...scope.ids])
     .order("created_at", { ascending: false })
     .limit(30);
   if (result.error) {
@@ -58,13 +78,13 @@ async function loadOpenChallenges(admin: ReturnType<typeof platformAdmin>) {
     throw new Error(result.error.message);
   }
 
-  const rows = (result.data ?? []) as {
+  const rows = ((result.data ?? []) as {
     id: string;
     stance_a: string;
     primary_id: string;
     candidate_a_id: string | null;
     created_at: string;
-  }[];
+  }[]).filter((row) => scope.ids.has(row.primary_id));
   const [primaries, profiles] = await Promise.all([
     primaryLookup(admin, rows.map((row) => row.primary_id)),
     loadProfiles(admin, rows.map((row) => row.candidate_a_id ?? "")),
@@ -72,18 +92,19 @@ async function loadOpenChallenges(admin: ReturnType<typeof platformAdmin>) {
 
   return {
     notice: null,
-    rows: rows.map((row) => {
+    rows: rows.flatMap((row) => {
       const primary = primaries.get(row.primary_id);
+      if (!primary || primary.party !== scope.party) return [];
       const profile = row.candidate_a_id ? profiles.get(row.candidate_a_id) : undefined;
-      return {
+      return [{
         id: row.id,
         stance: excerpt(row.stance_a),
-        office: primary?.office ?? "Primary",
-        party: primary?.party === "republican" ? "Republican" : "Democrat",
+        office: primary.office,
+        party: partyName(primary.party),
         createdAt: row.created_at,
         authorName: profile?.legal_name?.trim() || displayName(profile ?? null),
         authorStatus: tierLabel(parseTier(profile?.candidate_tier)),
-      };
+      }];
     }),
   };
 }

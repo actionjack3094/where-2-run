@@ -18,13 +18,13 @@ export function OpenChallengeItem({ challenge }: { challenge: OpenChallenge }) {
             </span>
           </div>
           <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-stone-500">
-            {challenge.party} · {challenge.office}
+            {`${challenge.party.toUpperCase()} PRIMARY · ${challenge.office.toUpperCase()}`}
           </p>
         </div>
       </header>
       <p className="mt-4 text-sm leading-6 text-stone-800">{challenge.stance}</p>
       <Link href={`/debates/${challenge.id}`} className={CTA}>
-        Accept the clash
+        Contend for the Floor
       </Link>
     </article>
   );
