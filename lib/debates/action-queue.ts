@@ -1,5 +1,9 @@
 import { isMissingSchema } from "@/lib/db/schema-errors";
-import { loadMatchedPrimaryIds, type MatchedPrimaryScope } from "@/lib/debates/matched-primaries";
+import {
+  loadMatchedPrimaryIds,
+  openChallengeInScope,
+  type MatchedPrimaryScope,
+} from "@/lib/debates/matched-primaries";
 import { excerpt, primaryLookup } from "@/lib/debates/queue-shared";
 import { loadUnansweredQuestions, type UnansweredQuestion } from "@/lib/debates/unanswered-questions";
 import { displayName, loadProfiles, platformAdmin } from "@/lib/platform/records";
@@ -8,6 +12,7 @@ import { tierLabel } from "@/lib/platform/types";
 
 export type OpenChallenge = {
   id: string;
+  primaryId: string;
   stance: string;
   office: string;
   party: string;
@@ -22,6 +27,8 @@ export type ActionQueue = {
   challenges: OpenChallenge[];
   questions: UnansweredQuestion[];
   notice: string | null;
+  party: MatchedPrimaryScope["party"];
+  matchedIds: string[];
 };
 
 function partyName(party: string) {
@@ -39,6 +46,8 @@ export async function loadActionQueue(userId: string | null = null): Promise<Act
         notice: userId
           ? "Calibrate your ideology vector to open primaries in your party."
           : "Sign in and calibrate to see primaries in your party.",
+        party: null,
+        matchedIds: [],
       };
     }
     const [challenges, questions] = await Promise.all([
@@ -49,6 +58,8 @@ export async function loadActionQueue(userId: string | null = null): Promise<Act
       challenges: challenges.rows,
       questions: questions.rows,
       notice: challenges.notice ?? questions.notice,
+      party: scope.party,
+      matchedIds: [...scope.ids],
     };
   } catch (caught) {
     const message = caught instanceof Error ? caught.message : "Could not load the action queue.";
@@ -56,6 +67,8 @@ export async function loadActionQueue(userId: string | null = null): Promise<Act
       challenges: [],
       questions: [],
       notice: isMissingSchema({ message }) ? "Apply the platform architecture migration, then reload." : message,
+      party: null,
+      matchedIds: [],
     };
   }
 }
@@ -94,10 +107,13 @@ async function loadOpenChallenges(
     notice: null,
     rows: rows.flatMap((row) => {
       const primary = primaries.get(row.primary_id);
-      if (!primary || primary.party !== scope.party) return [];
+      if (!primary || !openChallengeInScope({ primaryId: row.primary_id, party: primary.party }, scope)) {
+        return [];
+      }
       const profile = row.candidate_a_id ? profiles.get(row.candidate_a_id) : undefined;
       return [{
         id: row.id,
+        primaryId: row.primary_id,
         stance: excerpt(row.stance_a),
         office: primary.office,
         party: partyName(primary.party),

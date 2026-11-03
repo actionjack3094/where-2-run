@@ -15,7 +15,7 @@ export function BallotCandidate({ candidate }: { candidate: VoterBallotCandidate
   return (
     <li className="border-t border-stone-200 pt-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <Link href={`/profile/${candidate.id}`} className="text-sm font-semibold text-stone-900 hover:text-amber-800">
+        <Link href={`/candidates/${candidate.id}`} className="text-sm font-semibold text-stone-900 hover:text-amber-800">
           {candidate.name}
         </Link>
         <p className="text-[11px] font-medium uppercase tracking-widest text-stone-500">

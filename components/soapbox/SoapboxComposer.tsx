@@ -8,7 +8,7 @@ const MAX = 500;
 const COMPOSER_ID = "soapbox-composer";
 
 const PLACEHOLDER: Record<SoapboxLens, string> = {
-  candidate: "Post a campaign dispatch or issue stance to your matched sphere...",
+  candidate: "Post a campaign dispatch or issue stance to your matched primary network...",
   voter: "What is happening in your district? Start the local conversation...",
 };
 
@@ -66,7 +66,7 @@ export function SoapboxComposer({
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <p className="text-xs tabular-nums text-stone-500">{remaining} left</p>
         <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-amber-800">
-          Posting to {districtLabel}
+          {activeTab === "candidate" ? "MATCHED PRIMARY NETWORK" : `Posting to ${districtLabel}`}
         </span>
         <button
           type="submit"

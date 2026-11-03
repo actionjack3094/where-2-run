@@ -77,7 +77,7 @@ function PersonHeader({ person }: { person: BallotPerson }) {
     <div className="min-w-0">
       <div className="flex items-center gap-2">
         <CandidateAvatar name={person.name} avatarUrl={person.avatarUrl} size="sm" />
-        <Link href={`/profile/${person.id}`} className="truncate text-sm font-semibold text-stone-900 hover:text-amber-800">
+        <Link href={`/candidates/${person.id}`} className="truncate text-sm font-semibold text-stone-900 hover:text-amber-800">
           {person.name}
         </Link>
       </div>

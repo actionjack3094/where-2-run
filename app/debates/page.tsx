@@ -4,6 +4,7 @@ import { OpenChallengeItem } from "@/components/debates/OpenChallengeItem";
 import { UnansweredQuestionItem } from "@/components/debates/UnansweredQuestionItem";
 import { LaneTabs } from "@/components/lane-tabs";
 import { loadActionQueue } from "@/lib/debates/action-queue";
+import { openChallengeInScope } from "@/lib/debates/matched-primaries";
 import { loadDistrictGauntlet } from "@/lib/debates/load-gauntlet";
 import { getServerUser } from "@/lib/db/supabase-server";
 
@@ -21,6 +22,8 @@ export default async function DebatesPage(props: { searchParams: Promise<{ tab?:
     loadActionQueue(user?.id ?? null),
     tab === "open" && user?.id ? loadDistrictGauntlet(user.id).catch(() => null) : Promise.resolve(null),
   ]);
+  const scope = { ids: new Set(queue.matchedIds), party: queue.party };
+  const challenges = queue.challenges.filter((challenge) => openChallengeInScope(challenge, scope));
 
   return (
     <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
@@ -43,12 +46,12 @@ export default async function DebatesPage(props: { searchParams: Promise<{ tab?:
 
         {tab === "open" ? (
           <div className="mt-6">
-            {queue.challenges.length === 0 ? (
+            {challenges.length === 0 ? (
               queue.notice ? null : (
                 <p className="py-6 text-sm text-stone-600">No stances are waiting for an opponent.</p>
               )
             ) : (
-              queue.challenges.map((challenge) => <OpenChallengeItem key={challenge.id} challenge={challenge} />)
+              challenges.map((challenge) => <OpenChallengeItem key={challenge.id} challenge={challenge} />)
             )}
           </div>
         ) : (

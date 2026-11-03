@@ -17,6 +17,17 @@ export type MatchedPrimaryScope = {
 
 const EMPTY: MatchedPrimaryScope = { calibrated: false, party: null, ids: new Set() };
 
+/** An open challenge is visible only when its primary is in the viewer's matched set and party. */
+export function openChallengeInScope(
+  challenge: { primaryId: string; party: string },
+  scope: { ids: ReadonlySet<string>; party: Party | null },
+) {
+  if (!scope.party || !scope.ids.has(challenge.primaryId)) return false;
+  const value = challenge.party.trim().toLowerCase();
+  if (scope.party === "democrat") return value === "democrat" || value === "democratic";
+  return value === "republican";
+}
+
 function finite(value: unknown) {
   const number = typeof value === "number" ? value : Number(value);
   return Number.isFinite(number) ? number : 0;

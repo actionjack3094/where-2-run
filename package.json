@@ -16,6 +16,7 @@
     "feed:patch": "tsx scripts/patch-feed-user.ts",
     "seed:bots": "npx tsx scripts/seed-bots.ts",
     "seed:austin": "tsx scripts/seed-austin.ts",
+    "seed:tx10": "tsx scripts/seed-tx10-candidates.ts",
     "jury:test": "tsx scripts/test-jury-appeal.ts"
   },
   "dependencies": {

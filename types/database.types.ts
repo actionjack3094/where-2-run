@@ -95,6 +95,12 @@ export type AccountProfile = {
   avatar_url: string | null;
   /** Short public biography shown on the candidate profile. */
   bio: string | null;
+  party?: string | null;
+  office?: string | null;
+  candidate_stage?: string | null;
+  district_votes?: number | null;
+  escrow_pledged?: number | string | null;
+  escrow_target?: number | string | null;
   created_at: string | null;
   updated_at: string | null;
 };

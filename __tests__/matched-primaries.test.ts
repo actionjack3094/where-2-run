@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { matchedPrimaryIds } from "@/lib/debates/matched-primaries";
+import { matchedPrimaryIds, openChallengeInScope } from "@/lib/debates/matched-primaries";
 import type { DirectoryPrimary } from "@/lib/elections/state-directory";
 
 function seat(id: string, party: "democrat" | "republican"): DirectoryPrimary {
@@ -38,5 +38,21 @@ describe("matched primary ids", () => {
   it("drops a seat that has no primary in the viewer's party", () => {
     const ids = matchedPrimaryIds([seat("rep", "republican")], { x: -0.6, y: 0 });
     expect(ids.size).toBe(0);
+  });
+});
+
+describe("open challenge scope", () => {
+  const scope = { ids: new Set(["dem"]), party: "democrat" as const };
+
+  it("keeps a challenge in a matched Democratic primary", () => {
+    expect(openChallengeInScope({ primaryId: "dem", party: "Democratic" }, scope)).toBe(true);
+  });
+
+  it("drops the opposing party even when the seat id is present", () => {
+    expect(openChallengeInScope({ primaryId: "dem", party: "Republican" }, scope)).toBe(false);
+  });
+
+  it("drops a primary outside the matched set", () => {
+    expect(openChallengeInScope({ primaryId: "other", party: "democrat" }, scope)).toBe(false);
   });
 });
