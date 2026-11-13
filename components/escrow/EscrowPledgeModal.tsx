@@ -10,12 +10,10 @@ export function EscrowPledgeModal({
   isOpen,
   onClose,
   candidateName,
-  office,
 }: {
   isOpen: boolean;
   onClose: () => void;
   candidateName: string;
-  office: string;
 }) {
   const [amount, setAmount] = useState<PledgeAmount>(25);
   const [pending, setPending] = useState(false);
@@ -64,9 +62,10 @@ export function EscrowPledgeModal({
           Pledge Escrow for {candidateName}
         </h2>
         <p className="bg-stone-50 border border-stone-200 text-stone-700 text-sm p-3 rounded-lg mb-6 mt-4 leading-5">
-          Conditional Pledge: Your funds are held securely in escrow. You will only be charged if this
-          candidate reaches their 50-vote in-district threshold and officially files for the {office} ballot.
-          If they do not run, your card is never charged.
+          Conditional Pledge: Your funds are held securely in escrow toward the statutory primary filing fee.
+          You will only be charged if this candidate maintains Tier 1 Contender status (1,300+ AR) in the U.S.
+          House - TX-10 Primary and officially files for the ballot. If they do not run, your card is never
+          charged.
         </p>
         <p className="mb-2 text-[11px] font-medium uppercase tracking-widest text-stone-500">Pledge amount</p>
         <div className="grid grid-cols-4 gap-2">

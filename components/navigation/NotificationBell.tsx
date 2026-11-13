@@ -15,7 +15,7 @@ const ALERTS: { id: string; body: ReactNode }[] = [
   },
   {
     id: "contender",
-    body: "Lena Ortiz hit 50 district upvotes and is officially a Contender!",
+    body: "Lena Ortiz defeated #2 Contender in a TX-10 Clash (+54 AR) and unlocked her $3,125 Filing Escrow!",
   },
 ];
 

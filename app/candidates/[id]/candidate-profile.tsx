@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { EscrowPledgeModal } from "@/components/escrow/EscrowPledgeModal";
 import { CandidateAvatar } from "@/components/profile/CandidateAvatar";
+import { getPrimaryTier } from "@/lib/arena-rank";
 import type { AccountProfile } from "@/types/database.types";
+
+const TX10_PRIMARY_RANK = 4;
+const TX10_ARENA_RATING = 1340;
 
 function money(value: number | string | null | undefined) {
   const amount = typeof value === "number" ? value : Number(value ?? 0);
@@ -20,7 +24,6 @@ function axis(value: number | null | undefined) {
 export function CandidateProfile({ candidate }: { candidate: AccountProfile }) {
   const [isEscrowModalOpen, setIsEscrowModalOpen] = useState(false);
   const name = candidate.full_name?.trim() || "Unnamed candidate";
-  const office = candidate.office?.trim() || "primary";
   const pledged = Number(candidate.escrow_pledged ?? 0) || 0;
   const target = Number(candidate.escrow_target ?? 0) || 0;
   const progress = target > 0 ? Math.min(100, Math.round((pledged / target) * 100)) : 0;
@@ -51,8 +54,16 @@ export function CandidateProfile({ candidate }: { candidate: AccountProfile }) {
               </dd>
             </div>
             <div>
-              <dt className="text-[11px] font-medium uppercase tracking-widest text-stone-500">District votes</dt>
-              <dd className="mt-1 text-stone-800">{candidate.district_votes ?? 0}</dd>
+              <dt className="text-[11px] font-medium uppercase tracking-widest text-stone-500">
+                TX-10 Primary Rank
+              </dt>
+              <dd className="mt-1 text-stone-800">
+                #{TX10_PRIMARY_RANK} {getPrimaryTier(TX10_ARENA_RATING)} ·{" "}
+                {TX10_ARENA_RATING.toLocaleString("en-US")} AR
+                <p className="text-xs text-stone-500 mt-0.5">
+                  92% Ideological Correlation · Statutory Filing Escrow Unlocked
+                </p>
+              </dd>
             </div>
             <div>
               <dt className="text-[11px] font-medium uppercase tracking-widest text-stone-500">Filing escrow</dt>
@@ -79,7 +90,6 @@ export function CandidateProfile({ candidate }: { candidate: AccountProfile }) {
         isOpen={isEscrowModalOpen}
         onClose={() => setIsEscrowModalOpen(false)}
         candidateName={name}
-        office={office}
       />
     </main>
   );
