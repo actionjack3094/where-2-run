@@ -6,6 +6,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { InboxMenu } from "@/app/components/InboxMenu";
 import { AccountSlot } from "@/components/nav-account";
+import { NotificationBell } from "@/components/navigation/NotificationBell";
 import { NavLink } from "@/components/nav-link";
 import { NAV_FOCUS, NAV_LINKS } from "@/components/nav-links";
 import { loadNavIdentity, type NavIdentity } from "@/lib/actions/profile";
@@ -74,11 +75,10 @@ export function Navbar({ identity }: { identity: NavIdentity | null }) {
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-1.5 md:ml-0">
+          {live ? <InboxMenu /> : null}
+          <NotificationBell />
           {live ? (
-            <>
-              <InboxMenu />
-              <AccountSlot identity={live} menuId={menuId} menuOpen={menuOpen} menuRef={menuRef} setMenuOpen={setMenuOpen} />
-            </>
+            <AccountSlot identity={live} menuId={menuId} menuOpen={menuOpen} menuRef={menuRef} setMenuOpen={setMenuOpen} />
           ) : (
             <div className="hidden md:block">
               <AccountSlot identity={live} menuId={menuId} menuOpen={menuOpen} menuRef={menuRef} setMenuOpen={setMenuOpen} />
