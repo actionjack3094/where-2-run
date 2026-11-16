@@ -29,10 +29,17 @@ export const TX10_BOARD = [
 
 export const TX10_ISSUES = [
   {
+    id: "zoning",
+    title: "Federal Zoning & Housing Density Mandates",
+    content:
+      "Require a density bonus only where a city already has transit, water, and an open classroom, and publish the displacement count before another federally backed unit is approved.",
+    upvotes: 142,
+  },
+  {
     id: "i35",
     title: "Cap the I-35 expansion before it cuts East Austin",
     content: "Publish the displacement count and a local-hire rule before another lane opens through TX-10 neighborhoods.",
-    upvotes: 142,
+    upvotes: 118,
   },
   {
     id: "hospitals",

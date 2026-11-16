@@ -23,7 +23,7 @@ export const SEED_POSTS: SoapboxPost[] = [
     lens: "candidate",
     badge: "CONTENDER · 1,340 AR",
     href: LENA_CANDIDATE_HREF,
-    matchPercent: 91,
+    matchPercent: 92,
     district: HOUSE,
     zip: "78701",
     clip: false,

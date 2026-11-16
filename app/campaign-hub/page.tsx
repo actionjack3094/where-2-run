@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { CandidateFunnel } from "@/components/campaign/candidate-funnel";
 import { MilestoneUnlocks } from "@/components/campaign/MilestoneUnlocks";
 import { DropoutButton } from "@/components/pledges/DropoutButton";
 import { loadCampaignUnlocks } from "@/lib/campaign/load-unlocks";
@@ -16,12 +16,7 @@ export const metadata: Metadata = {
 export default async function CampaignHubPage(props: { searchParams: Promise<{ primary?: string }> }) {
   const primarySlug = (await props.searchParams).primary?.trim() || null;
   const user = await getServerUser().catch(() => null);
-  if (!user) {
-    const next = primarySlug
-      ? `/campaign-hub?primary=${encodeURIComponent(primarySlug)}`
-      : "/campaign-hub";
-    redirect(`/auth/login?next=${encodeURIComponent(next)}`);
-  }
+  if (!user) return <CandidateFunnel />;
 
   const loaded = await loadCampaignUnlocks(user.id, primarySlug);
 

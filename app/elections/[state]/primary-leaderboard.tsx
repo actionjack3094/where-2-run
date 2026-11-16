@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LenaEscrowPledge } from "@/components/escrow/lena-escrow-line";
 import { ARENA_TIER_LADDER, getPrimaryTier } from "@/lib/arena-rank";
 import { TX10_BOARD } from "@/lib/tx10-spine";
 import type { LeaderRow } from "@/lib/platform/types";
@@ -34,7 +35,13 @@ export function PrimaryLeaderboard({
                   #{row.rank} {getPrimaryTier(row.ar)} · {row.name} · {money(row.ar)} AR
                 </p>
                 <p className="mt-1 text-sm text-stone-600">
-                  {row.match}% Ideological Match · {row.escrow}
+                  {row.name === "Lena Ortiz" ? (
+                    <LenaEscrowPledge match={row.match} />
+                  ) : (
+                    <>
+                      {row.match}% Ideological Match · {row.escrow}
+                    </>
+                  )}
                 </p>
               </Link>
             </li>

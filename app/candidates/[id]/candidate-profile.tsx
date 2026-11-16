@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { EscrowPledgeModal } from "@/components/escrow/EscrowPledgeModal";
+import { useLenaEscrow } from "@/components/escrow/lena-escrow-line";
 import { CandidateAvatar } from "@/components/profile/CandidateAvatar";
 import { getPrimaryTier } from "@/lib/arena-rank";
+import { LENA_CANDIDATE_ID, writeLenaEscrow } from "@/lib/lena-escrow";
 import type { AccountProfile } from "@/types/database.types";
 
 const TX10_PRIMARY_RANK = 2;
@@ -24,13 +26,17 @@ function axis(value: number | null | undefined) {
 export function CandidateProfile({ candidate }: { candidate: AccountProfile }) {
   const [isEscrowModalOpen, setIsEscrowModalOpen] = useState(false);
   const [badge, setBadge] = useState<number | null>(null);
-  const [pledged, setPledged] = useState(Number(candidate.escrow_pledged ?? 0) || 0);
+  const [localPledged, setLocalPledged] = useState(Number(candidate.escrow_pledged ?? 0) || 0);
+  const storedEscrow = useLenaEscrow();
   const name = candidate.full_name?.trim() || "Unnamed candidate";
+  const lena = candidate.id === LENA_CANDIDATE_ID || name === "Lena Ortiz";
+  const pledged = lena ? storedEscrow : localPledged;
   const target = Number(candidate.escrow_target ?? 0) || 3125;
   const progress = target > 0 ? Math.min(100, Math.round((pledged / target) * 100)) : 0;
 
   function authorizePledge(amount: number) {
-    setPledged((current) => current + amount);
+    if (lena) writeLenaEscrow(pledged + amount);
+    else setLocalPledged((current) => current + amount);
     setBadge(amount);
   }
 
@@ -67,7 +73,7 @@ export function CandidateProfile({ candidate }: { candidate: AccountProfile }) {
                 #{TX10_PRIMARY_RANK} {getPrimaryTier(TX10_ARENA_RATING)} ·{" "}
                 {TX10_ARENA_RATING.toLocaleString("en-US")} AR
                 <p className="text-xs text-stone-500 mt-0.5">
-                  92% Ideological Correlation · Statutory Filing Escrow Unlocked
+                  92% Ideological Match · Statutory Filing Escrow Unlocked
                 </p>
               </dd>
             </div>

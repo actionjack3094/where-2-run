@@ -33,7 +33,7 @@ export function PrimaryHeader({
   const tabs = [
     { id: "board" as const, label: "Leaderboard", href: `/elections/${hub.slug}` },
     { id: "agenda" as const, label: "Agenda Queue", href: `/elections/${hub.slug}?tab=agenda` },
-    { id: "seats" as const, label: "Open seats", href: `/elections/${hub.slug}?tab=seats` },
+    { id: "seats" as const, label: "Voter Q&A", href: `/elections/${hub.slug}?tab=seats` },
   ];
 
   return (

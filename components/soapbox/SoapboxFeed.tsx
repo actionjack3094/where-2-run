@@ -79,8 +79,8 @@ function Card({ post }: { post: SoapboxPost }) {
             ) : null}
           </div>
           {post.matchPercent != null ? (
-            <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-stone-500">
-              {post.matchPercent}% match
+            <p className="mt-1 text-[11px] font-medium tracking-widest text-stone-500">
+              {post.matchPercent}% Ideological Match
             </p>
           ) : null}
         </div>

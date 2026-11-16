@@ -20,7 +20,7 @@ export function ArenaRankSummary({ profile }: { profile: ArenaPublicProfile }) {
       <p className="inline-flex rounded-full border border-gold px-2.5 py-1 text-[11px] font-semibold uppercase tracking-widest text-amber-800">
         {label}
       </p>
-      <p className="mt-3 text-sm text-stone-800">Ideological Correlation</p>
+      <p className="mt-3 text-sm text-stone-800">Ideological Match</p>
       <p className="mt-2 text-sm leading-6 text-stone-600">
         {locked
           ? "Statutory Filing Escrow (Locked — Reach Tier 1 Contender at 1,300+ AR to unlock)"

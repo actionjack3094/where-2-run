@@ -19,7 +19,7 @@ const ALERTS: { id: string; href: string; body: ReactNode }[] = [
   {
     id: "contender",
     href: LENA_CANDIDATE_HREF,
-    body: "Lena Ortiz defeated #2 Contender in a TX-10 Clash (+54 AR) and unlocked her $3,125 Filing Escrow!",
+    body: "Lena Ortiz defeated #3 Challenger Avery Chen in a TX-10 Clash (+54 AR) to reach #2 Contender and unlock her $3,125 Filing Escrow!",
   },
 ];
 
