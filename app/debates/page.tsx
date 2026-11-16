@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AgendaQueue, FeaturedClash } from "@/app/debates/featured-clash";
 import { DistrictGauntletForm } from "@/components/debates/DistrictGauntletForm";
 import { OpenChallengeItem } from "@/components/debates/OpenChallengeItem";
 import { UnansweredQuestionItem } from "@/components/debates/UnansweredQuestionItem";
@@ -42,27 +43,21 @@ export default async function DebatesPage(props: { searchParams: Promise<{ tab?:
           </p>
         </header>
 
-        {queue.notice ? <p className="mt-6 text-sm leading-6 text-stone-600">{queue.notice}</p> : null}
+        {queue.notice && user ? <p className="mt-6 text-sm leading-6 text-stone-600">{queue.notice}</p> : null}
 
         {tab === "open" ? (
           <div className="mt-6">
-            {challenges.length === 0 ? (
-              queue.notice ? null : (
-                <p className="py-6 text-sm text-stone-600">No stances are waiting for an opponent.</p>
-              )
-            ) : (
-              challenges.map((challenge) => <OpenChallengeItem key={challenge.id} challenge={challenge} />)
-            )}
+            <FeaturedClash signedIn={Boolean(user)} />
+            {challenges.map((challenge) => (
+              <OpenChallengeItem key={challenge.id} challenge={challenge} />
+            ))}
           </div>
         ) : (
           <div className="mt-6">
-            {queue.questions.length === 0 ? (
-              queue.notice ? null : (
-                <p className="py-6 text-sm text-stone-600">Every fresh agenda question has a first response.</p>
-              )
-            ) : (
-              queue.questions.map((question) => <UnansweredQuestionItem key={question.id} question={question} />)
-            )}
+            <AgendaQueue />
+            {queue.questions.map((question) => (
+              <UnansweredQuestionItem key={question.id} question={question} />
+            ))}
           </div>
         )}
 

@@ -2,6 +2,12 @@ export const PROSPECT_MIN = 1000;
 export const CHALLENGER_MIN = 1150;
 export const CONTENDER_MIN = 1300;
 
+export const ARENA_TIER_LADDER = [
+  "Tier 1: Contender (1,300+ AR)",
+  "Tier 2: Challenger (1,150-1,299 AR)",
+  "Tier 3: Prospect (1,000-1,149 AR)",
+] as const;
+
 const K = 50;
 
 export type PrimaryTier = "Prospect" | "Challenger" | "Contender";

@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { Bell } from "lucide-react";
+import { LENA_CANDIDATE_HREF } from "@/lib/tx10-spine";
 
-const ALERTS: { id: string; body: ReactNode }[] = [
+const ALERTS: { id: string; href: string; body: ReactNode }[] = [
   {
     id: "rebuttal-clock",
+    href: "/debates",
     body: (
       <>
         Caleb Nguyen accepted your challenge on Zoning Laws.{" "}
@@ -15,6 +18,7 @@ const ALERTS: { id: string; body: ReactNode }[] = [
   },
   {
     id: "contender",
+    href: LENA_CANDIDATE_HREF,
     body: "Lena Ortiz defeated #2 Contender in a TX-10 Clash (+54 AR) and unlocked her $3,125 Filing Escrow!",
   },
 ];
@@ -60,11 +64,14 @@ export function NotificationBell() {
           <p className="border-b border-stone-100 px-4 py-3 text-sm font-semibold text-stone-900">Notifications</p>
           <ul>
             {ALERTS.map((alert) => (
-              <li
-                key={alert.id}
-                className="p-4 border-b border-stone-100 text-sm text-stone-700 hover:bg-stone-50 cursor-pointer"
-              >
-                {alert.body}
+              <li key={alert.id} className="border-b border-stone-100">
+                <Link
+                  href={alert.href}
+                  onClick={() => setOpen(false)}
+                  className="block p-4 text-sm text-stone-700 hover:bg-stone-50"
+                >
+                  {alert.body}
+                </Link>
               </li>
             ))}
           </ul>

@@ -1,10 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { CandidateAvatar } from "@/components/profile/CandidateAvatar";
 import type { SoapboxLens, SoapboxPost } from "@/components/soapbox/types";
 
-function verified(post: SoapboxPost) {
-  return post.badge === "CONTENDER" || post.badge === "ON THE BALLOT";
+function tierRank(post: SoapboxPost) {
+  if (post.badge?.startsWith("CONTENDER")) return 0;
+  if (post.badge?.startsWith("CHALLENGER")) return 1;
+  if (post.badge?.startsWith("PROSPECT")) return 2;
+  return 3;
 }
 
 function visiblePosts(posts: SoapboxPost[], tab: SoapboxLens, zip: string, district: string) {
@@ -14,7 +18,7 @@ function visiblePosts(posts: SoapboxPost[], tab: SoapboxLens, zip: string, distr
       (post) => (zip.length === 5 && post.zip === zip) || post.district === district,
     );
   }
-  return [...scoped].sort((a, b) => Number(verified(b)) - Number(verified(a)));
+  return [...scoped].sort((a, b) => tierRank(a) - tierRank(b));
 }
 
 export function SoapboxFeed({
@@ -53,32 +57,46 @@ export function SoapboxFeed({
     <ul className="grid gap-4">
       {feed.map((post) => (
         <li key={post.id} className="rounded-2xl border border-amber-200/70 bg-white p-6 shadow-sm">
-          <header className="flex items-center gap-3">
-            <CandidateAvatar name={post.name} size="sm" />
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm font-semibold text-stone-900">{post.name}</p>
-                {post.badge ? (
-                  <span className="rounded-full border border-amber-500/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-amber-800">
-                    {post.badge}
-                  </span>
-                ) : null}
-              </div>
-              {post.matchPercent != null ? (
-                <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-stone-500">
-                  {post.matchPercent}% match
-                </p>
-              ) : null}
-            </div>
-          </header>
-          <p className="mt-4 text-sm leading-6 text-stone-800">{post.text}</p>
-          {post.clip ? (
-            <div className="mt-4 flex aspect-video items-center justify-center rounded-2xl bg-stone-900 text-[11px] font-medium uppercase tracking-widest text-white/80">
-              Clip
-            </div>
-          ) : null}
+          <Card post={post} />
         </li>
       ))}
     </ul>
+  );
+}
+
+function Card({ post }: { post: SoapboxPost }) {
+  const body = (
+    <>
+      <header className="flex items-center gap-3">
+        <CandidateAvatar name={post.name} size="sm" />
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold text-stone-900">{post.name}</p>
+            {post.badge ? (
+              <span className="rounded-full border border-amber-500/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-amber-800">
+                {post.badge}
+              </span>
+            ) : null}
+          </div>
+          {post.matchPercent != null ? (
+            <p className="mt-1 text-[11px] font-medium uppercase tracking-widest text-stone-500">
+              {post.matchPercent}% match
+            </p>
+          ) : null}
+        </div>
+      </header>
+      <p className="mt-4 text-sm leading-6 text-stone-800">{post.text}</p>
+      {post.clip ? (
+        <div className="mt-4 flex aspect-video items-center justify-center rounded-2xl bg-stone-900 text-[11px] font-medium uppercase tracking-widest text-white/80">
+          Clip
+        </div>
+      ) : null}
+    </>
+  );
+  if (!post.href) return body;
+  return (
+    <Link href={post.href} className="block rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-700">
+      {body}
+    </Link>
   );
 }

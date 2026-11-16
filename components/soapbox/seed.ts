@@ -1,4 +1,5 @@
 import type { SoapboxPost } from "@/components/soapbox/types";
+import { LENA_CANDIDATE_HREF } from "@/lib/tx10-spine";
 
 const HOUSE = "U.S. House TX-10";
 
@@ -9,7 +10,7 @@ export const SEED_POSTS: SoapboxPost[] = [
     name: "Jordan Hale",
     text: "Housing costs are the race. The first session should cap local fees that never show up on a mailer.",
     lens: "candidate",
-    badge: "PROSPECTIVE",
+    badge: "PROSPECT · 1,080 AR",
     matchPercent: 62,
     district: HOUSE,
     zip: "78701",
@@ -17,10 +18,11 @@ export const SEED_POSTS: SoapboxPost[] = [
   },
   {
     id: "seed-mina",
-    name: "Mina Ortiz",
+    name: "Lena Ortiz",
     text: "The hospital levy is the quiet vote on this ballot. Keep the emergency room open and publish the bond math.",
     lens: "candidate",
-    badge: "ON THE BALLOT",
+    badge: "CONTENDER · 1,340 AR",
+    href: LENA_CANDIDATE_HREF,
     matchPercent: 91,
     district: HOUSE,
     zip: "78701",
@@ -31,7 +33,7 @@ export const SEED_POSTS: SoapboxPost[] = [
     name: "Avery Chen",
     text: "Fund the transit line that already has riders before drawing a new map.",
     lens: "candidate",
-    badge: "CONTENDER",
+    badge: "CHALLENGER · 1,245 AR",
     matchPercent: 84,
     district: HOUSE,
     zip: "78746",
@@ -42,7 +44,7 @@ export const SEED_POSTS: SoapboxPost[] = [
     name: "Chris Patel",
     text: "School bonds should expire when the project does. That is the stance I will defend.",
     lens: "candidate",
-    badge: "PROSPECTIVE",
+    badge: "PROSPECT · 1,080 AR",
     matchPercent: 54,
     district: HOUSE,
     zip: "78704",

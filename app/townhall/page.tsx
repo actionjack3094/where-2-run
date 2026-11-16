@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { CalibrationLab } from "@/app/townhall/calibration-lab";
+import { GuestCalibration } from "@/app/townhall/guest-calibration";
 import { formatDistrictLabel } from "@/lib/ballot/district-label";
 import { createAdminClient } from "@/lib/db/supabase-admin";
 import { isMissingSchema } from "@/lib/db/schema-errors";
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 
 export default async function TownhallPage() {
   const user = await getServerUser();
-  if (!user) redirect("/auth/login?mode=create&next=%2Ftownhall");
+  if (!user) return <GuestCalibration />;
 
   const loaded = await loadLab(user.id);
 

@@ -19,7 +19,7 @@ export function ElectionsExperience({
   ballot,
 }: {
   tab: ElectionsTab;
-  matched: { calibrated: boolean; notice: string | null; races: MatchedPrimaryCard[] } | null;
+  matched: { calibrated: boolean; notice: string | null; races: MatchedPrimaryCard[]; guest?: boolean } | null;
   ballot: VoterBallotPanel | null;
 }) {
   const router = useRouter();
@@ -33,6 +33,10 @@ export function ElectionsExperience({
             items={TABS.map(({ id, label }) => ({ id, label }))}
             activeTab={tab}
             onChange={(id) => {
+              if (id === "matched" && matched?.guest) {
+                router.push("/?calibrated=true");
+                return;
+              }
               const next = TABS.find((item) => item.id === id);
               if (next) router.push(next.href);
             }}

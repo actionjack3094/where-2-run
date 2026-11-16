@@ -6,7 +6,7 @@ import { CandidateAvatar } from "@/components/profile/CandidateAvatar";
 import { getPrimaryTier } from "@/lib/arena-rank";
 import type { AccountProfile } from "@/types/database.types";
 
-const TX10_PRIMARY_RANK = 4;
+const TX10_PRIMARY_RANK = 2;
 const TX10_ARENA_RATING = 1340;
 
 function money(value: number | string | null | undefined) {
@@ -23,10 +23,16 @@ function axis(value: number | null | undefined) {
 
 export function CandidateProfile({ candidate }: { candidate: AccountProfile }) {
   const [isEscrowModalOpen, setIsEscrowModalOpen] = useState(false);
+  const [badge, setBadge] = useState<number | null>(null);
+  const [pledged, setPledged] = useState(Number(candidate.escrow_pledged ?? 0) || 0);
   const name = candidate.full_name?.trim() || "Unnamed candidate";
-  const pledged = Number(candidate.escrow_pledged ?? 0) || 0;
-  const target = Number(candidate.escrow_target ?? 0) || 0;
+  const target = Number(candidate.escrow_target ?? 0) || 3125;
   const progress = target > 0 ? Math.min(100, Math.round((pledged / target) * 100)) : 0;
+
+  function authorizePledge(amount: number) {
+    setPledged((current) => current + amount);
+    setBadge(amount);
+  }
 
   return (
     <main className="flex min-h-full w-full flex-1 flex-col bg-stone-50 text-stone-900">
@@ -71,8 +77,16 @@ export function CandidateProfile({ candidate }: { candidate: AccountProfile }) {
                 {money(pledged)} pledged of {money(target)}
               </dd>
               <div className="mt-2 h-2 overflow-hidden rounded-full bg-stone-100">
-                <div className="h-full rounded-full bg-amber-600" style={{ width: `${progress}%` }} />
+                <div
+                  className="h-full rounded-full bg-amber-600 transition-[width] duration-700 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
               </div>
+              {badge != null ? (
+                <p className="mt-3 inline-flex rounded-full border border-amber-500/50 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-800">
+                  +${badge} conditional pledge authorized in escrow
+                </p>
+              ) : null}
             </div>
           </dl>
           <button
@@ -89,6 +103,7 @@ export function CandidateProfile({ candidate }: { candidate: AccountProfile }) {
       <EscrowPledgeModal
         isOpen={isEscrowModalOpen}
         onClose={() => setIsEscrowModalOpen(false)}
+        onAuthorizePledge={authorizePledge}
         candidateName={name}
       />
     </main>

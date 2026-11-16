@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { BallotCandidate } from "@/app/elections/ballot-candidate";
-import { ZipGate } from "@/app/elections/ballot-zip-gate";
+import { LocalBallot } from "@/components/ballot/local-ballot";
 import { dedupeBallotRaces } from "@/lib/elections/ballot-races";
 import type { VoterBallotPanel } from "@/lib/elections/hub-types";
 
@@ -21,18 +21,7 @@ export function BallotPanel({ panel }: { panel: VoterBallotPanel }) {
         </p>
       </header>
       {panel.notice ? <p className="mt-6 text-sm leading-6 text-stone-600">{panel.notice}</p> : null}
-      {panel.signedOut ? (
-        <article className="mt-8 rounded-2xl border border-amber-500/40 bg-white px-6 py-8">
-          <h2 className="font-display text-2xl font-semibold text-stone-900">Sign in to open your home ballot</h2>
-          <Link
-            href="/auth/login?next=%2F%3Ftab%3Dballot"
-            className="mt-6 inline-flex h-11 items-center justify-center rounded-md bg-stone-900 px-5 text-[11px] font-semibold uppercase tracking-widest text-stone-50"
-          >
-            Sign in
-          </Link>
-        </article>
-      ) : null}
-      {panel.needsZip ? <ZipGate /> : null}
+      {panel.signedOut || panel.needsZip ? <LocalBallot className="mt-8" /> : null}
       {!panel.signedOut && !panel.needsZip && !panel.notice && races.length === 0 ? (
         <p className="mt-8 text-sm leading-6 text-stone-600">No races are filed for this voting ZIP yet.</p>
       ) : null}

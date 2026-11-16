@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { BallotCard } from "@/app/ballot/ballot-card";
-import { BallotZipGate } from "@/app/ballot/zip-gate";
+import { LocalBallot } from "@/components/ballot/local-ballot";
 import { electionsTabs } from "@/components/elections-tabs";
 import { LaneTabs } from "@/components/lane-tabs";
 import { loadMyBallotFeed } from "@/lib/ballot/load-district-feed";
@@ -41,7 +41,7 @@ export default async function BallotPage() {
         {feed.notice ? (
           <p className="border-b border-stone-200 px-4 py-3 text-sm leading-6 text-stone-600">{feed.notice}</p>
         ) : null}
-        {locked ? <BallotZipGate signedOut={feed.signedOut} /> : null}
+        {locked ? <LocalBallot /> : null}
         {!locked && feed.cards.length === 0 ? (
           <p className="px-4 py-16 text-sm leading-6 text-stone-600">
             No active debates or policy statements in {feed.districtLabel ?? "your district"} yet.

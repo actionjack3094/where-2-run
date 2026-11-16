@@ -9,10 +9,12 @@ type PledgeAmount = (typeof PLEDGE_AMOUNTS)[number];
 export function EscrowPledgeModal({
   isOpen,
   onClose,
+  onAuthorizePledge,
   candidateName,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  onAuthorizePledge?: (amount: number) => void;
   candidateName: string;
 }) {
   const [amount, setAmount] = useState<PledgeAmount>(25);
@@ -20,7 +22,11 @@ export function EscrowPledgeModal({
   const lock = useRef(false);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      lock.current = false;
+      setPending(false);
+      return;
+    }
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape" && !lock.current) onClose();
     }
@@ -40,6 +46,7 @@ export function EscrowPledgeModal({
     lock.current = true;
     setPending(true);
     window.setTimeout(() => {
+      onAuthorizePledge?.(amount);
       lock.current = false;
       setPending(false);
       onClose();

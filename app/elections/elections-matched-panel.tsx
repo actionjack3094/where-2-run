@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { GuestMatches } from "@/app/elections/guest-matches";
 import type { MatchedPrimaryCard } from "@/lib/elections/hub-types";
 
 export function MatchedPanel({
   feed,
 }: {
-  feed: { calibrated: boolean; notice: string | null; races: MatchedPrimaryCard[] };
+  feed: { calibrated: boolean; notice: string | null; races: MatchedPrimaryCard[]; guest?: boolean };
 }) {
   return (
     <section className="mt-8" aria-labelledby="matched-primaries-heading">
@@ -23,17 +24,18 @@ export function MatchedPanel({
             Calibrate your political compass to unlock your matched primaries
           </h2>
           <Link
-            href="/onboarding"
+            href="/townhall"
             className="mt-6 inline-flex h-11 items-center justify-center rounded-md bg-stone-900 px-5 text-[11px] font-semibold uppercase tracking-widest text-stone-50"
           >
             Start calibration
           </Link>
         </article>
       ) : null}
-      {feed.calibrated && feed.races.length === 0 && !feed.notice ? (
+      {feed.calibrated && !feed.guest && feed.races.length === 0 && !feed.notice ? (
         <p className="mt-8 text-sm leading-6 text-stone-600">No open primaries are on the board yet.</p>
       ) : null}
-      {feed.races.length > 0 ? (
+      {feed.guest ? <GuestMatches /> : null}
+      {!feed.guest && feed.races.length > 0 ? (
         <ul className="mt-8 grid gap-4">
           {feed.races.map((race) => (
             <li key={race.id} className="rounded-2xl border border-amber-500/30 bg-white px-5 py-5">

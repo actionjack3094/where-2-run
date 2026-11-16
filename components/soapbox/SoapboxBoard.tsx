@@ -25,7 +25,7 @@ export function SoapboxBoard({ viewer }: { viewer: SoapboxViewer }) {
         name: viewer.name,
         text,
         lens: activeTab,
-        badge: activeTab === "candidate" ? "PROSPECTIVE" : null,
+        badge: activeTab === "candidate" ? "PROSPECT · 1,000 AR" : null,
         matchPercent: null,
         district: viewer.district,
         zip: viewer.zip,
