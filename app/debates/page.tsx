@@ -47,7 +47,7 @@ export default async function DebatesPage(props: { searchParams: Promise<{ tab?:
 
         {tab === "open" ? (
           <div className="mt-6">
-            <FeaturedClash signedIn={Boolean(user)} />
+            <FeaturedClash />
             {challenges.map((challenge) => (
               <OpenChallengeItem key={challenge.id} challenge={challenge} />
             ))}
